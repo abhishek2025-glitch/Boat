@@ -1,0 +1,12 @@
+# Ignore editor and system files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Ignore node modules (if any)
+node_modules/
+
+# Keep all game files
+!.gitignore
