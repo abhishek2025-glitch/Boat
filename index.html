@@ -2,670 +2,611 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="description" content="MAELSTROM — Free Pirate Naval Survivor Game. Auto-fire cannons, grow your fleet, defeat ghost ship bosses. No download needed.">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="description" content="MAELSTROM — Free Pirate Naval Survivor. Auto-fire cannons, grow your fleet, defeat ghost ship bosses. No download needed.">
 <title>MAELSTROM — Survive the Sea. Outlast the Storm.</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Georgia',serif}
-#game-canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%;outline:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#04101e;font-family:'Georgia',serif}
+#game-canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
 
-/* ─── LOADING ─────────────────────────────────────────── */
-#loading-screen{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#04101e 0%,#0a1e36 60%,#061428 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;transition:opacity 0.8s}
-#loading-screen.fade-out{opacity:0;pointer-events:none}
-#loading-title{font-size:clamp(2.5rem,8vw,5.5rem);color:#f0c040;text-shadow:0 0 40px #f0c04077,0 4px 12px #000;letter-spacing:.18em;font-weight:900;text-transform:uppercase;margin-bottom:.15em}
-#loading-sub{color:#88ccff;font-size:clamp(.7rem,2.2vw,1rem);letter-spacing:.35em;text-transform:uppercase;margin-bottom:2.5em}
-#loading-bar-wrap{width:min(340px,70vw);height:12px;background:#0a1828;border-radius:6px;border:1px solid #1a3a5a;overflow:hidden;margin-bottom:.7em}
-#loading-bar{height:100%;width:0%;background:linear-gradient(90deg,#0055aa,#4488ff,#00ccff);border-radius:6px;transition:width .25s ease}
-#loading-text{color:#4488cc;font-size:.75rem;letter-spacing:.15em;min-height:1.2em}
+/* ─── LOADING ─────────────────────────────────────── */
+#loading{position:absolute;inset:0;background:linear-gradient(180deg,#04101e,#0a1e36 60%,#061428);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;transition:opacity .8s}
+#loading.out{opacity:0;pointer-events:none}
+#loading h1{font-size:clamp(2.4rem,8vw,5.5rem);color:#f0c040;text-shadow:0 0 40px #f0c04066,0 4px 12px #000;
+  letter-spacing:.18em;font-weight:900;text-transform:uppercase;margin-bottom:.15em}
+#loading p{color:#88ccff;font-size:clamp(.7rem,2vw,.95rem);letter-spacing:.35em;text-transform:uppercase;margin-bottom:2.5em}
+#load-bar-wrap{width:min(340px,70vw);height:10px;background:#0a1828;border-radius:5px;border:1px solid #1a3a5a;overflow:hidden;margin-bottom:.7em}
+#load-bar{height:100%;width:0%;background:linear-gradient(90deg,#0055aa,#4488ff,#00ccff);border-radius:5px;transition:width .2s}
+#load-txt{color:#3a6090;font-size:.72rem;letter-spacing:.12em;min-height:1.2em}
 
-/* ─── SCREENS ─────────────────────────────────────────── */
-.screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;z-index:50}
-.screen.active{display:flex}
+/* ─── SCREENS ─────────────────────────────────────── */
+.scr{position:absolute;inset:0;display:none;z-index:50}
+.scr.on{display:flex}
 
-/* ─── MAIN MENU ───────────────────────────────────────── */
+/* ─── MENU ────────────────────────────────────────── */
 #menu{flex-direction:column;align-items:center;justify-content:center;pointer-events:all;background:transparent}
-#menu-logo{font-size:clamp(2.8rem,9vw,6rem);color:#f0c040;text-shadow:0 0 50px #f0c04066,0 6px 16px #000,0 0 120px #f0c04022;letter-spacing:.18em;font-weight:900;text-transform:uppercase;animation:logopulse 3s ease-in-out infinite}
-@keyframes logopulse{0%,100%{text-shadow:0 0 40px #f0c04066,0 4px 12px #000}50%{text-shadow:0 0 80px #f0c040aa,0 4px 12px #000,0 0 160px #f0c04033}}
-#menu-sub{color:#88ccff;font-size:clamp(.7rem,2.2vw,1rem);letter-spacing:.35em;text-transform:uppercase;margin:.25em 0 1.8em;text-shadow:0 1px 4px #000}
-.menu-btns{display:flex;flex-direction:column;gap:.55em;align-items:center;width:100%}
-.btn{display:block;padding:.65em 2.2em;font-size:clamp(.85rem,2.4vw,1.05rem);color:#fff;background:linear-gradient(135deg,#162b4a,#0d1f38);border:1.5px solid #2a5a88;border-radius:7px;cursor:pointer;font-family:inherit;letter-spacing:.1em;text-transform:uppercase;transition:all .15s;min-width:230px;text-align:center;user-select:none;-webkit-tap-highlight-color:transparent}
-.btn:hover,.btn:active{background:linear-gradient(135deg,#1e3d6a,#152a50);border-color:#5599cc;transform:scale(1.04);box-shadow:0 0 20px #2255aa55}
-.btn.gold{background:linear-gradient(135deg,#6a4200,#b07010);border-color:#f0c040;color:#fff8e0}
-.btn.gold:hover{background:linear-gradient(135deg,#8a5a10,#d08830);box-shadow:0 0 20px #f0c04044}
-.btn.green{background:linear-gradient(135deg,#0a3a1a,#1a6a2a);border-color:#2aaa44}
-.btn.green:hover{background:linear-gradient(135deg,#0e5025,#259a40)}
-#menu-lb-preview{color:#6699bb;font-size:.78rem;letter-spacing:.08em;text-align:center;margin-bottom:.6em;max-width:320px}
-#menu-skulls{color:#f0c040;font-size:.82rem;margin-bottom:.3em}
-#menu-daily{color:#88ff88;font-size:.78rem;margin-bottom:.3em}
+#menu-logo{font-size:clamp(2.8rem,9vw,6rem);color:#f0c040;letter-spacing:.18em;font-weight:900;
+  text-transform:uppercase;text-shadow:0 0 60px #f0c04055,0 6px 16px #000;animation:lglow 3s ease-in-out infinite}
+@keyframes lglow{0%,100%{text-shadow:0 0 40px #f0c04055,0 4px 12px #000}50%{text-shadow:0 0 90px #f0c040aa,0 4px 12px #000}}
+#menu-sub{color:#88ccff;font-size:clamp(.65rem,2vw,.92rem);letter-spacing:.35em;text-transform:uppercase;
+  margin:.2em 0 1.6em;text-shadow:0 1px 4px #000}
+.btns{display:flex;flex-direction:column;gap:.5em;align-items:center}
+.btn{display:block;padding:.62em 2.1em;font-size:clamp(.82rem,2.3vw,1rem);color:#fff;
+  background:linear-gradient(135deg,#142540,#0c1928);border:1.5px solid #254870;border-radius:7px;
+  cursor:pointer;font-family:inherit;letter-spacing:.1em;text-transform:uppercase;
+  transition:all .14s;min-width:226px;text-align:center;user-select:none;-webkit-tap-highlight-color:transparent}
+.btn:hover,.btn:active{background:linear-gradient(135deg,#1c3660,#14243a);border-color:#4a88cc;
+  transform:scale(1.04);box-shadow:0 0 18px #2255aa44}
+.btn.gold{background:linear-gradient(135deg,#5a3600,#a86800);border-color:#e8b830}
+.btn.gold:hover{background:linear-gradient(135deg,#7a4e10,#c87a20);box-shadow:0 0 18px #f0c04033}
+#menu-info{color:#4466aa;font-size:.76rem;text-align:center;margin-bottom:.6em;max-width:300px}
+#menu-skulls{color:#f0c040;font-size:.8rem;margin-bottom:.25em}
 
-/* ─── HUD ─────────────────────────────────────────────── */
-#hud{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;display:none}
-#hud.active{display:block}
-/* HP */
+/* ─── HUD ─────────────────────────────────────────── */
+#hud{position:absolute;inset:0;pointer-events:none;z-index:10;display:none}
+#hud.on{display:block}
 #hud-hp-wrap{position:absolute;top:14px;left:14px}
-#hud-hp-label{color:#ff7777;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 1px 3px #000}
-#hud-hp-bar{width:150px;height:11px;background:#300;border-radius:5px;border:1px solid #500;overflow:hidden;margin-top:3px;box-shadow:0 2px 4px #000a}
-#hud-hp-fill{height:100%;background:linear-gradient(90deg,#cc2222,#ff5555);width:100%;border-radius:5px;transition:width .2s,background .3s}
-/* Shield (ghost phase indicator) */
-#hud-phase{position:absolute;top:38px;left:14px;color:#4dff9b;font-size:.65rem;letter-spacing:.08em;display:none;text-shadow:0 0 8px #4dff9b}
-/* TIMER */
-#hud-timer{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:#fff;font-size:clamp(1.3rem,4.5vw,2.2rem);font-weight:bold;text-shadow:0 2px 10px #000,0 0 30px #2255ff44;letter-spacing:.12em;pointer-events:none}
-#hud-timer.danger{color:#ff4444;text-shadow:0 2px 8px #000,0 0 20px #ff444488}
-/* SCORE */
+#hud-hp-lbl{color:#ff7777;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 1px 3px #000}
+#hud-hp-bar{width:148px;height:11px;background:#280000;border-radius:5px;border:1px solid #440000;
+  overflow:hidden;margin-top:3px;box-shadow:0 2px 5px #0008}
+#hud-hp-fill{height:100%;width:100%;background:linear-gradient(90deg,#cc2222,#ff5555);border-radius:5px;transition:width .18s,background .28s}
+#hud-phase{position:absolute;top:38px;left:14px;color:#4dff9b;font-size:.62rem;letter-spacing:.08em;
+  display:none;text-shadow:0 0 8px #4dff9b88;animation:phasepulse 1s ease-in-out infinite}
+@keyframes phasepulse{0%,100%{opacity:1}50%{opacity:.4}}
+#hud-timer{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:#fff;
+  font-size:clamp(1.25rem,4.2vw,2.1rem);font-weight:bold;
+  text-shadow:0 2px 10px #000,0 0 28px #2255ff33;letter-spacing:.12em;pointer-events:none}
+#hud-timer.red{color:#ff4444;text-shadow:0 2px 8px #000,0 0 20px #ff444488;animation:timerblink .6s ease-in-out infinite}
+@keyframes timerblink{0%,100%{opacity:1}50%{opacity:.7}}
 #hud-score{position:absolute;top:14px;right:14px;text-align:right;pointer-events:none}
-#hud-doubloons{color:#f0c040;font-size:.88rem;text-shadow:0 1px 4px #000;display:block}
-#hud-fleet{color:#88ccff;font-size:.75rem;text-shadow:0 1px 3px #000;display:block;margin-top:.15em}
-#hud-level{color:#aa88ff;font-size:.75rem;text-shadow:0 1px 3px #000;display:block;margin-top:.15em}
-/* XP BAR */
-#hud-xp-wrap{position:absolute;top:52px;right:14px;width:130px}
-#hud-xp-label{color:#6688aa;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em}
-#hud-xp-bar{height:5px;background:#001022;border-radius:3px;overflow:hidden;margin-top:2px;border:1px solid #113}
-#hud-xp-fill{height:100%;background:linear-gradient(90deg,#4400ff,#8844ff,#cc66ff);width:0%;border-radius:3px;transition:width .3s}
-/* BOSS BAR */
-#boss-bar{position:absolute;top:62px;left:50%;transform:translateX(-50%);width:min(420px,78%);display:none}
-#boss-bar-label{color:#4dff9b;font-size:.72rem;text-align:center;display:block;letter-spacing:.22em;text-transform:uppercase;text-shadow:0 0 10px #4dff9b;margin-bottom:3px}
-#boss-bar-track{height:15px;background:#001408;border-radius:6px;border:2px solid #4dff9b55;overflow:hidden;box-shadow:0 0 15px #4dff9b33}
-#boss-bar-fill{height:100%;background:linear-gradient(90deg,#009944,#4dff9b);width:100%;transition:width .1s;border-radius:4px}
-/* WAVE */
-#hud-wave{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);color:#4477aa;font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;text-shadow:0 1px 3px #000;white-space:nowrap}
-/* MINIMAP */
-#minimap-wrap{position:absolute;bottom:36px;left:14px;width:88px;height:88px;border-radius:50%;border:2px solid #1a3a5a;background:rgba(0,8,20,.75);overflow:hidden;box-shadow:0 2px 8px #000a}
-#minimap-canvas{width:88px;height:88px;display:block}
-/* ACTIVE ABILITIES */
-#ability-bar{position:absolute;bottom:36px;right:14px;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
-.ability-icon{width:38px;height:38px;background:rgba(0,15,35,.7);border:1.5px solid #2a4a6a;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;position:relative;overflow:hidden}
-.ability-icon .cd-fill{position:absolute;bottom:0;left:0;width:100%;background:rgba(0,0,0,.65);border-radius:0 0 4px 4px;transition:height .2s}
+#hud-score span{display:block;text-shadow:0 1px 4px #000}
+.hs1{color:#f0c040;font-size:.86rem}
+.hs2{color:#88ccff;font-size:.73rem;margin-top:.12em}
+.hs3{color:#aa88ff;font-size:.73rem;margin-top:.12em}
+#hud-xp-wrap{position:absolute;top:52px;right:14px;width:128px}
+#hud-xp-lbl{color:#445566;font-size:.58rem;text-transform:uppercase;letter-spacing:.07em}
+#hud-xp-bar{height:5px;background:#000e20;border-radius:3px;overflow:hidden;margin-top:2px;border:1px solid #112}
+#hud-xp-fill{height:100%;background:linear-gradient(90deg,#4400ff,#9944ff,#cc66ff);width:0%;border-radius:3px;transition:width .28s}
+#boss-bar{position:absolute;top:62px;left:50%;transform:translateX(-50%);width:min(420px,76%);display:none}
+#boss-lbl{color:#4dff9b;font-size:.7rem;text-align:center;display:block;letter-spacing:.22em;text-transform:uppercase;text-shadow:0 0 10px #4dff9b88;margin-bottom:3px}
+#boss-track{height:14px;background:#001306;border-radius:6px;border:1.5px solid #4dff9b44;overflow:hidden;box-shadow:0 0 14px #4dff9b22}
+#boss-fill{height:100%;background:linear-gradient(90deg,#00aa44,#4dff9b);width:100%;transition:width .1s;border-radius:4px}
+#hud-wave{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);color:#2a4a70;
+  font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;text-shadow:0 1px 3px #000;white-space:nowrap}
+#minimap{position:absolute;bottom:36px;left:14px;width:86px;height:86px;border-radius:50%;
+  border:1.5px solid #1a3050;background:rgba(0,8,20,.78);overflow:hidden;box-shadow:0 2px 8px #0009}
+#minimap canvas{width:86px;height:86px;display:block}
 
-/* ─── OVERLAY SCREENS ─────────────────────────────────── */
-#upgrade-screen{flex-direction:column;align-items:center;justify-content:center;background:rgba(0,6,18,.91);backdrop-filter:blur(6px);pointer-events:all}
-#upgrade-screen h2{color:#f0c040;font-size:clamp(1.1rem,3.5vw,1.9rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:.2em;text-shadow:0 0 24px #f0c04066}
-#upgrade-subtitle{color:#5577aa;font-size:.8rem;margin-bottom:1.6em;letter-spacing:.1em}
-#upgrade-cards{display:flex;gap:1em;flex-wrap:wrap;justify-content:center;max-width:920px}
-.card{width:min(210px,30vw);background:linear-gradient(160deg,#090f1e,#050b16);border-radius:10px;padding:1.1em .9em;cursor:pointer;transition:all .15s;border:2px solid #1a2a40;text-align:center;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.04) 0%,transparent 60%);pointer-events:none}
-.card:hover{transform:scale(1.07) translateY(-6px)}
-.card.common{border-color:#667788}
-.card.common:hover{box-shadow:0 0 25px #66778844}
-.card.rare{border-color:#3366ff}
-.card.rare:hover{box-shadow:0 0 25px #3366ff88}
-.card.epic{border-color:#9933ee}
-.card.epic:hover{box-shadow:0 0 25px #9933ee88}
-.card.legendary{border-color:#f0c040;animation:lglow 1.6s ease-in-out infinite}
-@keyframes lglow{0%,100%{box-shadow:0 0 18px #f0c04055}50%{box-shadow:0 0 38px #f0c040bb,inset 0 0 8px #f0c04011}}
-.card-icon{font-size:2.6em;margin-bottom:.25em;filter:drop-shadow(0 2px 4px #000)}
-.card-name{color:#eee;font-size:.85rem;font-weight:700;margin-bottom:.3em;letter-spacing:.04em}
-.card-desc{color:#7799bb;font-size:.68rem;line-height:1.45;margin-bottom:.5em}
-.card-rarity{font-size:.6rem;text-transform:uppercase;letter-spacing:.18em;font-weight:700}
-.card.common .card-rarity{color:#8899aa}
-.card.rare .card-rarity{color:#5588ff}
-.card.epic .card-rarity{color:#bb55ff}
-.card.legendary .card-rarity{color:#f0c040}
-#upgrade-hint{color:#2a4060;font-size:.72rem;margin-top:1.2em;letter-spacing:.1em}
+/* ─── SCREENS common ──────────────────────────────── */
+#upgrade-scr{flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(0,5,16,.92);backdrop-filter:blur(6px);pointer-events:all}
+#upgrade-scr h2{color:#f0c040;font-size:clamp(1.1rem,3.5vw,1.85rem);letter-spacing:.22em;
+  text-transform:uppercase;margin-bottom:.2em;text-shadow:0 0 22px #f0c04055}
+#upg-sub{color:#3a5575;font-size:.78rem;margin-bottom:1.5em;letter-spacing:.1em}
+#cards{display:flex;gap:.9em;flex-wrap:wrap;justify-content:center;max-width:900px}
+.card{width:min(205px,29vw);background:linear-gradient(160deg,#07101e,#040c16);border-radius:10px;
+  padding:1em .85em;cursor:pointer;transition:all .13s;border:2px solid #182840;text-align:center;position:relative}
+.card:hover{transform:scale(1.07) translateY(-5px)}
+.card.common{border-color:#556677}
+.card.common:hover{box-shadow:0 0 22px #55667733}
+.card.rare{border-color:#2255ee}
+.card.rare:hover{box-shadow:0 0 22px #2255ee88}
+.card.epic{border-color:#8822dd}
+.card.epic:hover{box-shadow:0 0 22px #8822dd88}
+.card.legendary{border-color:#f0c040;animation:cglw 1.6s ease-in-out infinite}
+@keyframes cglw{0%,100%{box-shadow:0 0 16px #f0c04044}50%{box-shadow:0 0 36px #f0c040aa,inset 0 0 8px #f0c04011}}
+.ci{font-size:2.5em;margin-bottom:.22em;filter:drop-shadow(0 2px 4px #000)}
+.cn{color:#eee;font-size:.83rem;font-weight:700;margin-bottom:.28em;letter-spacing:.04em}
+.cd{color:#6688aa;font-size:.67rem;line-height:1.44;margin-bottom:.45em}
+.cr{font-size:.58rem;text-transform:uppercase;letter-spacing:.18em;font-weight:700}
+.card.common .cr{color:#778899}
+.card.rare .cr{color:#4477ff}
+.card.epic .cr{color:#aa55ff}
+.card.legendary .cr{color:#f0c040}
+#upg-hint{color:#1e3252;font-size:.7rem;margin-top:1.1em;letter-spacing:.1em}
 
-/* ─── DEATH SCREEN ────────────────────────────────────── */
-#death-screen{flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.93);text-align:center;padding:2em 1em;pointer-events:all;overflow-y:auto}
-#death-title{color:#ff3333;font-size:clamp(1.6rem,6vw,3.2rem);letter-spacing:.22em;text-shadow:0 0 40px #ff333377;margin-bottom:.2em;text-transform:uppercase;font-weight:900}
-#death-flavour{color:#884444;font-size:.85rem;font-style:italic;margin-bottom:1.6em}
-#death-stats{color:#99aacc;font-size:.85rem;line-height:2.2;margin-bottom:.8em}
+#death-scr{flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.93);
+  text-align:center;padding:2em 1em;pointer-events:all;overflow-y:auto}
+#death-title{color:#ff2222;font-size:clamp(1.5rem,5.5vw,3rem);letter-spacing:.22em;
+  text-shadow:0 0 40px #ff222266;margin-bottom:.2em;text-transform:uppercase;font-weight:900}
+#death-flav{color:#773333;font-size:.83rem;font-style:italic;margin-bottom:1.5em}
+#death-stats{color:#8899bb;font-size:.83rem;line-height:2.2;margin-bottom:.7em}
 #death-stats strong{color:#f0c040}
-#death-skulls{color:#f0c040;font-size:1.05rem;margin-bottom:.5em;font-weight:bold}
-#death-rank{color:#88aabb;font-size:.8rem;margin-bottom:.8em}
-#death-share{background:#080f1c;border:1px solid #1a3050;border-radius:6px;padding:.9em 1.2em;color:#7799cc;font-size:.75rem;font-family:monospace;white-space:pre-line;max-width:320px;line-height:1.7;cursor:pointer;transition:border-color .2s;margin-bottom:1.2em;word-break:break-word}
-#death-share:hover{border-color:#4488cc}
-#death-share-hint{color:#2a4060;font-size:.65rem;margin-bottom:.8em}
-.death-btns{display:flex;flex-direction:column;gap:.5em;align-items:center}
+#death-skulls{color:#f0c040;font-size:1rem;font-weight:700;margin-bottom:.4em}
+#death-rank{color:#557788;font-size:.77rem;margin-bottom:.8em}
+#death-share{background:#06101e;border:1px solid #1a3050;border-radius:6px;padding:.8em 1.1em;
+  color:#6688bb;font-size:.73rem;font-family:monospace;white-space:pre-line;max-width:310px;
+  line-height:1.7;cursor:pointer;transition:border-color .2s;margin-bottom:.3em;word-break:break-word}
+#death-share:hover{border-color:#3a6090}
+#death-share-hint{color:#1e3050;font-size:.62rem;margin-bottom:.9em}
+.dbtns{display:flex;flex-direction:column;gap:.45em;align-items:center}
 
-/* ─── META UPGRADE TREE ───────────────────────────────── */
-#meta-screen{flex-direction:column;align-items:center;overflow-y:auto;background:rgba(0,4,14,.97);padding:2em 1em;pointer-events:all}
-#meta-screen h2{color:#f0c040;font-size:clamp(1.1rem,3.5vw,1.7rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:.2em}
-#meta-skulls-display{color:#f0c040;font-size:.88rem;margin-bottom:1.4em}
-#meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.9em;max-width:880px;width:100%;margin-bottom:1.2em}
-.meta-node{background:linear-gradient(135deg,#08111e,#040c18);border:2px solid #162230;border-radius:8px;padding:.9em;cursor:pointer;transition:all .15s;text-align:center}
-.meta-node:hover:not(.node-locked){border-color:#3366aa;background:linear-gradient(135deg,#0b1928,#071020)}
-.meta-node.node-owned{border-color:#1a5a22;background:linear-gradient(135deg,#061208,#0a1e0c)}
-.meta-node.node-locked{opacity:.42;cursor:default}
-.meta-node-icon{font-size:1.9em;margin-bottom:.3em}
-.meta-node-name{color:#dde;font-size:.8rem;font-weight:700;margin-bottom:.2em}
-.meta-node-desc{color:#5577aa;font-size:.67rem;line-height:1.4;margin-bottom:.4em}
-.meta-node-cost{color:#f0c040;font-size:.72rem}
-.meta-node.node-owned .meta-node-cost{color:#4dff9b}
+#meta-scr{flex-direction:column;align-items:center;overflow-y:auto;background:rgba(0,3,12,.97);
+  padding:2em 1em;pointer-events:all}
+#meta-scr h2{color:#f0c040;font-size:clamp(1rem,3.5vw,1.6rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:.2em}
+#meta-skulls-d{color:#f0c040;font-size:.85rem;margin-bottom:1.3em}
+#meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:.8em;max-width:860px;width:100%;margin-bottom:1.1em}
+.mnode{background:linear-gradient(135deg,#06101a,#030c14);border:2px solid #10202e;border-radius:8px;
+  padding:.85em;cursor:pointer;transition:all .14s;text-align:center}
+.mnode:hover:not(.locked){border-color:#2a5a88;background:linear-gradient(135deg,#0a1a28,#060e1a)}
+.mnode.owned{border-color:#155a20;background:linear-gradient(135deg,#050e06,#081606)}
+.mnode.locked{opacity:.4;cursor:default}
+.mni{font-size:1.8em;margin-bottom:.28em}
+.mnn{color:#ccd;font-size:.78rem;font-weight:700;margin-bottom:.18em}
+.mnd{color:#3a5570;font-size:.66rem;line-height:1.4;margin-bottom:.35em}
+.mnc{color:#f0c040;font-size:.7rem}
+.mnode.owned .mnc{color:#4dff9b}
 
-/* ─── SHIP SELECT ─────────────────────────────────────── */
-#ship-screen{flex-direction:column;align-items:center;background:rgba(0,4,14,.97);padding:2em 1em;pointer-events:all;overflow-y:auto}
-#ship-screen h2{color:#f0c040;font-size:clamp(1.1rem,3.5vw,1.7rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:1.2em}
-#ship-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.9em;max-width:750px;width:100%;margin-bottom:1.2em}
-.ship-card{background:linear-gradient(135deg,#08111e,#040c18);border:2px solid #162230;border-radius:8px;padding:1em;cursor:pointer;transition:all .15s;text-align:center}
-.ship-card:hover:not(.ship-locked){border-color:#3366aa}
-.ship-card.ship-selected{border-color:#f0c040;box-shadow:0 0 18px #f0c04033}
-.ship-card.ship-locked{opacity:.4;cursor:default}
-.ship-card-icon{font-size:2.4em;margin-bottom:.35em}
-.ship-card-name{color:#eee;font-size:.82rem;font-weight:700;margin-bottom:.2em}
-.ship-card-desc{color:#5577aa;font-size:.67rem;line-height:1.4;margin-bottom:.35em}
-.ship-card-cost{color:#f0c040;font-size:.7rem}
-.ship-card.ship-selected .ship-card-cost{color:#4dff9b}
+#ship-scr{flex-direction:column;align-items:center;background:rgba(0,3,12,.97);
+  padding:2em 1em;pointer-events:all;overflow-y:auto}
+#ship-scr h2{color:#f0c040;font-size:clamp(1rem,3.5vw,1.6rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:1.1em}
+#ship-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:.8em;max-width:720px;width:100%;margin-bottom:1.1em}
+.scard{background:linear-gradient(135deg,#06101a,#030c14);border:2px solid #10202e;border-radius:8px;
+  padding:.95em;cursor:pointer;transition:all .14s;text-align:center}
+.scard:hover:not(.slocked){border-color:#2a5a88}
+.scard.ssel{border-color:#f0c040;box-shadow:0 0 16px #f0c04030}
+.scard.slocked{opacity:.38;cursor:default}
+.sci{font-size:2.3em;margin-bottom:.32em}
+.scn{color:#eee;font-size:.8rem;font-weight:700;margin-bottom:.18em}
+.scd{color:#3a5570;font-size:.65rem;line-height:1.4;margin-bottom:.32em}
+.scc{color:#f0c040;font-size:.68rem}
+.scard.ssel .scc{color:#4dff9b}
 
-/* ─── LEADERBOARD ─────────────────────────────────────── */
-#lb-screen{flex-direction:column;align-items:center;justify-content:center;background:rgba(0,4,14,.97);pointer-events:all;padding:2em 1em;overflow-y:auto}
-#lb-screen h2{color:#f0c040;font-size:clamp(1.1rem,3.5vw,1.7rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:1.2em}
-#lb-list{max-width:440px;width:100%;font-size:.82rem;color:#88aacc;line-height:1;margin-bottom:1.4em}
-.lb-row{display:flex;justify-content:space-between;align-items:center;padding:.55em .6em;border-bottom:1px solid #0d1e30;gap:.5em}
-.lb-row:nth-child(1){color:#f0c040;font-weight:700}
-.lb-row:nth-child(2){color:#cccccc}
-.lb-row:nth-child(3){color:#cc9944}
-.lb-row.you-row{background:rgba(240,192,64,.06);border-color:#2a4020}
-.lb-rank{width:28px;text-align:right;flex-shrink:0}
-.lb-ship{width:22px;text-align:center;flex-shrink:0}
-.lb-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lb-score{flex-shrink:0;font-weight:700}
-.lb-time{flex-shrink:0;color:#556677;font-size:.72rem}
+#lb-scr{flex-direction:column;align-items:center;justify-content:flex-start;background:rgba(0,3,12,.97);
+  pointer-events:all;padding:2em 1em;overflow-y:auto}
+#lb-scr h2{color:#f0c040;font-size:clamp(1rem,3.5vw,1.6rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:1.1em}
+#lb-list{max-width:430px;width:100%;font-size:.8rem;color:#6688aa;line-height:1;margin-bottom:1.3em}
+.lbr{display:flex;justify-content:space-between;align-items:center;padding:.52em .55em;
+  border-bottom:1px solid #0c1c2c;gap:.4em}
+.lbr:nth-child(1){color:#f0c040;font-weight:700}
+.lbr:nth-child(2){color:#cccccc}
+.lbr:nth-child(3){color:#cc9944}
+.lbr-rk{width:26px;text-align:right;flex-shrink:0}
+.lbr-ico{width:20px;text-align:center;flex-shrink:0}
+.lbr-nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbr-sc{flex-shrink:0;font-weight:700}
+.lbr-tm{flex-shrink:0;color:#334455;font-size:.68rem}
 
-/* ─── WAVE ANNOUNCE ───────────────────────────────────── */
-#wave-announce{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);color:#ff8844;font-size:clamp(1.1rem,4.5vw,2.2rem);font-weight:900;text-shadow:0 0 30px #ff884477;letter-spacing:.22em;text-transform:uppercase;opacity:0;transition:opacity .5s;pointer-events:none;z-index:40;text-align:center;text-wrap:balance}
+#wave-ann{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);
+  color:#ff8844;font-size:clamp(1rem,4.2vw,2rem);font-weight:900;
+  text-shadow:0 0 28px #ff884466;letter-spacing:.22em;text-transform:uppercase;
+  opacity:0;transition:opacity .45s;pointer-events:none;z-index:40;text-align:center}
+#toast{position:absolute;top:76px;left:50%;transform:translateX(-50%);
+  background:rgba(0,12,36,.92);border:1px solid #244870;border-radius:6px;
+  color:#88ccff;font-size:.78rem;padding:.48em 1.25em;letter-spacing:.1em;
+  opacity:0;transition:opacity .28s;pointer-events:none;z-index:60;white-space:nowrap;text-shadow:0 1px 3px #000}
+#fps{position:absolute;bottom:2px;right:4px;color:#101e2e;font-size:.58rem;pointer-events:none}
+#pause-ovl{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:38;display:none;
+  align-items:center;justify-content:center;pointer-events:all}
+#pause-ovl.on{display:flex}
+.pause-box{background:rgba(0,8,22,.96);border:2px solid #244870;border-radius:10px;
+  padding:1.8em 2.8em;text-align:center}
+.pause-box h3{color:#f0c040;font-size:1.4rem;letter-spacing:.2em;margin-bottom:.9em;text-transform:uppercase}
 
-/* ─── TOAST ───────────────────────────────────────────── */
-#toast{position:absolute;top:78px;left:50%;transform:translateX(-50%);background:rgba(0,14,40,.9);border:1px solid #2a5a88;border-radius:6px;color:#88ccff;font-size:.8rem;padding:.5em 1.3em;letter-spacing:.1em;opacity:0;transition:opacity .3s;pointer-events:none;z-index:60;white-space:nowrap;text-shadow:0 1px 3px #000}
-
-/* ─── MOBILE JOYSTICK ─────────────────────────────────── */
-#jzone{position:absolute;bottom:0;left:0;width:55%;height:48%;z-index:20;pointer-events:none;display:none}
-#jzone.mobile{pointer-events:all;display:block}
-#jbase{position:absolute;width:108px;height:108px;border-radius:50%;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.14);display:none;pointer-events:none}
-#jthumb{position:absolute;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.38);top:31px;left:31px;pointer-events:none}
-
-/* ─── FPS ─────────────────────────────────────────────── */
-#fps-counter{position:absolute;bottom:1px;right:4px;color:#1a2a3a;font-size:.6rem;pointer-events:none;z-index:5}
-
-/* ─── PAUSE INDICATOR ─────────────────────────────────── */
-#pause-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:35;display:none;align-items:center;justify-content:center;pointer-events:all}
-#pause-overlay.active{display:flex}
-#pause-overlay .pause-box{background:rgba(0,10,25,.95);border:2px solid #2a5a88;border-radius:10px;padding:2em 3em;text-align:center}
-#pause-overlay h3{color:#f0c040;font-size:1.5rem;letter-spacing:.2em;margin-bottom:1em;text-transform:uppercase}
+/* ─── Mobile joystick ─────────────────────────────── */
+#jzone{position:absolute;bottom:0;left:0;width:56%;height:50%;z-index:22;pointer-events:none;display:none}
+#jzone.mob{pointer-events:all;display:block}
+#jbase{position:absolute;width:110px;height:110px;border-radius:50%;
+  background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.13);display:none;pointer-events:none}
+#jthumb{position:absolute;width:46px;height:46px;border-radius:50%;
+  background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.36);top:32px;left:32px}
 </style>
 </head>
 <body>
 
-<!-- Loading -->
-<div id="loading-screen">
-  <div id="loading-title">MAELSTROM</div>
-  <div id="loading-sub">Survive the Sea · Outlast the Storm</div>
-  <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
-  <div id="loading-text">Initialising seas…</div>
+<!-- Loading screen -->
+<div id="loading">
+  <h1>MAELSTROM</h1>
+  <p>Survive the Sea · Outlast the Storm</p>
+  <div id="load-bar-wrap"><div id="load-bar"></div></div>
+  <div id="load-txt">Initialising seas…</div>
 </div>
 
-<!-- Three.js canvas -->
 <canvas id="game-canvas" tabindex="0"></canvas>
 
-<!-- Toast + Wave Announce -->
+<!-- Overlays -->
 <div id="toast"></div>
-<div id="wave-announce"></div>
-<div id="fps-counter"></div>
+<div id="wave-ann"></div>
+<div id="fps"></div>
 
-<!-- ── HUD (shown during gameplay) ── -->
+<!-- HUD -->
 <div id="hud">
   <div id="hud-hp-wrap">
-    <div id="hud-hp-label">⚓ Hull</div>
+    <div id="hud-hp-lbl">⚓ Hull</div>
     <div id="hud-hp-bar"><div id="hud-hp-fill"></div></div>
   </div>
   <div id="hud-phase">👻 PHASED</div>
   <div id="hud-timer">0:00</div>
   <div id="hud-score">
-    <span id="hud-doubloons">🪙 0</span>
-    <span id="hud-fleet">⛵ Fleet: 1</span>
-    <span id="hud-level">Lv.1</span>
+    <span class="hs1" id="hud-dbl">🪙 0</span>
+    <span class="hs2" id="hud-fleet">⛵ Fleet: 1</span>
+    <span class="hs3" id="hud-lvl">Lv.1</span>
   </div>
   <div id="hud-xp-wrap">
-    <div id="hud-xp-label">Next Level</div>
+    <div id="hud-xp-lbl">Next Level</div>
     <div id="hud-xp-bar"><div id="hud-xp-fill"></div></div>
   </div>
   <div id="boss-bar">
-    <span id="boss-bar-label">💀 Ghost Ship Boss</span>
-    <div id="boss-bar-track"><div id="boss-bar-fill"></div></div>
+    <span id="boss-lbl">💀 Ghost Ship Boss</span>
+    <div id="boss-track"><div id="boss-fill"></div></div>
   </div>
   <div id="hud-wave">Open Ocean</div>
-  <div id="minimap-wrap"><canvas id="minimap-canvas" width="88" height="88"></canvas></div>
-  <div id="ability-bar"></div>
+  <div id="minimap"><canvas id="mm" width="86" height="86"></canvas></div>
 </div>
 
-<!-- ── SCREENS ── -->
-<div id="menu" class="screen">
+<!-- Screens -->
+<div id="menu" class="scr">
   <div id="menu-logo">MAELSTROM</div>
   <div id="menu-sub">Survive the Sea · Outlast the Storm</div>
   <div id="menu-skulls">💀 Skulls: 0</div>
-  <div id="menu-daily"></div>
-  <div id="menu-lb-preview">No runs yet — be the first legend</div>
-  <div class="menu-btns">
-    <button class="btn gold" id="btn-play">⚔️ &nbsp;PLAY — Open Ocean</button>
-    <button class="btn" id="btn-ships">🎭 &nbsp;Ship Select</button>
-    <button class="btn" id="btn-meta">💀 &nbsp;Skull Upgrades</button>
-    <button class="btn" id="btn-lb">🏆 &nbsp;Leaderboard</button>
+  <div id="menu-info">No runs yet — set sail and make history</div>
+  <div class="btns">
+    <button class="btn gold" id="b-play">⚔️ &nbsp;PLAY — Open Ocean</button>
+    <button class="btn" id="b-ships">🎭 &nbsp;Ship Select</button>
+    <button class="btn" id="b-meta">💀 &nbsp;Skull Upgrades</button>
+    <button class="btn" id="b-lb">🏆 &nbsp;Leaderboard</button>
   </div>
 </div>
 
-<div id="ship-screen" class="screen">
+<div id="ship-scr" class="scr">
   <h2>Choose Your Vessel</h2>
   <div id="ship-grid"></div>
-  <button class="btn" id="btn-ships-back">← Back</button>
+  <button class="btn" id="b-ships-back">← Back</button>
 </div>
 
-<div id="meta-screen" class="screen">
+<div id="meta-scr" class="scr">
   <h2>💀 Skull Tree</h2>
-  <div id="meta-skulls-display">Skulls: 0</div>
+  <div id="meta-skulls-d">Skulls: 0</div>
   <div id="meta-grid"></div>
-  <button class="btn" id="btn-meta-back">← Back</button>
+  <button class="btn" id="b-meta-back">← Back</button>
 </div>
 
-<div id="lb-screen" class="screen">
+<div id="lb-scr" class="scr">
   <h2>🏆 Leaderboard</h2>
   <div id="lb-list"></div>
-  <button class="btn" id="btn-lb-back">← Back</button>
+  <button class="btn" id="b-lb-back">← Back</button>
 </div>
 
-<div id="upgrade-screen" class="screen">
+<div id="upgrade-scr" class="scr">
   <h2>⚓ Level Up!</h2>
-  <div id="upgrade-subtitle">Choose your power — or press 1, 2, 3</div>
-  <div id="upgrade-cards"></div>
-  <div id="upgrade-hint">Click a card · Press 1 2 3 · ESC to skip</div>
+  <div id="upg-sub">Choose a power — or press 1, 2, 3</div>
+  <div id="cards"></div>
+  <div id="upg-hint">Click a card · 1 2 3 keys · ESC to skip</div>
 </div>
 
-<div id="death-screen" class="screen">
+<div id="death-scr" class="scr">
   <div id="death-title">SHIPWRECKED</div>
-  <div id="death-flavour">"The sea claims another legend… for now."</div>
+  <div id="death-flav">"The sea claims another legend… for now."</div>
   <div id="death-stats"></div>
   <div id="death-skulls"></div>
   <div id="death-rank"></div>
   <div id="death-share" title="Click to copy"></div>
-  <div id="death-share-hint">📋 Click card to copy &amp; share</div>
-  <div class="death-btns">
-    <button class="btn gold" id="btn-play-again">⚓ Sail Again</button>
-    <button class="btn" id="btn-death-menu">🏠 Main Menu</button>
+  <div id="death-share-hint">📋 Click to copy &amp; share</div>
+  <div class="dbtns">
+    <button class="btn gold" id="b-again">⚓ Sail Again</button>
+    <button class="btn"      id="b-dmenu">🏠 Main Menu</button>
   </div>
 </div>
 
-<div id="pause-overlay">
+<div id="pause-ovl">
   <div class="pause-box">
     <h3>⏸ Paused</h3>
-    <button class="btn" id="btn-resume">▶ Resume</button>
+    <button class="btn" id="b-resume">▶ Resume</button>
   </div>
 </div>
 
-<!-- Mobile joystick zone -->
-<div id="jzone">
-  <div id="jbase"><div id="jthumb"></div></div>
-</div>
+<!-- Mobile joystick -->
+<div id="jzone"><div id="jbase"><div id="jthumb"></div></div></div>
 
-<!-- ════════════════════════════════════════════════════════
-     THREE.JS CDN — r160
-════════════════════════════════════════════════════════ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<!-- ═══════════════════════════════════════════════════
+     Three.js r128  +  GLTFLoader r128  (stable CDN)
+     IMPORTANT: versions must match exactly
+════════════════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
-/* ══════════════════════════════════════════════════════════════
-   MAELSTROM  ·  Three.js r134 + Kenney GLB assets
-   Single-file game engine
-══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   MAELSTROM  ·  Three.js r128 + Kenney GLB assets
+   Production-grade single-file game engine
+   
+   ROOT-CAUSE FIXES APPLIED:
+   [FIX-1] Correct color-space: outputEncoding + ACESFilmic toneMapping
+   [FIX-2] GLB materials: PRESERVE embedded textures, only override 
+           material.map when the GLB has none (Kenney models embed 
+           colormap.png inside the GLB — do NOT overwrite it)
+   [FIX-3] metalness = 0 on all materials + envMap via PMREMGenerator
+           (prevents black surfaces on metallic PBR materials)
+   [FIX-4] Model scale calibrated to world size: ships are 12–20 world-units
+   [FIX-5] Matched CDN versions: Three r128 + GLTFLoader r128
+   [FIX-6] gltf.scene must be deep-cloned AFTER material setup, not before
+══════════════════════════════════════════════════════ */
 'use strict';
 
-// ── CDN for GLTF loader (r134 compatible) ────────────────────────
-const GLTF_LOADER_SRC = 'https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js';
-
-// ── ASSET BASE PATH ──────────────────────────────────────────────
-const ASSETS = 'assets/Models/GLB format/';
-const TEX_PATH = ASSETS + 'Textures/colormap.png';
+// ── CONSTANTS ────────────────────────────────────────────────────
+const WORLD   = 4000;            // world size in Three.js units
+const HALF    = WORLD / 2;       // offset for scene centering
+const CAM_H   = 400;             // camera height above sea
+const CAM_D   = 440;             // camera depth offset (tilt)
+const TWO_PI  = Math.PI * 2;
+const ASSETS  = 'assets/Models/GLB format/';
+const TEX_URL = ASSETS + 'Textures/colormap.png';
 
 // ── MATH UTILS ───────────────────────────────────────────────────
-const TWO_PI = Math.PI * 2;
-const lerp = (a,b,t) => a+(b-a)*t;
-const clamp = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
-const rand = (a,b) => a+Math.random()*(b-a);
-const randInt = (a,b) => Math.floor(rand(a,b+1));
-const randFrom = arr => arr[randInt(0,arr.length-1)];
-function dist2(ax,ay,bx,by){return (ax-bx)**2+(ay-by)**2}
-function dist(ax,ay,bx,by){return Math.sqrt(dist2(ax,ay,bx,by))}
+const lerp   = (a,b,t) => a+(b-a)*t;
+const clamp  = (v,lo,hi) => Math.max(lo, Math.min(hi, v));
+const rand   = (a,b) => a + Math.random()*(b-a);
+const randInt= (a,b) => Math.floor(rand(a,b+1));
+const rFrom  = a => a[randInt(0, a.length-1)];
+const d2     = (ax,az,bx,bz) => (ax-bx)**2+(az-bz)**2;
+const d      = (ax,az,bx,bz) => Math.sqrt(d2(ax,az,bx,bz));
 
-// ── PERLIN NOISE (2D) ────────────────────────────────────────────
+// ── PERLIN NOISE ─────────────────────────────────────────────────
 const _p=[...Array(256)].map((_,i)=>i);
-for(let i=255;i>0;i--){const j=randInt(0,i);[_p[i],_p[j]]=[_p[j],_p[i]]}
+for(let i=255;i>0;i--){const j=randInt(0,i);[_p[i],_p[j]]=[_p[j],_p[i]];}
 const _pp=[..._p,..._p];
-function _f(t){return t*t*t*(t*(t*6-15)+10)}
-function _g(h,x,y){const u=h<4?x:y,v=h<4?y:x;return((h&1)?-u:u)+((h&2)?-v:v)}
-function noise2(x,y){
+const _f=t=>t*t*t*(t*(t*6-15)+10);
+const _g=(h,x,y)=>{const u=h<4?x:y,v=h<4?y:x;return((h&1)?-u:u)+((h&2)?-v:v)};
+function noise(x,y){
   const xi=Math.floor(x)&255,yi=Math.floor(y)&255,xf=x-Math.floor(x),yf=y-Math.floor(y);
-  const u=_f(xf),v=_f(yf);
+  const u=_f(xf),v=_f(yf),l=(a,b,t)=>a+t*(b-a);
   const aa=_pp[_pp[xi]+yi],ab=_pp[_pp[xi]+yi+1],ba=_pp[_pp[xi+1]+yi],bb=_pp[_pp[xi+1]+yi+1];
-  return lerp(lerp(_g(aa,xf,yf),_g(ba,xf-1,yf),u),lerp(_g(ab,xf,yf-1),_g(bb,xf-1,yf-1),u),v);
+  return l(l(_g(aa,xf,yf),_g(ba,xf-1,yf),u),l(_g(ab,xf,yf-1),_g(bb,xf-1,yf-1),u),v);
 }
 
 // ── SAVE / LOAD ──────────────────────────────────────────────────
-let META = {};
+let META={};
 function loadMeta(){
-  try{META=JSON.parse(localStorage.getItem('maelstrom_v2')||'{}')}catch(e){META={}}
-  META.skulls    = META.skulls    || 0;
-  META.highScore = META.highScore || 0;
-  META.bestTime  = META.bestTime  || 0;
-  META.upgrades  = META.upgrades  || {};
-  META.ship      = META.ship      || 'sloop';
-  META.lb        = META.lb        || [];
-  META.runs      = META.runs      || 0;
-  META.name      = META.name      || null;
+  try{META=JSON.parse(localStorage.getItem('maelstrom_v3')||'{}')}catch(e){META={}}
+  META.skulls=META.skulls||0; META.highScore=META.highScore||0; META.bestTime=META.bestTime||0;
+  META.upgrades=META.upgrades||{}; META.ship=META.ship||'sloop';
+  META.lb=META.lb||[]; META.runs=META.runs||0; META.name=META.name||null;
 }
-function saveMeta(){
-  try{localStorage.setItem('maelstrom_v2',JSON.stringify(META))}catch(e){}
-}
+function saveMeta(){try{localStorage.setItem('maelstrom_v3',JSON.stringify(META))}catch(e){}}
 loadMeta();
 if(!META.name){
-  META.name = prompt('Enter your pirate name:','Pirate')||'Pirate';
-  META.name = META.name.slice(0,20);
+  META.name=(prompt('Enter your pirate name:','Pirate')||'Pirate').slice(0,20);
   saveMeta();
 }
 
-// ── TOAST ────────────────────────────────────────────────────────
-let _toastTimer=null;
+// ── UI HELPERS ───────────────────────────────────────────────────
+let _tt=null;
 function toast(msg,dur=2600){
   const el=document.getElementById('toast');
   el.textContent=msg; el.style.opacity='1';
-  if(_toastTimer)clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>{el.style.opacity='0'},dur);
+  clearTimeout(_tt); _tt=setTimeout(()=>el.style.opacity='0',dur);
 }
-
-// ── WAVE ANNOUNCE ────────────────────────────────────────────────
-let _waveTimer=null;
-function announce(msg){
-  const el=document.getElementById('wave-announce');
-  el.innerHTML=msg; el.style.opacity='1';
-  if(_waveTimer)clearTimeout(_waveTimer);
-  _waveTimer=setTimeout(()=>{el.style.opacity='0'},3200);
+let _at=null;
+function announce(html){
+  const el=document.getElementById('wave-ann');
+  el.innerHTML=html; el.style.opacity='1';
+  clearTimeout(_at); _at=setTimeout(()=>el.style.opacity='0',3200);
 }
-
-// ── SCREEN MANAGER ───────────────────────────────────────────────
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  if(id)document.getElementById(id).classList.add('active');
+function scr(id){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  if(id)document.getElementById(id).classList.add('on');
 }
-function showHUD(on){
-  const h=document.getElementById('hud');
-  if(on)h.classList.add('active'); else h.classList.remove('active');
-}
+function hud(on){document.getElementById('hud').classList.toggle('on',on);}
 
 // ── INPUT ────────────────────────────────────────────────────────
-const KEYS={};
+const K={};
 window.addEventListener('keydown',e=>{
-  KEYS[e.code]=true;
+  K[e.code]=true;
   if(!_paused&&_running){
-    if(e.code==='Digit1')selectUpgrade(0);
-    if(e.code==='Digit2')selectUpgrade(1);
-    if(e.code==='Digit3')selectUpgrade(2);
-    if(e.code==='Escape'){if(_showUpgrade)skipUpgrade(); else togglePause();}
+    if(e.code==='Digit1')selCard(0);
+    if(e.code==='Digit2')selCard(1);
+    if(e.code==='Digit3')selCard(2);
+    if(e.code==='Escape')_upPending?skipUpg():togglePause();
   }
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
 });
-window.addEventListener('keyup',e=>{KEYS[e.code]=false});
+window.addEventListener('keyup',e=>K[e.code]=false);
 
 // Mobile joystick
-const _jzone=document.getElementById('jzone');
-const _jbase=document.getElementById('jbase');
-const _jthumb=document.getElementById('jthumb');
-let _jactive=false,_jox=0,_joy=0,_jdx=0,_jdy=0;
-const JR=42;
-function isMobile(){return 'ontouchstart' in window||navigator.maxTouchPoints>0}
-if(isMobile()){
-  _jzone.classList.add('mobile');
-  _jzone.addEventListener('touchstart',e=>{
-    const t=e.touches[0]; _jactive=true;
-    _jox=t.clientX; _joy=t.clientY;
-    _jbase.style.left=(t.clientX-54)+'px';
-    _jbase.style.top=(t.clientY-54)+'px';
-    _jbase.style.display='block';
-    _jthumb.style.left='31px'; _jthumb.style.top='31px';
+let _ja=false,_jox=0,_joy=0,_jdx=0,_jdy=0;
+const JR=44;
+function isMob(){return('ontouchstart'in window)||navigator.maxTouchPoints>0}
+const jzone=document.getElementById('jzone');
+const jbase=document.getElementById('jbase');
+const jthumb=document.getElementById('jthumb');
+if(isMob()){
+  jzone.classList.add('mob');
+  jzone.addEventListener('touchstart',e=>{
+    const t=e.touches[0]; _ja=true; _jox=t.clientX; _joy=t.clientY;
+    jbase.style.left=(t.clientX-55)+'px'; jbase.style.top=(t.clientY-55)+'px';
+    jbase.style.display='block'; jthumb.style.left='32px'; jthumb.style.top='32px';
     e.preventDefault();
   },{passive:false});
-  _jzone.addEventListener('touchmove',e=>{
-    if(!_jactive)return;
-    const t=e.touches[0];
-    let dx=t.clientX-_jox,dy=t.clientY-_joy;
-    const m=Math.sqrt(dx*dx+dy*dy);
-    if(m>JR){dx=dx/m*JR;dy=dy/m*JR}
+  jzone.addEventListener('touchmove',e=>{
+    if(!_ja)return;
+    const t=e.touches[0]; let dx=t.clientX-_jox,dy=t.clientY-_joy;
+    const m=Math.sqrt(dx*dx+dy*dy); if(m>JR){dx=dx/m*JR;dy=dy/m*JR}
     _jdx=dx/JR; _jdy=dy/JR;
-    _jthumb.style.left=(54+dx-23)+'px'; _jthumb.style.top=(54+dy-23)+'px';
+    jthumb.style.left=(55+dx-23)+'px'; jthumb.style.top=(55+dy-23)+'px';
     e.preventDefault();
   },{passive:false});
-  const endJ=()=>{_jactive=false;_jdx=0;_jdy=0;_jbase.style.display='none'};
-  _jzone.addEventListener('touchend',endJ);
-  _jzone.addEventListener('touchcancel',endJ);
+  const ej=()=>{_ja=false;_jdx=0;_jdy=0;jbase.style.display='none'};
+  jzone.addEventListener('touchend',ej); jzone.addEventListener('touchcancel',ej);
 }
-function getInput(){
+function inp(){
   let dx=0,dy=0;
-  if(KEYS['ArrowLeft']||KEYS['KeyA'])dx-=1;
-  if(KEYS['ArrowRight']||KEYS['KeyD'])dx+=1;
-  if(KEYS['ArrowUp']||KEYS['KeyW'])dy-=1;
-  if(KEYS['ArrowDown']||KEYS['KeyS'])dy+=1;
-  if(_jactive){dx=_jdx;dy=_jdy}
-  const m=Math.sqrt(dx*dx+dy*dy);
-  if(m>1){dx/=m;dy/=m}
-  return {dx,dy};
+  if(K['ArrowLeft']||K['KeyA'])dx-=1; if(K['ArrowRight']||K['KeyD'])dx+=1;
+  if(K['ArrowUp']||K['KeyW'])dy-=1;   if(K['ArrowDown']||K['KeyS'])dy+=1;
+  if(_ja){dx=_jdx;dy=_jdy}
+  const m=Math.sqrt(dx*dx+dy*dy); if(m>1){dx/=m;dy/=m}
+  return{dx,dy};
 }
 
 // ── GAME STATE ───────────────────────────────────────────────────
-let _running=false,_paused=false,_showUpgrade=false;
-let _lastTs=0,_animId=null;
-let _fpsCount=0,_fpsClock=0,_fpsVal=0;
+let _running=false,_paused=false,_upPending=false;
+let _animId=null,_lastTs=0;
+let _fpsC=0,_fpsT=0,_fpsV=0;
 
-// THREE.js objects (filled after load)
-let _renderer, _scene, _camera, _clock;
-let _models={}; // name→THREE.Group clones
-let _colormap; // THREE.Texture
-let _gltfLoader;
-let _oceanMesh, _oceanMat;
-let _G={}; // game state
+// Three.js
+let _rend,_scene,_cam,_env;   // renderer, scene, camera, envMap
+let _ocean,_oceanOrig;         // ocean mesh + original vertex positions
+let _mdls={};                  // loaded+processed model cache: name→Group
+let _G={};                     // game state
 
-// World size
-const WORLD=4000;
-const HALF=WORLD/2;
-const CAM_HEIGHT=380;
-const CAM_TILT=0.82; // radians tilt from top
-
-// ── SHIP / ENEMY DEFINITIONS ─────────────────────────────────────
-const SHIP_DEFS={
-  sloop:   {name:'The Sloop',      icon:'⛵', model:'ship-pirate-small', cost:0,   hp:100, speed:7.5, size:14, cannons:1, passive:null,       desc:'Balanced — great for beginners'},
-  rowgang: {name:'Rowboat Gang',   icon:'🚣', model:'boat-row-large',    cost:30,  hp:70,  speed:9,   size:12, cannons:0, passive:'swarm',     desc:'Starts with 4 rowboats; they respawn'},
-  wraith:  {name:'The Wraith',     icon:'👻', model:'ship-ghost',        cost:150, hp:55,  speed:10,  size:14, cannons:1, passive:'ghost',     desc:'Glass cannon — phases through enemies'},
-  armada:  {name:'Armada Commander',icon:'🏴‍☠️',model:'ship-pirate-large', cost:200, hp:200, speed:4.8, size:18, cannons:2, passive:'fortress',  desc:'Fortress — very slow, starts with cannon towers'},
-};
-const ENEMY_DEFS={
-  rowboat: {model:'boat-row-small', hp:28,  speed:4.8, size:9,  dmg:8,  fireRate:0,   range:0,   xp:10, skulls:0, color:0x992211},
-  sloop:   {model:'ship-small',     hp:65,  speed:3.8, size:14, dmg:12, fireRate:2.6, range:230, xp:25, skulls:0, color:0x883322},
-  frigate: {model:'ship-medium',    hp:160, speed:2.6, size:20, dmg:18, fireRate:3.1, range:260, xp:55, skulls:1, color:0x664422},
-  galleon: {model:'ship-large',     hp:340, speed:1.8, size:26, dmg:24, fireRate:3.5, range:290, xp:130,skulls:2, color:0x443322},
-  ghost:   {model:'ship-ghost',     hp:520, speed:3.4, size:22, dmg:20, fireRate:2.3, range:280, xp:200,skulls:5, isBoss:true,color:0x004422},
-};
-const UPGRADE_POOL=[
-  {id:'rowboats', name:'Recruit Rowboats',      icon:'⛵', rarity:'common',    desc:'Add 2 rowboat flankers to fleet',              type:'fleet',  ship:'rowboat', n:2},
-  {id:'sloops',   name:'Press-Gang Sloops',     icon:'🚢', rarity:'rare',      desc:'Add 1 Sloop to fleet orbit',                   type:'fleet',  ship:'sloop',   n:1},
-  {id:'brig',     name:'Commandeer Brigantine', icon:'🛥️', rarity:'epic',      desc:'Add 1 Brigantine — double broadside',          type:'fleet',  ship:'frigate', n:1},
-  {id:'galleon',  name:'The Flagship Arrives',  icon:'🏴‍☠️',rarity:'legendary', desc:'Add a massive Galleon — 4-cannon volley',       type:'fleet',  ship:'galleon', n:1},
-  {id:'xcannon',  name:'Extra Cannon',          icon:'💣', rarity:'common',    desc:'+1 auto-targeting cannon',                     type:'add_cannon'},
-  {id:'mcannon',  name:'Mobile Cannon',         icon:'🔄', rarity:'rare',      desc:'360° cannon independently targets enemies',     type:'mobile_cannon'},
-  {id:'storm',    name:'Cannonball Storm',      icon:'💥', rarity:'epic',      desc:'Fires 8 cannonballs in burst — 3s cooldown',    type:'storm'},
-  {id:'ghostbr',  name:'Ghost Breaker Rounds',  icon:'🟢', rarity:'legendary', desc:'+100% damage vs Ghost Ships',                  type:'ghost_breaker'},
-  {id:'hull',     name:'Reinforce Hull',        icon:'⚙️', rarity:'common',    desc:'+25% max HP',                                  type:'hull_hp'},
-  {id:'ram',      name:'Ram Prow',              icon:'⚓', rarity:'rare',      desc:'Contact damage — ram enemies to hurt them',     type:'ram'},
-  {id:'sails',    name:'Stolen Sails',          icon:'💨', rarity:'epic',      desc:'+35% movement speed',                          type:'speed'},
-  {id:'ghosthull',name:'Ghost Hull',            icon:'👻', rarity:'legendary', desc:'Phase through enemies 8s every 30s',            type:'ghost_hull'},
-  {id:'barrel',   name:'Barrel Bombs',          icon:'🛢️', rarity:'common',    desc:'Drop 3 mines behind you every 10s',             type:'barrels'},
-  {id:'tower',    name:'Cannon Tower',          icon:'🏰', rarity:'rare',      desc:'Place auto-firing tower for 20s (max 2)',       type:'tower'},
-  {id:'lure',     name:'Treasure Lure',         icon:'💎', rarity:'epic',      desc:'Lure nearby enemies for 5s — clusters them',    type:'lure'},
-  {id:'vortex',   name:'Maelstrom Vortex',      icon:'🌀', rarity:'legendary', desc:'Vortex sucks in all enemies — 30s cooldown',    type:'vortex'},
-];
-const META_NODES=[
-  {id:'hull',    name:'Hull Reinforcement', icon:'🛡️', cost:10,  desc:'+15% starting HP',            effect:'hull_hp'},
-  {id:'fleet',   name:'Starting Fleet',     icon:'⛵', cost:20,  desc:'Start with 1 extra rowboat',   effect:'start_fleet'},
-  {id:'magnet',  name:'Treasure Magnet',    icon:'💰', cost:15,  desc:'+30% doubloon pickup radius',  effect:'pickup_radius'},
-  {id:'cannon',  name:'Cannon Master',      icon:'💣', cost:25,  desc:'+10% cannon damage',           effect:'cannon_dmg'},
-  {id:'ghost',   name:'Ghost Ward',         icon:'🔮', cost:30,  desc:'Boss spawns 60s later',        effect:'boss_delay'},
-  {id:'anchor',  name:'Island Anchor',      icon:'⚓', cost:40,  desc:'Auto-deploy tower every 90s',  effect:'auto_tower'},
-  {id:'flag',    name:'Flag Bearer',        icon:'🏴‍☠️', cost:50,  desc:'Enemies -15% accuracy nearby', effect:'flag'},
-  {id:'mastery', name:'Ghost Hull Mastery', icon:'💀', cost:100, desc:'Ghost Hull appears every 5th pool', effect:'gh_mastery'},
-];
-
-// ── THREE.JS SETUP ───────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// [FIX-1+3+5] THREE.JS RENDERER SETUP
+// All three settings together are required for correct GLB rendering:
+//   outputEncoding  → converts linear→sRGB for display
+//   toneMapping     → ACES filmic tone curve (standard for PBR)
+//   toneMappingExposure → scene brightness
+// ─────────────────────────────────────────────────────────────────
 function initThree(){
   const canvas=document.getElementById('game-canvas');
-  _renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
-  _renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  _renderer.setSize(window.innerWidth,window.innerHeight);
-  _renderer.shadowMap.enabled=true;
-  _renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  _renderer.outputEncoding=THREE.sRGBEncoding;
+  _rend=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+  _rend.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  _rend.setSize(window.innerWidth,window.innerHeight);
+  _rend.shadowMap.enabled=true;
+  _rend.shadowMap.type=THREE.PCFSoftShadowMap;
+
+  // [FIX-1] Correct colour-space pipeline for PBR/GLB rendering
+  _rend.outputEncoding        = THREE.sRGBEncoding;       // r128 API
+  _rend.toneMapping           = THREE.ACESFilmicToneMapping;
+  _rend.toneMappingExposure   = 1.1;
+  _rend.physicallyCorrectLights = true;
 
   _scene=new THREE.Scene();
-  _scene.background=new THREE.Color(0x0d1e36);
-  _scene.fog=new THREE.FogExp2(0x0d2a4a,0.0004);
+  _scene.background=new THREE.Color(0x0e1f36);
+  _scene.fog=new THREE.FogExp2(0x0e2a46,0.00035);
 
-  // Camera — isometric-like top-down with tilt
-  _camera=new THREE.PerspectiveCamera(45,window.innerWidth/window.innerHeight,1,8000);
-  _camera.position.set(0,CAM_HEIGHT,CAM_HEIGHT*1.1);
-  _camera.lookAt(0,0,0);
+  // Camera: isometric-style perspective, looking down and forward
+  _cam=new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, 1, 9000);
+  _cam.position.set(0,CAM_H,CAM_D);
+  _cam.lookAt(0,0,0);
 
-  _clock=new THREE.Clock();
-
-  // Lighting
-  const ambLight=new THREE.AmbientLight(0x88aacc,0.6);
-  _scene.add(ambLight);
-  const sun=new THREE.DirectionalLight(0xfff5e0,1.2);
-  sun.position.set(200,400,200);
+  // Lighting rig
+  const amb=new THREE.AmbientLight(0x88aacc,0.9);
+  _scene.add(amb);
+  const sun=new THREE.DirectionalLight(0xfff8e8,1.6);
+  sun.position.set(300,500,200);
   sun.castShadow=true;
   sun.shadow.mapSize.set(1024,1024);
-  sun.shadow.camera.near=1;
-  sun.shadow.camera.far=2000;
-  sun.shadow.camera.left=-500;
-  sun.shadow.camera.right=500;
-  sun.shadow.camera.top=500;
-  sun.shadow.camera.bottom=-500;
+  ['near','far'].forEach((k,i)=>sun.shadow.camera[k]=[1,2500][i]);
+  ['left','right','top','bottom'].forEach((k,i)=>sun.shadow.camera[k]=[-600,600,600,-600][i]);
   _scene.add(sun);
-  const rimLight=new THREE.DirectionalLight(0x4488cc,0.35);
-  rimLight.position.set(-200,100,-100);
-  _scene.add(rimLight);
+  const fill=new THREE.DirectionalLight(0x4488cc,0.5);
+  fill.position.set(-300,200,-100); _scene.add(fill);
+  const rim=new THREE.DirectionalLight(0xffaa44,0.3);
+  rim.position.set(0,100,-400); _scene.add(rim);
+
+  // [FIX-5] PMREMGenerator env map — prevents black metallic surfaces
+  // Creates a neutral grey envMap so metallic GLB materials reflect something
+  const pmrem=new THREE.PMREMGenerator(_rend);
+  pmrem.compileEquirectangularShader();
+  const envScene=new THREE.Scene();
+  envScene.background=new THREE.Color(0x8899aa);
+  _env=pmrem.fromScene(new THREE.RoomEnvironment()).texture;
+  _scene.environment=_env;  // applies to all MeshStandardMaterial automatically
+  pmrem.dispose();
 
   window.addEventListener('resize',()=>{
-    _camera.aspect=window.innerWidth/window.innerHeight;
-    _camera.updateProjectionMatrix();
-    _renderer.setSize(window.innerWidth,window.innerHeight);
+    _cam.aspect=window.innerWidth/window.innerHeight;
+    _cam.updateProjectionMatrix();
+    _rend.setSize(window.innerWidth,window.innerHeight);
   });
 }
 
-// ── OCEAN PLANE ──────────────────────────────────────────────────
+// ── OCEAN ─────────────────────────────────────────────────────────
 function buildOcean(){
-  const geo=new THREE.PlaneGeometry(WORLD*2,WORLD*2,80,80);
-  // Build animated ocean shader
-  _oceanMat=new THREE.MeshStandardMaterial({
-    color:0x1a5c8a,
-    roughness:0.15,
-    metalness:0.1,
-    transparent:true,
-    opacity:0.94,
-    side:THREE.FrontSide,
-  });
-  _oceanMesh=new THREE.Mesh(geo,_oceanMat);
-  _oceanMesh.rotation.x=-Math.PI/2;
-  _oceanMesh.receiveShadow=true;
-  _scene.add(_oceanMesh);
-  // Store original y-positions for wave animation
-  _oceanMesh.userData.origPos=new Float32Array(geo.attributes.position.array);
+  const geo=new THREE.PlaneGeometry(WORLD*2.5,WORLD*2.5,60,60);
+  _ocean=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
+    color:0x1a5c8a,roughness:.12,metalness:0.05,transparent:true,opacity:.94
+  }));
+  _ocean.rotation.x=-Math.PI/2;
+  _ocean.receiveShadow=true;
+  _scene.add(_ocean);
+  _oceanOrig=new Float32Array(geo.attributes.position.array);
 }
-
-function animateOcean(t){
-  const pos=_oceanMesh.geometry.attributes.position;
-  const orig=_oceanMesh.userData.origPos;
+function animOcean(t){
+  const pos=_ocean.geometry.attributes.position;
+  const orig=_oceanOrig;
   for(let i=0;i<pos.count;i++){
     const ox=orig[i*3],oy=orig[i*3+1];
-    pos.array[i*3+2]=noise2(ox/300+t*0.25,oy/300+t*0.18)*4;
+    pos.array[i*3+2]=noise(ox/280+t*.24,oy/280+t*.17)*4.5;
   }
   pos.needsUpdate=true;
-  _oceanMesh.geometry.computeVertexNormals();
+  _ocean.geometry.computeVertexNormals();
 }
 
-// ── GLB LOADER ───────────────────────────────────────────────────
-function loadGLTFLoader(){
-  return new Promise(resolve=>{
-    if(typeof THREE.GLTFLoader!=='undefined'){resolve();return}
-    const s=document.createElement('script');
-    s.src=GLTF_LOADER_SRC;
-    s.onload=resolve;
-    s.onerror=()=>{
-      // Fallback: stub loader that returns placeholder geometry
-      THREE.GLTFLoader=class{
-        load(url,ok){
-          const grp=new THREE.Group();
-          // placeholder box
-          const geo=new THREE.BoxGeometry(8,4,16);
-          const mat=new THREE.MeshStandardMaterial({color:0x8a5a28});
-          grp.add(new THREE.Mesh(geo,mat));
-          ok({scene:grp});
-        }
-      };
-      resolve();
-    };
-    document.head.appendChild(s);
+// ── MODEL LOADING ─────────────────────────────────────────────────
+//
+// [FIX-2] DO NOT replace material.map on GLB materials that already have
+// a texture — Kenney GLBs embed colormap.png internally. Replacing it
+// with an externally loaded version causes the black-material bug because:
+//   a) the external texture loads asynchronously (may not be ready yet)
+//   b) the encoding may differ from the embedded version
+//   c) UV coordinates may mismatch if texture dimensions differ
+//
+// CORRECT approach: let GLTFLoader handle textures natively.
+// Only fix: set metalness=0 and roughness=.85 to prevent black surfaces
+// on models that were authored with high metalness values.
+//
+// [FIX-3] Deep-clone with .clone(true) AFTER material fixup, not before.
+// Store the fixed master in _mdls[], clone from that for each instance.
+//
+function fixMaterial(mat){
+  // Clamp metalness — high metalness without a proper HDRI envMap = black
+  mat.metalness   = Math.min(mat.metalness||0, 0.1);
+  mat.roughness   = Math.max(mat.roughness||0.8, 0.65);
+  mat.needsUpdate = true;
+}
+
+function processGLTF(gltf){
+  const grp=gltf.scene;
+  grp.traverse(n=>{
+    if(!n.isMesh) return;
+    n.castShadow=true; n.receiveShadow=true;
+    // Handle arrays of materials (multi-material meshes)
+    if(Array.isArray(n.material)){
+      n.material=n.material.map(m=>{const mc=m.clone();fixMaterial(mc);return mc;});
+    } else {
+      n.material=n.material.clone();
+      fixMaterial(n.material);
+    }
   });
+  return grp;
 }
 
-const _loadedModels={};
+const _rawGLTF={};  // raw loaded GLTF (before processing) keyed by name
+
 function loadModel(name){
   return new Promise(resolve=>{
-    if(_loadedModels[name]){resolve(_loadedModels[name].clone());return}
+    if(_mdls[name]){resolve(_mdls[name].clone(true));return}
     const loader=new THREE.GLTFLoader();
-    const path=`${ASSETS}${name}.glb`;
     loader.load(
-      path,
+      `${ASSETS}${name}.glb`,
       gltf=>{
-        const grp=gltf.scene;
-        // Apply shared colormap texture
-        grp.traverse(n=>{
-          if(n.isMesh){
-            n.material=n.material.clone();
-            if(_colormap)n.material.map=_colormap;
-            n.material.needsUpdate=true;
-            n.castShadow=true;
-            n.receiveShadow=true;
-          }
-        });
-        _loadedModels[name]=grp;
-        resolve(grp.clone());
+        const grp=processGLTF(gltf);
+        _mdls[name]=grp;
+        resolve(grp.clone(true));
       },
       undefined,
       ()=>{
-        // On error: return placeholder geometry
-        const grp=new THREE.Group();
+        // Fallback geometry — visible placeholder, never black
         const geo=new THREE.BoxGeometry(8,5,18);
-        const mat=new THREE.MeshStandardMaterial({color:0x8a5a28,roughness:.8});
+        const mat=new THREE.MeshStandardMaterial({
+          color:0x8a6040,roughness:.8,metalness:0
+        });
+        const grp=new THREE.Group();
         grp.add(new THREE.Mesh(geo,mat));
-        _loadedModels[name]=grp;
-        resolve(grp.clone());
+        _mdls[name]=grp;
+        resolve(grp.clone(true));
       }
     );
   });
 }
 
-function loadTexture(url){
-  return new Promise(resolve=>{
-    new THREE.TextureLoader().load(url,t=>{
-      t.encoding=THREE.sRGBEncoding;
-      resolve(t);
-    },undefined,()=>resolve(null));
-  });
-}
+// ── ASSET LOADING ─────────────────────────────────────────────────
+function setLoadTxt(t){document.getElementById('load-txt').textContent=t}
+function setLoadPct(p){document.getElementById('load-bar').style.width=(p*100)+'%'}
 
-// ── PROGRESS TRACKER ─────────────────────────────────────────────
-let _loadTotal=0,_loadDone=0;
-function setLoadStatus(txt){document.getElementById('loading-text').textContent=txt}
-function setLoadPct(p){document.getElementById('loading-bar').style.width=(p*100)+'%'}
-
-async function preloadAssets(){
-  await loadGLTFLoader();
-  setLoadStatus('Loading colormap texture…');
-  _colormap=await loadTexture(TEX_PATH);
-  setLoadPct(.08);
-
-  // Critical ship models
+async function preload(){
   const critical=[
     'ship-pirate-small','ship-pirate-medium','ship-pirate-large','ship-ghost',
     'boat-row-small','boat-row-large',
@@ -676,198 +617,222 @@ async function preloadAssets(){
     'chest','barrel','bottle','crate',
     'rocks-a','rocks-b','rocks-c',
     'patch-sand','patch-grass','palm-straight','palm-bend',
-    'cannon','cannon-mobile',
-    'tower-complete-small','tower-complete-large',
+    'tower-complete-small',
   ];
-
-  _loadTotal=critical.length+secondary.length;
+  const all=[...critical,...secondary];
   let done=0;
-  const incr=()=>{done++;setLoadPct(.08+done/_loadTotal*.88)};
-
-  setLoadStatus('Loading ships…');
-  await Promise.all(critical.map(async name=>{
-    setLoadStatus(`Loading ${name}…`);
-    _models[name]=await loadModel(name);
-    incr();
-  }));
-
-  setLoadStatus('Loading world assets…');
-  await Promise.all(secondary.map(async name=>{
-    _models[name]=await loadModel(name);
-    incr();
-  }));
-
-  setLoadPct(1);
-  setLoadStatus('Ready!');
-  await new Promise(r=>setTimeout(r,400));
+  setLoadTxt('Loading ships…');
+  for(const name of all){
+    setLoadTxt(`Loading ${name}…`);
+    await loadModel(name);
+    done++;
+    setLoadPct(0.05+done/all.length*0.9);
+  }
+  setLoadPct(1); setLoadTxt('Ready!');
+  await new Promise(r=>setTimeout(r,350));
 }
 
-// ── CANNON BALL (3D projectile) ───────────────────────────────────
-class Cannonball3D{
-  constructor(ox,oy,oz,tx,ty,tz,dmg,owner,isGhost=false){
-    this.dmg=dmg; this.owner=owner; this.isGhostBreaker=isGhost;
-    this.dead=false; this.r=2.5;
-    const mesh=_models['cannon-ball']
-      ? _models['cannon-ball'].clone()
-      : new THREE.Mesh(new THREE.SphereGeometry(2,8,6),new THREE.MeshStandardMaterial({color:0x222222,roughness:.8}));
-    mesh.scale.set(2,2,2);
-    _scene.add(mesh); this.mesh=mesh;
-    this.x=ox; this.z=oz;
-    const dx=tx-ox,dz=tz-oz,hor=Math.sqrt(dx*dx+dz*dz);
-    const spd=140; this.vx=dx/hor*spd; this.vz=dz/hor*spd;
-    this.vy=20; // arc
-    this.life=hor/spd+.35;
-    // trail
-    this.trail=[];
-    if(isGhost){mesh.traverse(n=>{if(n.isMesh){n.material=n.material.clone();n.material.color.set(0x00ff88);n.material.emissive.set(0x00aa44)}})}
-  }
-  update(dt){
-    this.x+=this.vx*dt; this.z+=this.vz*dt;
-    this.vy-=80*dt; // gravity
-    const fy=Math.max(0,this.vy*dt);
-    this.mesh.position.set(this.x-HALF,fy+2,this.z-HALF);
-    this.life-=dt; if(this.life<=0)this.destroy();
-  }
-  destroy(){this.dead=true;_scene.remove(this.mesh)}
+// ─────────────────────────────────────────────────────────────────
+// [FIX-4] SCALE CALIBRATION
+// Kenney GLB models are ~1-2 Three.js units tall (real-world meters).
+// Our camera is at Y=400, looking at a world 4000 units wide.
+// At scale=1, a 2-unit ship is effectively invisible.
+// Required scale = camera_distance / 30 ≈ 13
+//
+// Calibrated per ship class:
+//   rowboat  → scale 9  (~9 units = small and fast)
+//   sloop    → scale 12 (~12 units = medium frigate)
+//   frigate  → scale 15 (~15 units = heavy)
+//   galleon  → scale 20 (~20 units = massive)
+//   ghost    → scale 18 (~18 units = boss)
+// ─────────────────────────────────────────────────────────────────
+const SCALE={
+  rowboat:9, sloop:12, frigate:15, galleon:20,
+  ghost:18, 'p-sloop':12, 'p-frigate':16, 'p-galleon':22,
+  wreck:14, crate:5, chest:6, barrel:5, bottle:4, tower:12,
+  rock:16, palm:14, patch:18,
+};
+
+// ── GAME DATA ─────────────────────────────────────────────────────
+const SHIP_DEFS={
+  sloop:  {name:'The Sloop',     icon:'⛵', model:'ship-pirate-small', sc:SCALE['p-sloop'],   cost:0,   hp:100, spd:7.5,  sz:14, cn:1, passive:null,     desc:'Balanced — great for beginners'},
+  rowgang:{name:'Rowboat Gang',  icon:'🚣', model:'boat-row-large',    sc:SCALE.rowboat*1.4,  cost:30,  hp:70,  spd:9,    sz:12, cn:0, passive:'swarm',   desc:'Starts with 4 rowboats; they respawn'},
+  wraith: {name:'The Wraith',    icon:'👻', model:'ship-ghost',        sc:SCALE.ghost*.85,    cost:150, hp:55,  spd:10,   sz:14, cn:1, passive:'ghost',   desc:'Glass cannon — phases through enemies'},
+  armada: {name:'Armada Cmdr',   icon:'🏴‍☠️', model:'ship-pirate-large', sc:SCALE['p-galleon'], cost:200, hp:200, spd:4.8,  sz:18, cn:2, passive:'fortress',desc:'Fortress — slow, starts with cannon towers'},
+};
+const ENEMY_CFG={
+  rowboat:{model:'boat-row-small',  sc:SCALE.rowboat,  hp:28,  spd:4.8, sz:9,  dmg:8,  fr:0,   rng:0,   xp:10, sk:0, boss:false},
+  sloop:  {model:'ship-small',       sc:SCALE.sloop,    hp:65,  spd:3.8, sz:14, dmg:12, fr:2.6, rng:230, xp:25, sk:0, boss:false},
+  frigate:{model:'ship-medium',      sc:SCALE.frigate,  hp:160, spd:2.6, sz:20, dmg:18, fr:3.1, rng:260, xp:55, sk:1, boss:false},
+  galleon:{model:'ship-large',       sc:SCALE.galleon,  hp:340, spd:1.8, sz:26, dmg:24, fr:3.5, rng:290, xp:130,sk:2, boss:false},
+  ghost:  {model:'ship-ghost',       sc:SCALE.ghost,    hp:520, spd:3.4, sz:22, dmg:20, fr:2.3, rng:280, xp:200,sk:5, boss:true},
+};
+const FLEET_CFG={
+  rowboat: {model:'boat-row-small',  sc:SCALE.rowboat,  hp:40, spd:8, sz:9,  dmg:12,fr:2.5,rng:200,cn:1},
+  sloop:   {model:'ship-small',      sc:SCALE.sloop,    hp:70, spd:7, sz:14, dmg:18,fr:2.1,rng:250,cn:1},
+  frigate: {model:'ship-pirate-medium',sc:SCALE['p-frigate'],hp:110,spd:5.4,sz:20,dmg:22,fr:1.9,rng:275,cn:2},
+  galleon: {model:'ship-pirate-large',sc:SCALE['p-galleon'],hp:190,spd:3.5,sz:26,dmg:30,fr:2.6,rng:310,cn:4},
+};
+const UPGRADES=[
+  {id:'rows',   name:'Recruit Rowboats',     icon:'⛵',rarity:'common',   desc:'Add 2 rowboat flankers to fleet',       type:'fleet',  ship:'rowboat',n:2},
+  {id:'slps',   name:'Press-Gang Sloops',    icon:'🚢',rarity:'rare',     desc:'Add 1 Sloop to fleet orbit',            type:'fleet',  ship:'sloop',  n:1},
+  {id:'brig',   name:'Commandeer Brigantine',icon:'🛥️',rarity:'epic',     desc:'Add 1 Brigantine — double broadside',   type:'fleet',  ship:'frigate',n:1},
+  {id:'gall',   name:'The Flagship Arrives', icon:'🏴‍☠️',rarity:'legendary',desc:'Add a Galleon — 4-cannon volley',       type:'fleet',  ship:'galleon',n:1},
+  {id:'xcan',   name:'Extra Cannon',         icon:'💣',rarity:'common',   desc:'+1 auto-targeting cannon',              type:'add_cannon'},
+  {id:'mcan',   name:'Mobile Cannon',        icon:'🔄',rarity:'rare',     desc:'360° cannon independent targeting',     type:'mobile_cannon'},
+  {id:'strm',   name:'Cannonball Storm',     icon:'💥',rarity:'epic',     desc:'8-cannon burst every 3s',               type:'storm'},
+  {id:'gbr',    name:'Ghost Breaker Rounds', icon:'🟢',rarity:'legendary',desc:'+100% damage vs Ghost Ships',           type:'ghost_breaker'},
+  {id:'hull',   name:'Reinforce Hull',       icon:'⚙️',rarity:'common',   desc:'+25% max HP',                           type:'hull_hp'},
+  {id:'ram',    name:'Ram Prow',             icon:'⚓',rarity:'rare',     desc:'Contact damage when ramming enemies',   type:'ram'},
+  {id:'sails',  name:'Stolen Sails',         icon:'💨',rarity:'epic',     desc:'+35% movement speed',                   type:'speed'},
+  {id:'ghull',  name:'Ghost Hull',           icon:'👻',rarity:'legendary',desc:'Phase through enemies 8s every 30s',    type:'ghost_hull'},
+  {id:'brl',    name:'Barrel Bombs',         icon:'🛢️',rarity:'common',   desc:'Drop 3 mines every 10s',                type:'barrels'},
+  {id:'twr',    name:'Cannon Tower',         icon:'🏰',rarity:'rare',     desc:'Auto-firing tower 20s, max 2',          type:'tower'},
+  {id:'lure',   name:'Treasure Lure',        icon:'💎',rarity:'epic',     desc:'Lure nearby enemies for 5s',            type:'lure'},
+  {id:'vrtx',   name:'Maelstrom Vortex',     icon:'🌀',rarity:'legendary',desc:'Vortex sucks in all enemies — 30s CD',  type:'vortex'},
+];
+const META_TREE=[
+  {id:'hull',   name:'Hull Reinforcement',icon:'🛡️',cost:10,  desc:'+15% starting HP'},
+  {id:'fleet',  name:'Starting Fleet',    icon:'⛵',cost:20,  desc:'Start with 1 extra rowboat'},
+  {id:'magnet', name:'Treasure Magnet',   icon:'💰',cost:15,  desc:'+30% doubloon pickup radius'},
+  {id:'cannon', name:'Cannon Master',     icon:'💣',cost:25,  desc:'+10% cannon damage'},
+  {id:'ghost',  name:'Ghost Ward',        icon:'🔮',cost:30,  desc:'Boss spawns 60s later'},
+  {id:'anchor', name:'Island Anchor',     icon:'⚓',cost:40,  desc:'Auto-deploy tower every 90s'},
+  {id:'flag',   name:'Flag Bearer',       icon:'🏴‍☠️',cost:50, desc:'Enemies -15% accuracy nearby'},
+  {id:'mastery',name:'Ghost Mastery',     icon:'💀',cost:100, desc:'Legendary upgrades appear more often'},
+];
+
+// ── HP BAR DOM ELEMENTS ───────────────────────────────────────────
+function makeHpEl(){
+  const el=document.createElement('div');
+  el.style.cssText='position:absolute;pointer-events:none;z-index:20;display:none';
+  el.innerHTML='<div style="width:38px;height:4px;background:#200;border-radius:2px;border:1px solid #400"><div class="hpf" style="height:100%;background:#22cc22;border-radius:2px;width:100%;transition:width .14s,background .25s"></div></div>';
+  document.body.appendChild(el);
+  return{wrap:el,fill:el.querySelector('.hpf')};
+}
+function updateHpEl(hpEl,x,z,hp,maxHp,show){
+  if(!show||!_running){hpEl.wrap.style.display='none';return}
+  const v=new THREE.Vector3(x-HALF,12,z-HALF);
+  v.project(_cam);
+  const sx=(v.x+1)/2*window.innerWidth,sy=(-v.y+1)/2*window.innerHeight;
+  if(sx<-50||sx>window.innerWidth+50||sy<-50||sy>window.innerHeight+50){hpEl.wrap.style.display='none';return}
+  hpEl.wrap.style.display='block';
+  hpEl.wrap.style.left=(sx-19)+'px'; hpEl.wrap.style.top=(sy-26)+'px';
+  const p=clamp(hp/maxHp,0,1);
+  hpEl.fill.style.width=(p*100)+'%';
+  hpEl.fill.style.background=p>.5?'#22cc22':p>.25?'#aacc22':'#cc2222';
 }
 
-// ── PARTICLE SYSTEM (Three.js Points) ────────────────────────────
-class Particles3D{
-  constructor(maxN=2000){
-    this.particles=[];
-    this.geo=new THREE.BufferGeometry();
-    this.positions=new Float32Array(maxN*3);
-    this.colors=new Float32Array(maxN*3);
-    this.geo.setAttribute('position',new THREE.BufferAttribute(this.positions,3));
-    this.geo.setAttribute('color',new THREE.BufferAttribute(this.colors,3));
-    this.mat=new THREE.PointsMaterial({size:4,vertexColors:true,transparent:true,depthWrite:false,sizeAttenuation:true});
-    this.pts=new THREE.Points(this.geo,this.mat);
-    _scene.add(this.pts);
-    this.maxN=maxN;
-  }
-  emit(x,z,opts={}){
-    const n=Math.min(opts.count||8,this.maxN/4);
-    const col=new THREE.Color(opts.color||'#f0c040');
-    for(let i=0;i<n;i++){
-      const a=Math.random()*TWO_PI;
-      const spd=rand(opts.minS||20,opts.maxS||100);
-      this.particles.push({
-        x,y:rand(2,12),z,
-        vx:Math.cos(a)*spd,vy:rand(8,40),vz:Math.sin(a)*spd,
-        life:1,decay:rand(.8,1.8)/(opts.life||0.8),
-        r:col.r,g:col.g,b:col.b
-      });
-    }
-  }
-  update(dt){
-    let i=this.particles.length;
-    while(i--){
-      const p=this.particles[i];
-      p.x+=p.vx*dt; p.y+=p.vy*dt; p.z+=p.vz*dt;
-      p.vx*=.93; p.vz*=.93; p.vy-=60*dt;
-      if(p.y<0)p.y=0;
-      p.life-=p.decay*dt;
-      if(p.life<=0)this.particles.splice(i,1);
-    }
-    const active=Math.min(this.particles.length,this.maxN);
-    for(let j=0;j<active;j++){
-      const p=this.particles[j];
-      const a=Math.max(0,p.life);
-      this.positions[j*3]=p.x-HALF;
-      this.positions[j*3+1]=p.y;
-      this.positions[j*3+2]=p.z-HALF;
-      this.colors[j*3]=p.r*a; this.colors[j*3+1]=p.g*a; this.colors[j*3+2]=p.b*a;
-    }
-    // Zero remaining
-    for(let j=active;j<this.maxN;j++){
-      this.positions[j*3+1]=-999;
-    }
-    this.geo.attributes.position.needsUpdate=true;
-    this.geo.attributes.color.needsUpdate=true;
-  }
-}
-
-// ── FLOATING TEXT (CSS 2D overlay, not Three.js) ─────────────────
-class FloatText{
-  constructor(x,z,text,color='#f0c040'){
-    this.x=x;this.z=z;this.text=text;this.color=color;
-    this.life=1;this.vy=-50;
+// ── FLOATING TEXT ─────────────────────────────────────────────────
+class FloatTxt{
+  constructor(x,z,txt,col='#f0c040'){
+    this.x=x;this.z=z;this.worldY=8;this.vy=-55;this.life=1;
     const el=document.createElement('div');
-    el.style.cssText=`position:absolute;pointer-events:none;font-size:.82rem;font-weight:700;
-      font-family:Georgia,serif;text-shadow:0 1px 4px #000;letter-spacing:.05em;z-index:25;
-      transition:opacity .1s;color:${color};white-space:nowrap`;
-    el.textContent=text;
-    document.body.appendChild(el);
-    this.el=el;
-    this.worldY=6;
+    el.style.cssText=`position:absolute;pointer-events:none;font:700 .8rem/1 Georgia,serif;
+      text-shadow:0 1px 4px #000;z-index:26;opacity:1;white-space:nowrap;color:${col}`;
+    el.textContent=txt; document.body.appendChild(el); this.el=el;
   }
   update(dt){
-    this.worldY+=this.vy*dt; this.vy*=.94;
-    this.life-=dt*1.3;
+    this.worldY+=this.vy*dt; this.vy*=.93; this.life-=dt*1.3;
     if(this.life<=0){this.destroy();return}
-    // Project world→screen
     const v=new THREE.Vector3(this.x-HALF,this.worldY,this.z-HALF);
-    v.project(_camera);
-    const sx=(v.x+1)/2*window.innerWidth;
-    const sy=(-v.y+1)/2*window.innerHeight;
-    this.el.style.left=(sx-24)+'px';
-    this.el.style.top=sy+'px';
+    v.project(_cam);
+    this.el.style.left=((v.x+1)/2*window.innerWidth-22)+'px';
+    this.el.style.top=((-v.y+1)/2*window.innerHeight)+'px';
     this.el.style.opacity=Math.max(0,this.life);
   }
-  destroy(){if(this.el.parentNode)this.el.parentNode.removeChild(this.el)}
+  destroy(){if(this.el.parentNode)this.el.parentNode.removeChild(this.el);}
 }
 
-// ── SHIP BASE CLASS ───────────────────────────────────────────────
-class Ship3D{
-  constructor(x,z,modelName,scale=1){
-    this.x=x; this.z=z; this.angle=0; this.targetAngle=0;
-    this.vx=0; this.vz=0;
-    this.hp=100; this.maxHp=100;
-    this.speed=5; this.size=14;
-    this.dead=false; this.hitTimer=0;
-    this.wake=[];
-    // 3D mesh
-    const src=_models[modelName]||_models['ship-pirate-small'];
-    this.mesh=src.clone();
-    this.mesh.scale.set(scale,scale,scale);
+// ── PARTICLES (Three.js Points) ───────────────────────────────────
+class Particles{
+  constructor(max=2500){
+    this.pool=[]; this.max=max;
+    this.pos=new Float32Array(max*3);
+    this.col=new Float32Array(max*3);
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(this.pos,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(this.col,3));
+    this.pts=new THREE.Points(geo,
+      new THREE.PointsMaterial({size:5,vertexColors:true,transparent:true,depthWrite:false,sizeAttenuation:true}));
+    _scene.add(this.pts);
+  }
+  emit(x,z,opts={}){
+    const n=Math.min(opts.n||8,this.max>>2);
+    const c=new THREE.Color(opts.color||'#f0c040');
+    for(let i=0;i<n;i++){
+      const a=Math.random()*TWO_PI,s=rand(opts.minS||25,opts.maxS||110);
+      this.pool.push({x,y:rand(2,14),z,vx:Math.cos(a)*s,vy:rand(8,45),vz:Math.sin(a)*s,
+        life:1,dec:rand(.9,2)/(opts.life||.8),r:c.r,g:c.g,b:c.b});
+    }
+  }
+  update(dt){
+    let i=this.pool.length;
+    while(i--){
+      const p=this.pool[i]; p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
+      p.vx*=.94;p.vz*=.94;p.vy-=65*dt; if(p.y<0)p.y=0; p.life-=p.dec*dt;
+      if(p.life<=0)this.pool.splice(i,1);
+    }
+    const n=Math.min(this.pool.length,this.max);
+    for(let j=0;j<n;j++){
+      const p=this.pool[j],a=Math.max(0,p.life);
+      this.pos[j*3]=p.x-HALF;this.pos[j*3+1]=p.y;this.pos[j*3+2]=p.z-HALF;
+      this.col[j*3]=p.r*a;this.col[j*3+1]=p.g*a;this.col[j*3+2]=p.b*a;
+    }
+    for(let j=n;j<this.max;j++)this.pos[j*3+1]=-9999;
+    this.pts.geometry.attributes.position.needsUpdate=true;
+    this.pts.geometry.attributes.color.needsUpdate=true;
+  }
+}
+
+// ── CANNONBALL ─────────────────────────────────────────────────────
+class Cannonball{
+  constructor(ox,oz,tx,tz,dmg,owner,ghost=false){
+    this.dmg=dmg;this.owner=owner;this.isGB=ghost;this.dead=false;this.r=3;
+    const src=_mdls['cannon-ball'];
+    this.mesh=src?src.clone(true):new THREE.Mesh(
+      new THREE.SphereGeometry(2.5,8,6),
+      new THREE.MeshStandardMaterial({color:0x222222,roughness:.7,metalness:0}));
+    this.mesh.scale.setScalar(2.2);
+    _scene.add(this.mesh);
+    if(ghost){
+      this.mesh.traverse(m=>{if(m.isMesh){m.material=m.material.clone();
+        m.material.color.set(0x00ff88);m.material.emissive.set(0x00aa44);}});
+    }
+    this.x=ox;this.z=oz;
+    const dd=d(ox,oz,tx,tz),spd=150;
+    this.vx=(tx-ox)/dd*spd; this.vz=(tz-oz)/dd*spd; this.vy=22;
+    this.life=dd/spd+.4;
+  }
+  update(dt){
+    this.x+=this.vx*dt; this.z+=this.vz*dt; this.vy-=90*dt;
+    this.mesh.position.set(this.x-HALF,Math.max(0,this.vy*dt*8)+2.5,this.z-HALF);
+    this.life-=dt; if(this.life<=0)this.kill();
+  }
+  kill(){_scene.remove(this.mesh);this.dead=true;}
+}
+
+// ── BASE SHIP CLASS ────────────────────────────────────────────────
+class Ship{
+  constructor(x,z,modelName,scale){
+    this.x=x;this.z=z;this.angle=0;this.hp=100;this.maxHp=100;
+    this.spd=5;this.sz=14;this.dead=false;this.hitT=0;
+    // [FIX-4] Apply calibrated scale — clone(true) for deep material copy
+    const src=_mdls[modelName]||_mdls['ship-pirate-small'];
+    this.mesh=src.clone(true);
+    this.mesh.scale.setScalar(scale||12);
     this.mesh.castShadow=true;
     _scene.add(this.mesh);
-    // HP bar (canvas overlay)
-    this._buildHpBar();
+    this.hpEl=makeHpEl();
   }
-  _buildHpBar(){
-    const el=document.createElement('div');
-    el.style.cssText=`position:absolute;pointer-events:none;z-index:20;display:none`;
-    el.innerHTML='<div style="width:36px;height:4px;background:#300;border-radius:2px;border:1px solid #500"><div class="hpf" style="height:100%;background:#33cc33;border-radius:2px;width:100%;transition:width .15s,background .3s"></div></div>';
-    document.body.appendChild(el);
-    this.hpEl=el;
-    this.hpFill=el.querySelector('.hpf');
-  }
-  updateHpBar(){
-    if(this.dead){this.hpEl.style.display='none';return}
-    const v=new THREE.Vector3(this.x-HALF,10,this.z-HALF);
-    v.project(_camera);
-    const sx=(v.x+1)/2*window.innerWidth;
-    const sy=(-v.y+1)/2*window.innerHeight;
-    if(sx<-50||sx>window.innerWidth+50||sy<-50||sy>window.innerHeight+50){
-      this.hpEl.style.display='none';return;
-    }
-    this.hpEl.style.display='block';
-    this.hpEl.style.left=(sx-18)+'px';
-    this.hpEl.style.top=(sy-24)+'px';
-    const pct=clamp(this.hp/this.maxHp,0,1);
-    this.hpFill.style.width=(pct*100)+'%';
-    this.hpFill.style.background=pct>.5?'#33cc33':pct>.25?'#aacc22':'#cc2222';
-  }
-  takeDamage(n){
-    this.hp-=n; this.hitTimer=.25;
+  takeDmg(n){
+    this.hp-=n; this.hitT=.22;
     if(this.hp<=0){this.hp=0;this.dead=true;}
-    // Flash red
+    // Red flash
     this.mesh.traverse(m=>{if(m.isMesh){
-      const orig=m.userData.origColor||m.material.color.getHex();
-      m.userData.origColor=orig;
-      m.material.emissive.set(0xff2200);
-      setTimeout(()=>{if(m.material)m.material.emissive.set(0)},250);
+      const oc=m.material.color.getHex();
+      m.material.color.set(0xff2200);
+      setTimeout(()=>{if(m.material)m.material.color.set(oc);},220);
     }});
   }
   syncMesh(){
@@ -875,954 +840,721 @@ class Ship3D{
     this.mesh.position.set(this.x-HALF,0,this.z-HALF);
     this.mesh.rotation.y=this.angle;
   }
-  destroy(){
-    _scene.remove(this.mesh);
-    if(this.hpEl&&this.hpEl.parentNode)this.hpEl.parentNode.removeChild(this.hpEl);
-    this.dead=true;
-  }
-  // Smooth turn
-  rotateTo(a,dt,rate=4){
+  rotateTo(a,dt,r=4){
     let da=a-this.angle;
     while(da>Math.PI)da-=TWO_PI; while(da<-Math.PI)da+=TWO_PI;
-    this.angle+=da*Math.min(1,dt*rate);
+    this.angle+=da*Math.min(1,dt*r);
+  }
+  kill(){
+    _scene.remove(this.mesh);
+    if(this.hpEl.wrap.parentNode)this.hpEl.wrap.parentNode.removeChild(this.hpEl.wrap);
+    this.dead=true;
   }
 }
 
-// ── PLAYER ───────────────────────────────────────────────────────
-class Player extends Ship3D{
+// ── PLAYER ────────────────────────────────────────────────────────
+class Player extends Ship{
   constructor(def){
-    const scale=def.model==='ship-pirate-large'?1.4:def.model==='ship-ghost'?.9:1;
-    super(HALF,HALF,def.model,scale);
-    this.def=def;
-    this.hp=def.hp*(META.upgrades.hull?1.15:1);
-    this.maxHp=this.hp;
-    this.speed=def.speed;
-    this.size=def.size;
-    this.cannons=def.cannons;
-    this.extraCannons=0;
-    this.passive=def.passive;
-    // Upgrade flags
-    this.hasMobile=false;
-    this.hasStorm=false; this.stormTimer=0;
-    this.hasGhostBreaker=false;
-    this.hasRam=false;
-    this.speedMult=1;
-    this.hasGhostHull=false; this.phaseTimer=0; this.phaseCD=30; this.isPhased=false;
-    this.hasBarrels=false; this.barrelTimer=0;
-    this.hasTower=false; this.towerTimer=0;
-    this.hasVortex=false; this.vortexTimer=30; this.vortexActive=false; this.vortexLife=0;
-    this.hasLure=false; this.lureTimer=0;
-    this.mobileCAngle=0; this.mobileCTimer=0;
-    // Levelling
-    this.doubloons=0; this.xp=0; this.xpNeeded=100; this.level=0;
-    // Multi-fire timers
-    this.fireTimers=[0,0,0,0,0];
-    this.fleet=[];
-    this.pickupR=META.upgrades.magnet?78:60;
-    this.upgradeTaken=[];
-    this.ghostHullCD=30;
+    super(HALF,HALF,def.model,def.sc);
+    this.def=def; this.hp=def.hp*(META.upgrades.hull?1.15:1); this.maxHp=this.hp;
+    this.spd=def.spd; this.sz=def.sz; this.cn=def.cn; this.passive=def.passive;
+    // Upgrade state
+    this.extraCn=0; this.hasMob=false; this.hasStorm=false; this.stormT=0;
+    this.hasGB=false; this.hasRam=false; this.spdMul=1;
+    this.hasGH=false; this.ghT=0; this.ghCD=30; this.phased=false;
+    this.hasBrl=false; this.brlT=0;
+    this.hasTwr=false; this.twrT=0;
+    this.hasVtx=false; this.vtxT=30; this.vtxActive=false; this.vtxLife=0;
+    this.mobA=0; this.mobFT=0;
+    this.fireTimes=Array(8).fill(0);
+    this.doubloons=0; this.xp=0; this.xpNeed=100; this.level=0;
+    this.pickR=META.upgrades.magnet?78:60;
+    this.fleet=[]; this.upgTaken=[];
+    this.flagAcc=META.upgrades.flag||false;
   }
   addXP(n){
     this.doubloons+=n; this.xp+=n;
-    while(this.xp>=this.xpNeeded){
-      this.xp-=this.xpNeeded;
-      this.xpNeeded=Math.floor(this.xpNeeded*1.22+25);
+    while(this.xp>=this.xpNeed){
+      this.xp-=this.xpNeed; this.xpNeed=Math.floor(this.xpNeed*1.22+28);
       this.level++;
-      if(!_showUpgrade){_showUpgrade=true;_paused=true;}
+      if(!_upPending){_upPending=true;_paused=true;}
     }
   }
-  update(dt,enemies,projectiles,particles,floatTexts,G){
+  update(dt,enemies,CBs,parts,FTs,G){
     if(this.dead)return;
-    const inp=getInput();
-    const spd=this.speed*this.speedMult*22*dt;
-    if(inp.dx||inp.dy){
-      this.targetAngle=Math.atan2(inp.dx,inp.dy);
-      this.rotateTo(this.targetAngle,dt,3.5);
+    const i=inp();
+    const spd=this.spd*this.spdMul*22*dt;
+    if(i.dx||i.dy){this.rotateTo(Math.atan2(i.dx,i.dy),dt,4);}
+    this.x=clamp(this.x+i.dx*spd,60,WORLD-60);
+    this.z=clamp(this.z+i.dy*spd,60,WORLD-60);
+    // Ghost
+    if(this.passive==='ghost'||this.hasGH){
+      this.ghCD-=dt;
+      if(this.ghCD<=0){this.phased=true;this.ghT=8;this.ghCD=30;toast('👻 Phased!');
+        document.getElementById('hud-phase').style.display='block';}
     }
-    this.x=clamp(this.x+inp.dx*spd,50,WORLD-50);
-    this.z=clamp(this.z+inp.dy*spd,50,WORLD-50);
-
-    // Ghost passive
-    if(this.passive==='ghost'||this.hasGhostHull){
-      this.ghostHullCD-=dt;
-      if(this.ghostHullCD<=0){
-        this.isPhased=true; this.phaseTimer=8; this.ghostHullCD=30;
-        toast('👻 Phased!');
-        document.getElementById('hud-phase').style.display='block';
-      }
-    }
-    if(this.isPhased){
-      this.phaseTimer-=dt;
-      if(this.phaseTimer<=0){this.isPhased=false;document.getElementById('hud-phase').style.display='none';}
-      // Ghost visual
-      this.mesh.traverse(m=>{if(m.isMesh)m.material.opacity=.45+Math.sin(G.t*8)*.15});
+    if(this.phased){
+      this.ghT-=dt; if(this.ghT<=0){this.phased=false;document.getElementById('hud-phase').style.display='none';}
+      this.mesh.traverse(m=>{if(m.isMesh){m.material.transparent=true;m.material.opacity=.35+Math.sin(G.t*9)*.15;}});
     } else {
-      this.mesh.traverse(m=>{if(m.isMesh)m.material.opacity=1});
+      this.mesh.traverse(m=>{if(m.isMesh){m.material.transparent=false;m.material.opacity=1;}});
     }
-
     // Auto-fire
-    const dmgMult=(META.upgrades.cannon?1.1:1)*(this.hasGhostBreaker?2:1);
-    const total=this.cannons+this.extraCannons;
-    const sorted=[...enemies].sort((a,b)=>dist2(this.x,this.z,a.x,a.z)-dist2(this.x,this.z,b.x,b.z));
-    for(let c=0;c<total;c++){
-      this.fireTimers[c]=(this.fireTimers[c]||0)-dt;
-      if(this.fireTimers[c]<=0){
-        const t=sorted[c%sorted.length];
-        if(t&&dist(this.x,this.z,t.x,t.z)<320){
-          projectiles.push(new Cannonball3D(this.x,0,this.z,t.x,0,t.z,20*dmgMult,'player',this.hasGhostBreaker));
-          particles.emit(this.x,this.z,{count:6,color:'#ff8833',minS:30,maxS:100,life:.5});
-          this.fireTimers[c]=1.8+c*.3;
-        }else this.fireTimers[c]=.3;
+    const dm=(META.upgrades.cannon?1.1:1)*(this.hasGB?2:1);
+    const sorted=[...enemies].sort((a,b)=>d2(this.x,this.z,a.x,a.z)-d2(this.x,this.z,b.x,b.z));
+    const total=this.cn+this.extraCn;
+    for(let ci=0;ci<total;ci++){
+      this.fireTimes[ci]=(this.fireTimes[ci]||0)-dt;
+      if(this.fireTimes[ci]<=0){
+        const t=sorted[ci%sorted.length];
+        if(t&&d(this.x,this.z,t.x,t.z)<320){
+          CBs.push(new Cannonball(this.x,this.z,t.x+rand(-18,18),t.z+rand(-18,18),20*dm,'player',this.hasGB));
+          parts.emit(this.x,this.z,{n:6,color:'#ff8833',minS:30,maxS:100,life:.5});
+          this.fireTimes[ci]=1.85+ci*.28;
+        }else this.fireTimes[ci]=.3;
       }
     }
     // Mobile cannon
-    if(this.hasMobile&&sorted.length>0){
+    if(this.hasMob&&sorted.length>0){
       const t=sorted[0];
-      const a=Math.atan2(t.x-this.x,t.z-this.z);
-      this.mobileCAngle=lerp(this.mobileCAngle,a,dt*3);
-      this.mobileCTimer-=dt;
-      if(this.mobileCTimer<=0&&dist(this.x,this.z,t.x,t.z)<400){
-        projectiles.push(new Cannonball3D(this.x,0,this.z,t.x,0,t.z,16*dmgMult,'player'));
-        this.mobileCTimer=1.2;
+      this.mobA=lerp(this.mobA,Math.atan2(t.x-this.x,t.z-this.z),dt*3);
+      this.mobFT-=dt;
+      if(this.mobFT<=0&&d(this.x,this.z,t.x,t.z)<400){
+        CBs.push(new Cannonball(this.x,this.z,t.x,t.z,16*dm,'player'));
+        this.mobFT=1.2;
       }
     }
     // Storm
     if(this.hasStorm){
-      this.stormTimer-=dt;
-      if(this.stormTimer<=0&&sorted.length>0){
-        for(let i=0;i<8;i++){
-          const a=(i/8)*TWO_PI;
-          projectiles.push(new Cannonball3D(this.x,0,this.z,this.x+Math.sin(a)*180,0,this.z+Math.cos(a)*180,13*dmgMult,'player'));
-        }
-        particles.emit(this.x,this.z,{count:25,color:'#ff5522',minS:40,maxS:180,life:.8});
-        this.stormTimer=3;
+      this.stormT-=dt;
+      if(this.stormT<=0&&sorted.length>0){
+        for(let si=0;si<8;si++){const a=(si/8)*TWO_PI;CBs.push(new Cannonball(this.x,this.z,this.x+Math.sin(a)*180,this.z+Math.cos(a)*180,13*dm,'player'));}
+        parts.emit(this.x,this.z,{n:25,color:'#ff5522',minS:40,maxS:180,life:.85});
+        this.stormT=3;
       }
     }
-    // Barrel bombs
-    if(this.hasBarrels){
-      this.barrelTimer-=dt;
-      if(this.barrelTimer<=0){
-        for(let i=0;i<3;i++)G.mines.push({x:this.x+rand(-35,35),z:this.z+rand(-35,35),r:12,life:15,mesh:spawnMineMarker(this.x,this.z)});
-        this.barrelTimer=10;
-      }
-    }
+    // Barrels
+    if(this.hasBrl){this.brlT-=dt;if(this.brlT<=0){for(let bi=0;bi<3;bi++)G.mines.push({x:this.x+rand(-38,38),z:this.z+rand(-38,38),r:12,life:14,mesh:mkMine(this.x,this.z)});this.brlT=10;}}
     // Tower
-    if(this.hasTower){
-      this.towerTimer-=dt;
-      if(this.towerTimer<=0&&G.towers.filter(t=>!t.dead).length<2){
-        G.towers.push(new Tower(this.x+rand(-60,60),this.z+rand(-60,60)));
-        this.towerTimer=20;
-      }
-    }
+    if(this.hasTwr){this.twrT-=dt;if(this.twrT<=0&&G.towers.filter(t=>!t.dead).length<2){G.towers.push(new Tower(this.x+rand(-65,65),this.z+rand(-65,65)));this.twrT=20;}}
     // Vortex
-    if(this.hasVortex){
-      this.vortexTimer-=dt;
-      if(this.vortexTimer<=0&&enemies.length>4&&!this.vortexActive){
-        this.vortexActive=true; this.vortexLife=3;
-        this.vortexTimer=30;
-        toast('🌀 Maelstrom Vortex!');
-        particles.emit(this.x,this.z,{count:50,color:'#4488ff',minS:50,maxS:250,life:1.5});
+    if(this.hasVtx){
+      this.vtxT-=dt;
+      if(this.vtxT<=0&&!this.vtxActive&&enemies.length>4){
+        this.vtxActive=true;this.vtxLife=3;this.vtxT=30;toast('🌀 Maelstrom Vortex!');
+        parts.emit(this.x,this.z,{n:50,color:'#4488ff',minS:50,maxS:250,life:1.5});
       }
     }
-    if(this.vortexActive){
-      this.vortexLife-=dt;
-      if(this.vortexLife<=0)this.vortexActive=false;
+    if(this.vtxActive){
+      this.vtxLife-=dt; if(this.vtxLife<=0)this.vtxActive=false;
       for(const e of enemies){
-        const d=dist(e.x,e.z,this.x,this.z);
-        if(d<360){
-          const a=Math.atan2(this.x-e.x,this.z-e.z);
-          e.x+=Math.sin(a)*280*dt; e.z+=Math.cos(a)*280*dt;
-          if(d<50)e.takeDamage(dt*180);
-        }
+        const dd=d(e.x,e.z,this.x,this.z);
+        if(dd<360){const a=Math.atan2(this.x-e.x,this.z-e.z);e.x+=Math.sin(a)*280*dt;e.z+=Math.cos(a)*280*dt;if(dd<55)e.takeDmg(180*dt);}
       }
     }
     // Ram
-    if(this.hasRam){
-      for(const e of enemies){if(!e.dead&&dist(this.x,this.z,e.x,e.z)<this.size+e.size+4)e.takeDamage(30*dt)}
+    if(this.hasRam){for(const e of enemies)if(!e.dead&&d(this.x,this.z,e.x,e.z)<this.sz+e.sz+5)e.takeDmg(28*dt);}
+    this.syncMesh();
+    updateHpEl(this.hpEl,this.x,this.z,this.hp,this.maxHp,true);
+  }
+}
+
+// ── FLEET SHIP ─────────────────────────────────────────────────────
+class FleetShip extends Ship{
+  constructor(type,owner){
+    const c=FLEET_CFG[type]||FLEET_CFG.sloop;
+    super(owner.x,owner.z,c.model,c.sc);
+    this.ftype=type; this.hp=c.hp;this.maxHp=c.hp; this.spd=c.spd; this.sz=c.sz;
+    this.dmg=c.dmg; this.fr=c.fr; this.rng=c.rng; this.cnts=c.cn;
+    this.ft=Math.random()*2; this.oA=Math.random()*TWO_PI;
+    this.oR=80+owner.fleet.length*16;
+  }
+  update(dt,owner,enemies,CBs,parts,dm){
+    if(this.dead)return;
+    this.oA+=dt*.9/(this.oR/80);
+    const tx=owner.x+Math.sin(this.oA)*this.oR,tz=owner.z+Math.cos(this.oA)*this.oR;
+    const dx=tx-this.x,dz=tz-this.z,dd=Math.sqrt(dx*dx+dz*dz);
+    if(dd>5){this.x+=dx/dd*this.spd*22*dt;this.z+=dz/dd*this.spd*22*dt;this.rotateTo(Math.atan2(dx,dz),dt,3);}
+    this.ft-=dt;
+    if(this.ft<=0){
+      const sorted=[...enemies].sort((a,b)=>d2(this.x,this.z,a.x,a.z)-d2(this.x,this.z,b.x,b.z));
+      const t=sorted[0];
+      if(t&&d(this.x,this.z,t.x,t.z)<this.rng){
+        for(let ci=0;ci<this.cnts;ci++){
+          const sa=(ci-(this.cnts-1)/2)*.2,ba=Math.atan2(t.x-this.x,t.z-this.z);
+          const ta=ba+sa,rng2=this.rng*.88;
+          CBs.push(new Cannonball(this.x,this.z,this.x+Math.sin(ta)*rng2,this.z+Math.cos(ta)*rng2,this.dmg*dm,'fleet'));
+        }
+        parts.emit(this.x,this.z,{n:4,color:'#ff8833',minS:20,maxS:80,life:.42});
+        this.ft=this.fr;
+      }else this.ft=.4;
     }
     this.syncMesh();
-    this.updateHpBar();
+    updateHpEl(this.hpEl,this.x,this.z,this.hp,this.maxHp,true);
   }
 }
 
-// ── FLEET SHIP ────────────────────────────────────────────────────
-class FleetShip extends Ship3D{
-  constructor(type,player){
-    const cfgs={
-      rowboat:{model:'boat-row-small',hp:40,speed:8,size:9,dmg:12,fr:2.5,r:200,c:1,scale:.8},
-      sloop:{model:'ship-small',hp:70,speed:6.5,size:14,dmg:18,fr:2.1,r:250,c:1,scale:1},
-      frigate:{model:'ship-pirate-medium',hp:110,speed:5.4,size:20,dmg:22,fr:1.9,r:275,c:2,scale:1.1},
-      galleon:{model:'ship-pirate-large',hp:190,speed:3.5,size:26,dmg:30,fr:2.6,r:310,c:4,scale:1.4},
-    };
-    const cfg=cfgs[type]||cfgs.sloop;
-    super(player.x,player.z,cfg.model,cfg.scale);
-    this.ftype=type;
-    this.hp=cfg.hp; this.maxHp=cfg.hp;
-    this.speed=cfg.speed; this.size=cfg.size;
-    this.dmg=cfg.dmg; this.fireRate=cfg.fr; this.range=cfg.r; this.cannonCount=cfg.c;
-    this.fireTimer=Math.random()*2;
-    this.orbitA=Math.random()*TWO_PI;
-    this.orbitR=80+player.fleet.length*15;
-  }
-  update(dt,player,enemies,projectiles,particles,dmgMult){
-    if(this.dead)return;
-    this.orbitA+=dt*.9/(this.orbitR/80);
-    const tx=player.x+Math.sin(this.orbitA)*this.orbitR;
-    const tz=player.z+Math.cos(this.orbitA)*this.orbitR;
-    const dx=tx-this.x,dz=tz-this.z,d=Math.sqrt(dx*dx+dz*dz);
-    if(d>5){this.x+=dx/d*this.speed*20*dt; this.z+=dz/d*this.speed*20*dt; this.rotateTo(Math.atan2(dx,dz),dt,3);}
-    this.fireTimer-=dt;
-    if(this.fireTimer<=0){
-      const sorted=[...enemies].sort((a,b)=>dist2(this.x,this.z,a.x,a.z)-dist2(this.x,this.z,b.x,b.z));
-      const t=sorted[0];
-      if(t&&dist(this.x,this.z,t.x,t.z)<this.range){
-        for(let c=0;c<this.cannonCount;c++){
-          const sp=this.cannonCount>1?(c-(this.cannonCount-1)/2)*.18:0;
-          const ta=Math.atan2(t.x-this.x,t.z-this.z)+sp;
-          projectiles.push(new Cannonball3D(this.x,0,this.z,this.x+Math.sin(ta)*this.range,0,this.z+Math.cos(ta)*this.range,this.dmg*dmgMult,'fleet'));
-        }
-        particles.emit(this.x,this.z,{count:4,color:'#ff8833',minS:20,maxS:80,life:.4});
-        this.fireTimer=this.fireRate;
-      }else this.fireTimer=.4;
-    }
-    this.syncMesh(); this.updateHpBar();
-  }
-}
-
-// ── ENEMY ─────────────────────────────────────────────────────────
-class Enemy extends Ship3D{
-  constructor(type,x,z,isGhost=false,bossScale=0){
-    const def=ENEMY_DEFS[type];
-    const scale=def.isBoss?1.8:(type==='galleon'?1.3:type==='frigate'?1.1:type==='sloop'?1:0.8);
-    super(x,z,def.model,scale);
-    this.etype=type; this.isGhost=isGhost||def.isBoss;
-    this.hp=def.hp*(1+bossScale*.4)*(isGhost?.7:1);
-    this.maxHp=this.hp;
-    this.speed=def.speed*(1+bossScale*.15); this.size=def.size;
-    this.dmg=def.dmg+bossScale*3; this.fireRate=def.fireRate; this.range=def.range;
-    this.xpV=def.xp; this.skullV=def.skulls;
-    this.isBoss=!!def.isBoss; this.fireTimer=Math.random()*2;
-    this.circleDir=Math.random()>.5?1:-1; this.circleA=0;
+// ── ENEMY ──────────────────────────────────────────────────────────
+class Enemy extends Ship{
+  constructor(type,x,z,isGhost,bossScale=0){
+    const c=ENEMY_CFG[type];
+    super(x,z,c.model,c.sc);
+    this.etype=type; this.isGhost=isGhost||c.boss;
+    this.hp=c.hp*(1+bossScale*.4)*(isGhost&&!c.boss?.7:1); this.maxHp=this.hp;
+    this.spd=c.spd*(1+bossScale*.15); this.sz=c.sz;
+    this.dmg=c.dmg+bossScale*3; this.fr=c.fr; this.rng=c.rng;
+    this.xpV=c.xp; this.skV=c.sk; this.isBoss=c.boss;
+    this.ft=Math.random()*2; this.cA=0; this.cDir=Math.random()>.5?1:-1;
+    // [FIX-2] Ghost tint: set emissive, NOT replacing the material map
     if(this.isGhost){
       this.mesh.traverse(m=>{if(m.isMesh){
         m.material=m.material.clone();
-        m.material.color.set(0x00ff88);
-        m.material.emissive.set(0x00aa44);
-        m.material.transparent=true; m.material.opacity=.8;
+        m.material.emissive.set(0x00ff88);
+        m.material.emissiveIntensity=.55;
+        m.material.transparent=true; m.material.opacity=.82;
       }});
+      // Boss scale
+      if(this.isBoss)this.mesh.scale.multiplyScalar(1.5+(bossScale*.3));
     }
   }
-  update(dt,player,projectiles,particles,G){
+  update(dt,player,CBs,parts,G){
     if(this.dead)return;
-    const d=dist(this.x,this.z,player.x,player.z);
+    const dd=d(this.x,this.z,player.x,player.z);
     if(this.etype==='rowboat'){
-      // Beeline
       const a=Math.atan2(player.x-this.x,player.z-this.z);
-      this.x+=Math.sin(a)*this.speed*20*dt;
-      this.z+=Math.cos(a)*this.speed*20*dt;
-      this.rotateTo(a,dt,6);
-      if(d<player.size+this.size){
-        if(!player.isPhased)player.takeDamage(this.dmg*.5*dt*60);
-        this.takeDamage(this.dmg*.3*dt*60);
-        particles.emit(this.x,this.z,{count:6,color:'#ff4422',minS:30,maxS:100,life:.4});
-      }
+      this.x+=Math.sin(a)*this.spd*22*dt; this.z+=Math.cos(a)*this.spd*22*dt; this.rotateTo(a,dt,7);
+      if(dd<player.sz+this.sz&&!player.phased){player.takeDmg(this.dmg*.5*dt*60);this.takeDmg(this.dmg*.3*dt*60);}
     } else {
-      if(d>200){
-        const a=Math.atan2(player.x-this.x,player.z-this.z);
-        this.x+=Math.sin(a)*this.speed*18*dt; this.z+=Math.cos(a)*this.speed*18*dt;
-        this.rotateTo(a,dt,3);
-      } else {
-        this.circleA+=dt*this.circleDir*(this.speed/180);
-        this.x+=Math.sin(this.circleA+Math.PI/2)*this.speed*12*dt;
-        this.z+=Math.cos(this.circleA+Math.PI/2)*this.speed*12*dt;
-      }
-      this.fireTimer-=dt;
-      if(this.fireTimer<=0&&d<this.range){
-        const shots=this.isBoss?3:1;
-        const acc=G.player.flagAccuracy?.7:.8;
+      if(dd>210){const a=Math.atan2(player.x-this.x,player.z-this.z);this.x+=Math.sin(a)*this.spd*20*dt;this.z+=Math.cos(a)*this.spd*20*dt;this.rotateTo(a,dt,3);}
+      else{this.cA+=dt*this.cDir*(this.spd/180);this.x+=Math.sin(this.cA+Math.PI/2)*this.spd*12*dt;this.z+=Math.cos(this.cA+Math.PI/2)*this.spd*12*dt;}
+      this.ft-=dt;
+      if(this.ft<=0&&dd<this.rng){
+        const shots=this.isBoss?3:1,acc=G.player.flagAcc?.7:.8;
         for(let s=0;s<shots;s++){
-          const base=Math.atan2(player.x-this.x,player.z-this.z);
-          const sp=base+(s-.5*(shots-1))*.25+rand(-.25,.25)*(1-acc+.2);
-          const r2=this.range*.9;
-          projectiles.push(new Cannonball3D(this.x,0,this.z,this.x+Math.sin(sp)*r2,0,this.z+Math.cos(sp)*r2,this.dmg,'enemy'));
+          const ba=Math.atan2(player.x-this.x,player.z-this.z);
+          const sp=ba+(s-.5*(shots-1))*.22+rand(-.28,.28)*(1-acc+.2);
+          CBs.push(new Cannonball(this.x,this.z,this.x+Math.sin(sp)*this.rng*.9,this.z+Math.cos(sp)*this.rng*.9,this.dmg,'enemy'));
         }
-        particles.emit(this.x,this.z,{count:5,color:'#ff4422',minS:20,maxS:80,life:.4});
-        this.fireTimer=this.fireRate+(shots-1)*.4;
+        parts.emit(this.x,this.z,{n:5,color:'#ff4422',minS:20,maxS:80,life:.4});
+        this.ft=this.fr+(shots-1)*.4;
       }
     }
-    this.x=clamp(this.x,20,WORLD-20); this.z=clamp(this.z,20,WORLD-20);
-    this.syncMesh(); this.updateHpBar();
+    this.x=clamp(this.x,30,WORLD-30); this.z=clamp(this.z,30,WORLD-30);
+    this.syncMesh();
+    updateHpEl(this.hpEl,this.x,this.z,this.hp,this.maxHp,true);
     if(this.isBoss){
-      const pct=this.hp/this.maxHp;
       document.getElementById('boss-bar').style.display='block';
-      document.getElementById('boss-bar-fill').style.width=(pct*100)+'%';
+      document.getElementById('boss-fill').style.width=(clamp(this.hp/this.maxHp,0,1)*100)+'%';
     }
   }
-  destroyFX(particles){
-    particles.emit(this.x,this.z,{count:22,color:this.isGhost?'#4dff9b':'#ff6622',minS:40,maxS:180,life:.9});
-    this.destroy();
-  }
+  killFX(parts){parts.emit(this.x,this.z,{n:22,color:this.isGhost?'#4dff9b':'#ff6622',minS:40,maxS:180,life:.9});this.kill();}
 }
 
-// ── MINE ─────────────────────────────────────────────────────────
-function spawnMineMarker(x,z){
-  const src=_models['barrel']||_models['crate'];
-  const m=src?src.clone():new THREE.Mesh(new THREE.CylinderGeometry(5,5,8,8),new THREE.MeshStandardMaterial({color:0x7a4a20}));
-  m.position.set(x-HALF,2,z-HALF);
-  _scene.add(m); return m;
+// ── MINE ──────────────────────────────────────────────────────────
+function mkMine(x,z){
+  const src=_mdls['barrel'];
+  const m=src?src.clone(true):new THREE.Mesh(new THREE.CylinderGeometry(4,4,7,8),new THREE.MeshStandardMaterial({color:0x7a4a20,metalness:0,roughness:.8}));
+  m.scale.setScalar(src?SCALE.barrel:1);
+  m.position.set(x-HALF,2.5,z-HALF); _scene.add(m); return m;
 }
 
 // ── CANNON TOWER ──────────────────────────────────────────────────
 class Tower{
   constructor(x,z){
-    this.x=x; this.z=z; this.r=20; this.life=20; this.dead=false;
-    this.fireTimer=0; this.angle=0; this.range=280;
-    const src=_models['tower-complete-small']||_models['cannon'];
-    this.mesh=src?src.clone():new THREE.Mesh(new THREE.CylinderGeometry(8,10,25,8),new THREE.MeshStandardMaterial({color:0x8a7050}));
-    this.mesh.position.set(x-HALF,0,z-HALF);
+    this.x=x;this.z=z;this.life=20;this.dead=false;this.ft=0;this.rng=280;
+    const src=_mdls['tower-complete-small'];
+    this.mesh=src?src.clone(true):new THREE.Mesh(new THREE.CylinderGeometry(8,10,24,8),new THREE.MeshStandardMaterial({color:0x8a7050,metalness:0,roughness:.8}));
+    this.mesh.scale.setScalar(src?SCALE.tower:1);
+    this.mesh.position.set(x-HALF,0,z-HALF); _scene.add(this.mesh);
+  }
+  update(dt,enemies,CBs,dm){
+    this.life-=dt; if(this.life<=0||this.dead){_scene.remove(this.mesh);this.dead=true;return;}
+    this.ft-=dt;
+    if(this.ft<=0){
+      const sorted=[...enemies].sort((a,b)=>d2(this.x,this.z,a.x,a.z)-d2(this.x,this.z,b.x,b.z));
+      const t=sorted[0];
+      if(t&&d(this.x,this.z,t.x,t.z)<this.rng){CBs.push(new Cannonball(this.x,this.z,t.x,t.z,25*dm,'tower'));this.ft=1.5;}
+      else this.ft=.35;
+    }
+  }
+}
+
+// ── LOOT ──────────────────────────────────────────────────────────
+class Loot{
+  constructor(x,z,type,val){
+    this.x=x;this.z=z;this.type=type;this.val=val;this.r=type==='chest'?15:type==='skull'?11:9;
+    this.life=22;this.dead=false;this.bt=Math.random()*TWO_PI;
+    const mmap={chest:'chest',skull:'crate',doubloon:'crate',bottle:'bottle'};
+    const src=_mdls[mmap[type]||'crate'];
+    this.mesh=src?src.clone(true):new THREE.Mesh(new THREE.SphereGeometry(this.r*.4,8,6),new THREE.MeshStandardMaterial({color:type==='chest'?0xc07010:0xf0c040,metalness:0,roughness:.7}));
+    this.mesh.scale.setScalar(src?SCALE[mmap[type]]||SCALE.crate:1);
     _scene.add(this.mesh);
   }
-  update(dt,enemies,projectiles,dmgMult){
-    this.life-=dt;
-    if(this.life<=0||this.dead){
-      _scene.remove(this.mesh); this.dead=true; return;
-    }
-    this.fireTimer-=dt;
-    if(this.fireTimer<=0){
-      const sorted=[...enemies].sort((a,b)=>dist2(this.x,this.z,a.x,a.z)-dist2(this.x,this.z,b.x,b.z));
-      const t=sorted[0];
-      if(t&&dist(this.x,this.z,t.x,t.z)<this.range){
-        projectiles.push(new Cannonball3D(this.x,0,this.z,t.x,0,t.z,25*dmgMult,'tower'));
-        this.fireTimer=1.5;
-      }else this.fireTimer=.3;
-    }
-  }
-}
-
-// ── LOOT DROP ─────────────────────────────────────────────────────
-class Loot{
-  constructor(x,z,type,value){
-    this.x=x; this.z=z; this.type=type; this.value=value;
-    this.r=type==='chest'?16:type==='skull'?11:9;
-    this.life=22; this.dead=false; this.bobT=Math.random()*TWO_PI;
-    // 3D mesh
-    const modelMap={chest:'chest',skull:'crate',doubloon:'crate',bottle:'bottle'};
-    const mname=modelMap[type]||'crate';
-    const src=_models[mname];
-    if(src){this.mesh=src.clone();_scene.add(this.mesh);}
-    else{
-      const geo=new THREE.SphereGeometry(this.r/2,8,6);
-      const mat=new THREE.MeshStandardMaterial({color:type==='chest'?0xc07010:type==='skull'?0xf0f0e0:0xf0c040,emissive:0x221100,roughness:.6});
-      this.mesh=new THREE.Mesh(geo,mat);
-      _scene.add(this.mesh);
-    }
-  }
   update(dt,t){
-    this.life-=dt; this.bobT+=dt*2;
-    if(this.life<=0||this.dead){this.destroy();return}
-    this.mesh.position.set(this.x-HALF,2+Math.sin(this.bobT)*2,this.z-HALF);
+    this.life-=dt; this.bt+=dt*2;
+    if(this.life<=0||this.dead){_scene.remove(this.mesh);this.dead=true;return;}
+    this.mesh.position.set(this.x-HALF,2.5+Math.sin(this.bt)*2,this.z-HALF);
     this.mesh.rotation.y+=dt*.8;
   }
-  destroy(){_scene.remove(this.mesh);this.dead=true;}
 }
 
-// ── WORLD OBJECTS: islands & rocks ───────────────────────────────
-let _worldObjects=[]; // {type,x,z,r,mesh,hasLoot}
+// ── WORLD OBJECTS ─────────────────────────────────────────────────
+let _world=[]; // {type,x,z,r,mesh,hasLoot}
 function buildWorld(){
   // Rocks
-  for(let i=0;i<28;i++){
-    const x=rand(200,WORLD-200),z=rand(200,WORLD-200);
-    const r=rand(18,40);
-    const keys=['rocks-a','rocks-b','rocks-c'];
-    const src=_models[randFrom(keys)];
-    let mesh;
-    if(src){mesh=src.clone();mesh.scale.setScalar(rand(.6,1.2));}
-    else{mesh=new THREE.Mesh(new THREE.DodecahedronGeometry(r*.6),new THREE.MeshStandardMaterial({color:0x6a5a4a,roughness:.9}));}
-    mesh.position.set(x-HALF,rand(0,3),z-HALF);
-    mesh.rotation.y=Math.random()*TWO_PI;
-    _scene.add(mesh);
-    _worldObjects.push({type:'rock',x,z,r,mesh});
+  for(let i=0;i<30;i++){
+    const x=rand(200,WORLD-200),z=rand(200,WORLD-200),r=rand(18,42);
+    const src=_mdls[rFrom(['rocks-a','rocks-b','rocks-c'])];
+    const mesh=src?src.clone(true):new THREE.Mesh(new THREE.DodecahedronGeometry(r*.5),new THREE.MeshStandardMaterial({color:0x6a5a4a,metalness:0,roughness:.9}));
+    mesh.scale.setScalar(src?SCALE.rock*rand(.7,1.3):1);
+    mesh.position.set(x-HALF,rand(0,3),z-HALF); mesh.rotation.y=Math.random()*TWO_PI;
+    _scene.add(mesh); _world.push({type:'rock',x,z,r,mesh});
   }
   // Islands
   for(let i=0;i<4;i++){
-    const x=rand(400,WORLD-400),z=rand(400,WORLD-400);
-    const r=rand(55,95);
-    // Sand patches
-    const group=new THREE.Group();
-    const pCount=5+i;
-    for(let p=0;p<pCount;p++){
-      const src=_models[Math.random()>.5?'patch-sand':'patch-grass'];
-      if(src){
-        const m=src.clone(); m.position.set(rand(-r*.6,r*.6),0,rand(-r*.6,r*.6));
-        m.rotation.y=Math.random()*TWO_PI; group.add(m);
-      }
+    const x=rand(500,WORLD-500),z=rand(500,WORLD-500),r=rand(60,100);
+    const grp=new THREE.Group();
+    for(let p=0;p<6+i;p++){
+      const s=_mdls[Math.random()>.5?'patch-sand':'patch-grass'];
+      if(s){const m=s.clone(true);m.scale.setScalar(SCALE.patch*rand(.8,1.2));
+        m.position.set(rand(-r*.6,r*.6),0,rand(-r*.6,r*.6));m.rotation.y=Math.random()*TWO_PI;grp.add(m);}
     }
-    // Palms
-    for(let t2=0;t2<randInt(2,4);t2++){
-      const src=_models[Math.random()>.5?'palm-straight':'palm-bend'];
-      if(src){const m=src.clone();m.position.set(rand(-r*.5,r*.5),-1,rand(-r*.5,r*.5));m.rotation.y=Math.random()*TWO_PI;group.add(m);}
+    for(let t=0;t<randInt(2,4);t++){
+      const s=_mdls[Math.random()>.5?'palm-straight':'palm-bend'];
+      if(s){const m=s.clone(true);m.scale.setScalar(SCALE.palm*rand(.9,1.2));
+        m.position.set(rand(-r*.5,r*.5),-1,rand(-r*.5,r*.5));m.rotation.y=Math.random()*TWO_PI;grp.add(m);}
     }
-    // Chest marker
-    const chestSrc=_models['chest'];
-    if(chestSrc){
-      const cm=chestSrc.clone(); cm.position.set(0,1,0); cm.userData.isIslandChest=true;
-      group.add(cm);
-    }
-    group.position.set(x-HALF,0,z-HALF);
-    _scene.add(group);
-    _worldObjects.push({type:'island',x,z,r,mesh:group,hasLoot:true});
+    const cs=_mdls['chest'];
+    if(cs){const cm=cs.clone(true);cm.scale.setScalar(SCALE.chest);cm.position.set(0,2,0);cm.userData.chest=true;grp.add(cm);}
+    grp.position.set(x-HALF,0,z-HALF); _scene.add(grp);
+    _world.push({type:'island',x,z,r,mesh:grp,hasLoot:true});
   }
 }
 
-// ── WRECK ─────────────────────────────────────────────────────────
 function spawnWreck(x,z){
-  const src=_models['ship-wreck'];
-  if(!src)return;
-  const m=src.clone();
-  m.position.set(x-HALF,0,z-HALF);
-  m.rotation.y=Math.random()*TWO_PI;
-  m.scale.setScalar(rand(.8,1.3));
-  _scene.add(m);
-  _worldObjects.push({type:'wreck',x,z,r:18,mesh:m});
+  const s=_mdls['ship-wreck']; if(!s)return;
+  const m=s.clone(true); m.scale.setScalar(SCALE.wreck*rand(.8,1.2));
+  m.position.set(x-HALF,0,z-HALF); m.rotation.y=Math.random()*TWO_PI; _scene.add(m);
+  _world.push({type:'wreck',x,z,r:16,mesh:m});
 }
 
 // ── WAVE SYSTEM ───────────────────────────────────────────────────
-function getWaveCfg(minute){
-  if(minute<2)  return {types:['rowboat'],         count:9,  interval:2.8};
-  if(minute<4)  return {types:['rowboat','sloop'],  count:11, interval:2.5};
-  if(minute<7)  return {types:['rowboat','sloop','frigate'],count:13,interval:2.2};
-  if(minute<11) return {types:['sloop','frigate','galleon'],count:15,interval:2.0,ghost:.12};
-  if(minute<17) return {types:['frigate','galleon'], count:18,interval:1.8,ghost:.25};
-  if(minute<25) return {types:['galleon'],           count:22,interval:1.5,ghost:.4};
-  return        {types:['galleon'],                  count:26,interval:1.2,ghost:.55};
+function waveCfg(min){
+  if(min<2)  return{types:['rowboat'],                    n:9,  iv:2.8};
+  if(min<4)  return{types:['rowboat','sloop'],            n:11, iv:2.5};
+  if(min<7)  return{types:['rowboat','sloop','frigate'],  n:13, iv:2.2};
+  if(min<11) return{types:['sloop','frigate','galleon'],  n:16, iv:2.0, gc:.12};
+  if(min<17) return{types:['frigate','galleon'],          n:19, iv:1.8, gc:.28};
+  if(min<25) return{types:['galleon'],                    n:23, iv:1.5, gc:.42};
+  return     {types:['galleon'],                          n:27, iv:1.2, gc:.58};
 }
-
 function spawnEnemy(G){
-  const minute=G.time/60;
-  const cfg=getWaveCfg(minute);
-  const type=randFrom(cfg.types);
-  const isGhost=cfg.ghost&&Math.random()<cfg.ghost;
-  const p=G.player;
+  const min=G.time/60,cfg=waveCfg(min),type=rFrom(cfg.types);
+  const isGhost=cfg.gc&&Math.random()<cfg.gc;
+  const p=G.player,far=rand(340,450);
   const edge=randInt(0,3);
   let ex,ez;
-  const far=rand(320,430);
-  if(edge===0){ex=p.x-far;ez=p.z+rand(-400,400)}
-  else if(edge===1){ex=p.x+far;ez=p.z+rand(-400,400)}
-  else if(edge===2){ez=p.z-far;ex=p.x+rand(-400,400)}
-  else{ez=p.z+far;ex=p.x+rand(-400,400)}
-  ex=clamp(ex,60,WORLD-60); ez=clamp(ez,60,WORLD-60);
-  G.enemies.push(new Enemy(type,ex,ez,isGhost,G.bossScale));
-  G.spawnInterval=cfg.interval;
+  if(edge===0){ex=p.x-far;ez=p.z+rand(-420,420)}
+  else if(edge===1){ex=p.x+far;ez=p.z+rand(-420,420)}
+  else if(edge===2){ez=p.z-far;ex=p.x+rand(-420,420)}
+  else{ez=p.z+far;ex=p.x+rand(-420,420)}
+  G.enemies.push(new Enemy(type,clamp(ex,60,WORLD-60),clamp(ez,60,WORLD-60),isGhost,G.bossScale));
+  G.spawnIv=cfg.iv;
 }
-
 function spawnBoss(G){
   G.bossActive=true;
-  announce('💀 GHOST SHIP BOSS!<br><small>All cannons open fire!</small>');
-  document.getElementById('boss-bar').style.display='block';
-  G.screenShake=1;
-  const p=G.player;
-  const bossCount=Math.min(G.bossScale+1,2);
-  for(let b=0;b<bossCount;b++){
-    const bx=p.x+(b===0?380:-380);
-    const bz=p.z-360;
-    G.enemies.push(new Enemy('ghost',clamp(bx,100,WORLD-100),clamp(bz,100,WORLD-100),false,G.bossScale));
+  announce('💀 GHOST SHIP BOSS!<br><small>All cannons — OPEN FIRE!</small>');
+  G.shake=1.2;
+  const p=G.player,bc=Math.min(G.bossScale+1,2);
+  for(let b=0;b<bc;b++){
+    const bx=clamp(p.x+(b===0?400:-400),100,WORLD-100),bz=clamp(p.z-380,100,WORLD-100);
+    G.enemies.push(new Enemy('ghost',bx,bz,false,G.bossScale));
   }
-  for(let i=0;i<10;i++){
-    const a=(i/10)*TWO_PI;
-    G.enemies.push(new Enemy('rowboat',p.x+Math.sin(a)*490,p.z+Math.cos(a)*490,true,0));
-  }
+  for(let i=0;i<10;i++){const a=(i/10)*TWO_PI;G.enemies.push(new Enemy('rowboat',p.x+Math.sin(a)*500,p.z+Math.cos(a)*500,true,0));}
 }
 
-// ── GAME INITIALISE ───────────────────────────────────────────────
+// ── INIT GAME ─────────────────────────────────────────────────────
 function initGame(){
-  // Clear old scene objects (except ocean, lights, particles)
-  _worldObjects.forEach(o=>{if(o.mesh)_scene.remove(o.mesh)});
-  _worldObjects=[];
+  // Remove previous world objects
+  _world.forEach(o=>{if(o.mesh)_scene.remove(o.mesh)}); _world=[];
+  // Remove previous DOM hp bars
+  document.querySelectorAll('[data-hpbar]').forEach(el=>el.remove());
 
   const def=SHIP_DEFS[META.ship||'sloop'];
   const player=new Player(def);
-
-  // Meta bonuses
   if(META.upgrades.fleet)player.fleet.push(new FleetShip('rowboat',player));
-  if(def.passive==='swarm'){for(let i=0;i<4;i++)player.fleet.push(new FleetShip('rowboat',player));}
-  if(META.upgrades.anchor){player.hasTower=true;}
+  if(def.passive==='swarm')for(let i=0;i<4;i++)player.fleet.push(new FleetShip('rowboat',player));
 
   buildWorld();
 
   _G={
-    player, enemies:[], projectiles:[], particles:new Particles3D(3000),
-    floatTexts:[], loots:[], mines:[], towers:[], time:0, t:0,
-    spawnTimer:0, spawnInterval:2.8, maxEnemies:30,
-    score:0, skullsThisRun:0, bossActive:false, bossScale:0, bossKills:0,
-    nextBossTime:META.upgrades.ghost?540:480,
-    screenShake:0, shakeX:0, shakeZ:0,
-    upgradeCards:[], currentUpgradePending:false,
-    towerAutoTimer:0,
+    player, enemies:[], CBs:[], parts:new Particles(2500),
+    FTs:[], loots:[], mines:[], towers:[], time:0, t:0,
+    spawnT:0, spawnIv:2.8, maxE:32, score:0, skRun:0,
+    bossActive:false, bossScale:0, bossKills:0,
+    nextBoss:META.upgrades.ghost?540:480,
+    shake:0, shX:0, shZ:0,
+    upgradeCards:[], tAutoT:0,
   };
-  _G.player.flagAccuracy=META.upgrades.flag?true:false;
 }
 
-// ── COLLISIONS ───────────────────────────────────────────────────
-function processCollisions(){
+// ── COLLISION SYSTEM ──────────────────────────────────────────────
+function collide(){
   const p=_G.player;
-  const dmgMult=(META.upgrades.cannon?1.1:1)*(p.hasGhostBreaker?2:1);
+  const dm=(META.upgrades.cannon?1.1:1)*(p.hasGB?2:1);
 
-  // Player/fleet projectiles vs enemies
-  for(const cb of _G.projectiles){
+  // Player/fleet/tower CBs vs enemies
+  for(const cb of _G.CBs){
     if(cb.dead||cb.owner==='enemy')continue;
     for(const e of _G.enemies){
       if(e.dead)continue;
-      if(dist2(cb.x,cb.z,e.x,e.z)<(e.size+cb.r)**2){
-        let dmg=cb.dmg;
-        if(e.isGhost&&!p.hasGhostBreaker)dmg*=.5;
-        e.takeDamage(dmg);
-        _G.floatTexts.push(new FloatText(e.x,e.z,`-${Math.floor(dmg)}`,e.isGhost?'#4dff9b':'#ff6622'));
-        cb.destroy(); break;
+      if(d2(cb.x,cb.z,e.x,e.z)<(e.sz+cb.r)**2){
+        let dmg=cb.dmg; if(e.isGhost&&!p.hasGB)dmg*=.5;
+        e.takeDmg(dmg);
+        _G.FTs.push(new FloatTxt(e.x,e.z,`-${Math.floor(dmg)}`,e.isGhost?'#4dff9b':'#ff6622'));
+        cb.kill(); break;
       }
     }
   }
-  // Enemy projectiles vs player & fleet
-  for(const cb of _G.projectiles){
+  // Enemy CBs vs player+fleet
+  for(const cb of _G.CBs){
     if(cb.dead||cb.owner!=='enemy')continue;
-    if(!p.isPhased&&dist(cb.x,cb.z,p.x,p.z)<p.size+cb.r){
-      p.takeDamage(cb.dmg);
-      _G.screenShake=Math.min(.6,_G.screenShake+.18);
-      _G.floatTexts.push(new FloatText(p.x,p.z,`-${Math.floor(cb.dmg)}`,'#ff4444'));
-      cb.destroy(); continue;
+    if(!p.phased&&d2(cb.x,cb.z,p.x,p.z)<(p.sz+cb.r)**2){
+      p.takeDmg(cb.dmg); _G.shake=Math.min(.7,_G.shake+.2);
+      _G.FTs.push(new FloatTxt(p.x,p.z,`-${Math.floor(cb.dmg)}`,'#ff4444'));
+      cb.kill(); continue;
     }
-    for(const fs of p.fleet){
-      if(fs.dead)continue;
-      if(dist(cb.x,cb.z,fs.x,fs.z)<fs.size+cb.r){fs.takeDamage(cb.dmg*.5);cb.destroy();break;}
-    }
+    for(const fs of p.fleet){if(!fs.dead&&d2(cb.x,cb.z,fs.x,fs.z)<(fs.sz+cb.r)**2){fs.takeDmg(cb.dmg*.5);cb.kill();break;}}
   }
-  // Enemy deaths
+  // Enemy deaths → loot + wreck
   for(let i=_G.enemies.length-1;i>=0;i--){
-    const e=_G.enemies[i];
-    if(!e.dead)continue;
-    // Loot
-    const lc=e.isBoss?10:e.etype==='galleon'?4:e.etype==='frigate'?2:1;
+    const e=_G.enemies[i]; if(!e.dead)continue;
+    const lc=e.isBoss?12:e.etype==='galleon'?4:e.etype==='frigate'?2:1;
     for(let l=0;l<lc;l++){
-      const lx=e.x+rand(-50,50),lz=e.z+rand(-50,50);
-      const isChest=e.isBoss||(e.etype==='galleon'&&Math.random()<.5);
-      const isSk=e.skullV>0&&Math.random()<.3;
-      _G.loots.push(new Loot(lx,lz,isChest?'chest':isSk?'skull':'doubloon',isChest?60:isSk?1:e.xpV/lc));
+      const lx=e.x+rand(-52,52),lz=e.z+rand(-52,52);
+      const chest=e.isBoss||(e.etype==='galleon'&&Math.random()<.5);
+      const skull=!chest&&e.skV>0&&Math.random()<.3;
+      _G.loots.push(new Loot(lx,lz,chest?'chest':skull?'skull':'doubloon',chest?65:skull?1:e.xpV/lc));
     }
     if(e.isBoss){
       _G.bossActive=false; _G.bossKills++; _G.bossScale++;
-      _G.nextBossTime=_G.time+(META.upgrades.ghost?540:480);
-      toast('💀 Ghost Ship defeated! Legendary!',4000);
-      _G.screenShake=1.5;
-      for(let l=0;l<14;l++)_G.loots.push(new Loot(e.x+rand(-90,90),e.z+rand(-90,90),'chest',80));
+      _G.nextBoss=_G.time+(META.upgrades.ghost?540:480);
+      toast('💀 Ghost Ship destroyed! LEGENDARY!',4000);
+      _G.shake=1.6;
+      for(let l=0;l<16;l++)_G.loots.push(new Loot(e.x+rand(-100,100),e.z+rand(-100,100),'chest',80));
     }
     _G.score+=e.xpV;
-    e.destroyFX(_G.particles);
-    if(e.size>=18)spawnWreck(e.x,e.z);
+    e.killFX(_G.parts);
+    if(e.sz>=18)spawnWreck(e.x,e.z);
     _G.enemies.splice(i,1);
   }
   // Loot pickup
   for(let i=_G.loots.length-1;i>=0;i--){
-    const l=_G.loots[i];
-    if(l.dead){_G.loots.splice(i,1);continue;}
-    if(dist(p.x,p.z,l.x,l.z)<p.pickupR){
+    const l=_G.loots[i]; if(l.dead){_G.loots.splice(i,1);continue;}
+    if(d(p.x,p.z,l.x,l.z)<p.pickR){
       if(l.type==='doubloon'||l.type==='chest'){
-        p.addXP(l.value);
-        _G.floatTexts.push(new FloatText(l.x,l.z,`+${Math.floor(l.value)}🪙`,'#f0c040'));
+        p.addXP(l.val); _G.FTs.push(new FloatTxt(l.x,l.z,`+${Math.floor(l.val)}🪙`,'#f0c040'));
       } else if(l.type==='skull'){
-        _G.skullsThisRun+=l.value;
-        _G.floatTexts.push(new FloatText(l.x,l.z,`+${l.value}💀`,'#eeeee0'));
+        _G.skRun+=l.val; _G.FTs.push(new FloatTxt(l.x,l.z,`+${l.val}💀`,'#eeeee0'));
       }
-      _G.score+=l.value*.5;
-      l.destroy(); _G.loots.splice(i,1); continue;
+      _G.score+=l.val*.5; l.dead=true;
     }
   }
   // Mine vs enemies
   for(let i=_G.mines.length-1;i>=0;i--){
-    const m=_G.mines[i];
-    m.life-=1/60;
+    const m=_G.mines[i]; m.life-=1/60;
     if(m.life<=0){_scene.remove(m.mesh);_G.mines.splice(i,1);continue;}
     let hit=false;
     for(const e of _G.enemies){
-      if(!e.dead&&dist(m.x,m.z,e.x,e.z)<m.r+e.size){
-        e.takeDamage(50);
-        _G.particles.emit(m.x,m.z,{count:18,color:'#ff6622',minS:40,maxS:160,life:.8});
+      if(!e.dead&&d(m.x,m.z,e.x,e.z)<m.r+e.sz){
+        e.takeDmg(52); _G.parts.emit(m.x,m.z,{n:18,color:'#ff6622',minS:40,maxS:160,life:.8});
         _scene.remove(m.mesh); _G.mines.splice(i,1); hit=true; break;
       }
     }
-    if(hit)continue;
-    if(m.mesh)m.mesh.position.y=2+Math.sin(_G.t*3+i)*1.5;
+    if(!hit&&m.mesh)m.mesh.position.y=2.5+Math.sin(_G.t*3+i)*1.5;
   }
-  // Rock collision pushback
-  for(const obj of _worldObjects){
+  // Rock pushback
+  for(const obj of _world){
     if(obj.type!=='rock')continue;
-    const d=dist(p.x,p.z,obj.x,obj.z);
-    if(d<p.size+obj.r){
-      if(!p.isPhased)p.takeDamage(5/60);
-      const a=Math.atan2(p.x-obj.x,p.z-obj.z);
-      p.x+=Math.sin(a)*3; p.z+=Math.cos(a)*3;
+    if(d(p.x,p.z,obj.x,obj.z)<p.sz+obj.r){
+      if(!p.phased)p.takeDmg(5/60);
+      const a=Math.atan2(p.x-obj.x,p.z-obj.z); p.x+=Math.sin(a)*3; p.z+=Math.cos(a)*3;
     }
   }
   // Island loot
-  for(const obj of _worldObjects){
+  for(const obj of _world){
     if(obj.type!=='island'||!obj.hasLoot)continue;
-    if(dist(p.x,p.z,obj.x,obj.z)<obj.r+35){
-      obj.hasLoot=false;
-      p.addXP(70); _G.skullsThisRun+=2;
-      _G.floatTexts.push(new FloatText(obj.x,obj.z,'🏝️ +70🪙','#f0c040'));
+    if(d(p.x,p.z,obj.x,obj.z)<obj.r+38){
+      obj.hasLoot=false; p.addXP(72); _G.skRun+=2;
+      _G.FTs.push(new FloatTxt(obj.x,obj.z,'🏝️ +72🪙','#f0c040'));
       toast('🏝️ Island looted!',2000);
-      // Remove chest marker
-      obj.mesh.traverse(m=>{if(m.userData.isIslandChest)m.visible=false});
+      obj.mesh.traverse(m=>{if(m.userData.chest)m.visible=false});
     }
   }
   // Dead fleet cleanup
   p.fleet=p.fleet.filter(fs=>{
-    if(fs.dead){
-      _G.particles.emit(fs.x,fs.z,{count:15,color:'#ff6622',minS:30,maxS:140,life:.8});
-      spawnWreck(fs.x,fs.z); return false;
-    }
+    if(fs.dead){_G.parts.emit(fs.x,fs.z,{n:14,color:'#ff6622',minS:30,maxS:140,life:.8});spawnWreck(fs.x,fs.z);return false;}
     return true;
   });
 }
 
-// ── HUD UPDATE ────────────────────────────────────────────────────
+// ── HUD ───────────────────────────────────────────────────────────
 function updateHUD(){
   const p=_G.player;
-  const pct=p.hp/p.maxHp;
-  const fill=document.getElementById('hud-hp-fill');
-  fill.style.width=(pct*100)+'%';
-  fill.style.background=pct>.5?'linear-gradient(90deg,#22cc22,#55ff55)':pct>.25?'linear-gradient(90deg,#aacc22,#ccff44)':'linear-gradient(90deg,#cc2222,#ff4444)';
+  const pct=clamp(p.hp/p.maxHp,0,1);
+  const f=document.getElementById('hud-hp-fill');
+  f.style.width=(pct*100)+'%';
+  f.style.background=pct>.5?'linear-gradient(90deg,#22cc22,#55ff55)':pct>.25?'linear-gradient(90deg,#aacc22,#ccee44)':'linear-gradient(90deg,#cc2222,#ff4444)';
   const m=Math.floor(_G.time/60),s=Math.floor(_G.time%60);
   const tel=document.getElementById('hud-timer');
   tel.textContent=m+':'+(s<10?'0':'')+s;
-  tel.className=_G.time>1500?'danger':'';
-  document.getElementById('hud-doubloons').textContent='🪙 '+p.doubloons.toLocaleString();
+  tel.className=_G.time>1500?'red':'';
+  document.getElementById('hud-dbl').textContent='🪙 '+p.doubloons.toLocaleString();
   document.getElementById('hud-fleet').textContent='⛵ Fleet: '+(1+p.fleet.length);
-  document.getElementById('hud-level').textContent='Lv.'+(p.level+1);
-  document.getElementById('hud-xp-fill').style.width=(p.xp/p.xpNeeded*100)+'%';
-  const min=Math.floor(_G.time/60);
-  const waveName=min<2?'Open Ocean':min<5?'Sloop Hunters':min<8?'Navy Frigates':min<11?'Armada Rising':min<17?'Ghost Seas':'Infernal Deep';
-  document.getElementById('hud-wave').textContent=`⚓ Minute ${min} — ${waveName}`;
-  // Boss bar hide
-  const hasBoss=_G.enemies.some(e=>e.isBoss&&!e.dead);
-  if(!hasBoss)document.getElementById('boss-bar').style.display='none';
+  document.getElementById('hud-lvl').textContent='Lv.'+(p.level+1);
+  document.getElementById('hud-xp-fill').style.width=(p.xp/p.xpNeed*100)+'%';
+  const mn=Math.floor(_G.time/60);
+  document.getElementById('hud-wave').textContent='⚓ Minute '+mn+' — '+(mn<2?'Open Ocean':mn<5?'Sloop Hunters':mn<8?'Navy Frigates':mn<11?'Armada Rising':mn<17?'Ghost Seas':'Infernal Deep');
+  const hb=document.getElementById('boss-bar');
+  if(!_G.enemies.some(e=>e.isBoss&&!e.dead))hb.style.display='none';
 }
-
-// ── MINIMAP ───────────────────────────────────────────────────────
-function drawMinimap(){
-  const mc=document.getElementById('minimap-canvas');
-  const mc2=mc.getContext('2d');
-  const W=88,sc=W/WORLD;
-  mc2.fillStyle='#060e1c'; mc2.fillRect(0,0,W,W);
-  // Islands
-  for(const o of _worldObjects){
-    if(o.type==='island'){mc2.fillStyle='#9a7030';mc2.beginPath();mc2.arc(o.x*sc,o.z*sc,o.r*sc*1.2,0,TWO_PI);mc2.fill();}
-    if(o.type==='rock'){mc2.fillStyle='#4a3a2a';mc2.beginPath();mc2.arc(o.x*sc,o.z*sc,o.r*sc,0,TWO_PI);mc2.fill();}
+function updateMinimap(){
+  const mc=document.getElementById('mm').getContext('2d');
+  const W=86,sc=W/WORLD;
+  mc.fillStyle='#050e1c'; mc.fillRect(0,0,W,W);
+  for(const o of _world){
+    if(o.type==='island'){mc.fillStyle='#9a7030';mc.beginPath();mc.arc(o.x*sc,o.z*sc,o.r*sc*1.1,0,TWO_PI);mc.fill();}
+    if(o.type==='rock'){mc.fillStyle='#3a2a1a';mc.beginPath();mc.arc(o.x*sc,o.z*sc,o.r*sc,0,TWO_PI);mc.fill();}
   }
-  // Enemies
-  mc2.fillStyle='#ff3333';
-  for(const e of _G.enemies){mc2.beginPath();mc2.arc(e.x*sc,e.z*sc,2,0,TWO_PI);mc2.fill();}
-  // Fleet
-  mc2.fillStyle='#4488ff';
-  for(const fs of _G.player.fleet){mc2.beginPath();mc2.arc(fs.x*sc,fs.z*sc,1.5,0,TWO_PI);mc2.fill();}
-  // Player
-  mc2.fillStyle='#f0c040';
-  mc2.beginPath();mc2.arc(_G.player.x*sc,_G.player.z*sc,3,0,TWO_PI);mc2.fill();
+  mc.fillStyle='#ff2222';
+  for(const e of _G.enemies){mc.beginPath();mc.arc(e.x*sc,e.z*sc,2,0,TWO_PI);mc.fill();}
+  mc.fillStyle='#4488ff';
+  for(const fs of _G.player.fleet){mc.beginPath();mc.arc(fs.x*sc,fs.z*sc,1.5,0,TWO_PI);mc.fill();}
+  mc.fillStyle='#f0c040';
+  mc.beginPath();mc.arc(_G.player.x*sc,_G.player.z*sc,3,0,TWO_PI);mc.fill();
 }
 
-// ── UPGRADE SCREEN ────────────────────────────────────────────────
-function showUpgradeScreen(){
-  const legendary_bias=META.upgrades.mastery?.15:.05;
-  const weighted=UPGRADE_POOL.map(c=>({card:c,w:c.rarity==='common'?4:c.rarity==='rare'?2.5:c.rarity==='epic'?1.5:legendary_bias*10}));
-  weighted.sort(()=>Math.random()-.5);
+// ── UPGRADE CARDS ─────────────────────────────────────────────────
+function showUpgScr(){
+  const lb=META.upgrades.mastery?.16:.05;
+  const w=UPGRADES.map(c=>({c,w:c.rarity==='common'?4:c.rarity==='rare'?2.5:c.rarity==='epic'?1.5:lb*10}));
+  w.sort(()=>Math.random()-.5);
   const cards=[]; const used=new Set();
-  for(const w of weighted){
-    if(cards.length>=3)break;
-    if(!used.has(w.card.id)&&Math.random()<w.w){cards.push(w.card);used.add(w.card.id);}
-  }
-  while(cards.length<3){const c=randFrom(UPGRADE_POOL);if(!used.has(c.id)){cards.push(c);used.add(c.id);}}
+  for(const wi of w){if(cards.length>=3)break;if(!used.has(wi.c.id)&&Math.random()<wi.w){cards.push(wi.c);used.add(wi.c.id);}}
+  while(cards.length<3){const c=rFrom(UPGRADES);if(!used.has(c.id)){cards.push(c);used.add(c.id);}}
   _G.upgradeCards=cards;
-  const el=document.getElementById('upgrade-cards');
-  el.innerHTML='';
+  const el=document.getElementById('cards'); el.innerHTML='';
   cards.forEach((c,i)=>{
     const div=document.createElement('div');
     div.className=`card ${c.rarity}`;
-    div.innerHTML=`<div class="card-icon">${c.icon}</div><div class="card-name">${c.name}</div><div class="card-desc">${c.desc}</div><div class="card-rarity">◆ ${c.rarity}</div>`;
-    div.onclick=()=>selectUpgrade(i);
-    el.appendChild(div);
+    div.innerHTML=`<div class="ci">${c.icon}</div><div class="cn">${c.name}</div><div class="cd">${c.desc}</div><div class="cr">◆ ${c.rarity}</div>`;
+    div.onclick=()=>selCard(i); el.appendChild(div);
   });
-  showScreen('upgrade-screen');
+  scr('upgrade-scr');
 }
-
-function selectUpgrade(idx){
-  const card=_G.upgradeCards[idx];
-  if(!card)return;
-  applyUpgrade(card);
-  _G.upgradeCards=[];
-  _showUpgrade=false; _paused=false;
-  showScreen(null);
+function selCard(idx){
+  const c=_G.upgradeCards[idx]; if(!c)return;
+  applyUpg(c); _G.upgradeCards=[]; _upPending=false; _paused=false; scr(null);
 }
-
-function skipUpgrade(){
-  _G.upgradeCards=[];
-  _showUpgrade=false; _paused=false;
-  showScreen(null);
-}
-
-function applyUpgrade(card){
+function skipUpg(){_G.upgradeCards=[];_upPending=false;_paused=false;scr(null);}
+function applyUpg(c){
   const p=_G.player;
-  toast(`✨ ${card.name}!`,2200);
-  _G.particles.emit(p.x,p.z,{count:22,color:'#f0c040',minS:40,maxS:170,life:1});
-  switch(card.type){
-    case 'fleet': for(let i=0;i<card.n;i++)p.fleet.push(new FleetShip(card.ship,p)); break;
-    case 'add_cannon': p.extraCannons++; p.fireTimers.push(0); break;
-    case 'mobile_cannon': p.hasMobile=true; break;
-    case 'storm': p.hasStorm=true; p.stormTimer=0; break;
-    case 'ghost_breaker': p.hasGhostBreaker=true; break;
+  toast(`✨ ${c.name}!`,2200);
+  _G.parts.emit(p.x,p.z,{n:24,color:'#f0c040',minS:40,maxS:170,life:1});
+  switch(c.type){
+    case 'fleet': for(let i=0;i<c.n;i++)p.fleet.push(new FleetShip(c.ship,p)); break;
+    case 'add_cannon': p.extraCn++; break;
+    case 'mobile_cannon': p.hasMob=true; break;
+    case 'storm': p.hasStorm=true; p.stormT=0; break;
+    case 'ghost_breaker': p.hasGB=true; break;
     case 'hull_hp': {const b=Math.floor(p.maxHp*.25);p.maxHp+=b;p.hp=Math.min(p.hp+b,p.maxHp);} break;
     case 'ram': p.hasRam=true; break;
-    case 'speed': p.speedMult+=.35; break;
-    case 'ghost_hull': p.hasGhostHull=true; p.ghostHullCD=30; break;
-    case 'barrels': p.hasBarrels=true; p.barrelTimer=5; break;
-    case 'tower': p.hasTower=true; p.towerTimer=0; break;
+    case 'speed': p.spdMul+=.35; break;
+    case 'ghost_hull': p.hasGH=true; p.ghCD=30; break;
+    case 'barrels': p.hasBrl=true; p.brlT=5; break;
+    case 'tower': p.hasTwr=true; p.twrT=0; break;
     case 'lure': p.hasLure=true; break;
-    case 'vortex': p.hasVortex=true; p.vortexTimer=15; break;
+    case 'vortex': p.hasVtx=true; p.vtxT=12; break;
   }
-  p.upgradeTaken.push(card.id);
+  p.upgTaken.push(c.id);
 }
 
 // ── GAME END ──────────────────────────────────────────────────────
 function endGame(victory=false){
-  _running=false; _paused=false; _showUpgrade=false;
+  _running=false; _paused=false; _upPending=false;
   if(_animId){cancelAnimationFrame(_animId);_animId=null;}
-  showHUD(false);
+  hud(false);
+  // Cleanup all DOM hp/float elements
+  document.querySelectorAll('.hpf').forEach(el=>el.closest('div[style*="position:absolute"]')?.remove());
 
-  const p=_G.player;
-  const time=_G.time;
+  const p=_G.player,time=_G.time;
   const score=Math.floor(_G.score+p.doubloons+time*10+(victory?50000:0));
-  const skulls=Math.max(1,Math.floor(_G.skullsThisRun+p.doubloons/80+_G.bossKills*5+(time>=600?10:0)+(time>=1200?25:0)));
+  const skulls=Math.max(1,Math.floor(_G.skRun+p.doubloons/80+_G.bossKills*5+(time>=600?10:0)+(time>=1200?25:0)));
 
-  META.runs++;
-  META.skulls+=skulls;
+  META.runs++; META.skulls+=skulls;
   if(score>META.highScore)META.highScore=score;
   if(time>META.bestTime)META.bestTime=time;
-
   const m=Math.floor(time/60),s=Math.floor(time%60);
-  META.lb=META.lb||[];
   META.lb.push({name:META.name,score,time,ship:META.ship||'sloop',date:new Date().toLocaleDateString()});
-  META.lb.sort((a,b)=>b.score-a.score);
-  META.lb=META.lb.slice(0,25);
-  saveMeta();
-
-  // Destroy all HpBar DOM elements
-  for(const e of _G.enemies){if(e.hpEl&&e.hpEl.parentNode)e.hpEl.parentNode.removeChild(e.hpEl);}
-  for(const fs of p.fleet){if(fs.hpEl&&fs.hpEl.parentNode)fs.hpEl.parentNode.removeChild(fs.hpEl);}
-  if(p.hpEl&&p.hpEl.parentNode)p.hpEl.parentNode.removeChild(p.hpEl);
-  document.querySelectorAll('.hp-bar-overlay').forEach(el=>el.remove());
+  META.lb.sort((a,b)=>b.score-a.score); META.lb=META.lb.slice(0,25); saveMeta();
 
   const rank=META.lb.findIndex(e=>e.score===score)+1;
   document.getElementById('death-title').textContent=victory?'🏆 LEGEND!':'SHIPWRECKED';
-  document.getElementById('death-flavour').textContent=victory?'"Only 0.3% ever survive 30 minutes. You are a legend."':'"The sea claims another legend… for now."';
+  document.getElementById('death-flav').textContent=victory?'"Only 0.3% of players survive 30 minutes. You are a legend."':'"The sea claims another legend… for now."';
   document.getElementById('death-stats').innerHTML=
     `⏱ Survived: <strong>${m}:${s<10?'0':''}${s}</strong><br>
      🪙 Score: <strong>${score.toLocaleString()}</strong><br>
      🏆 Best: <strong>${META.highScore.toLocaleString()}</strong><br>
-     ⛵ Fleet at death: <strong>${1+p.fleet.length} ships</strong><br>
+     ⛵ Fleet: <strong>${1+p.fleet.length} ships</strong><br>
      💀 Boss kills: <strong>${_G.bossKills}</strong><br>
-     ✨ Upgrades: <strong>${p.upgradeTaken.length}</strong>`;
-  document.getElementById('death-skulls').textContent=`💀 +${skulls} Skulls earned (Total: ${META.skulls})`;
+     ✨ Upgrades: <strong>${p.upgTaken.length}</strong>`;
+  document.getElementById('death-skulls').textContent=`💀 +${skulls} Skulls (Total: ${META.skulls})`;
   document.getElementById('death-rank').textContent=`📊 Run #${META.runs} · Rank #${rank} on your board`;
-
   const def=SHIP_DEFS[META.ship||'sloop'];
-  const shareCard=`🏴‍☠️ MAELSTROM\n⏱ ${m}:${s<10?'0':''}${s} survived\n⚓ ${score.toLocaleString()} pts\n${def.icon} Fleet: ${1+p.fleet.length} ships\n💀 Boss kills: ${_G.bossKills}`;
-  document.getElementById('death-share').textContent=shareCard;
-  document.getElementById('death-share').onclick=()=>{
-    navigator.clipboard?.writeText(shareCard).then(()=>toast('📋 Copied to clipboard!')).catch(()=>{});
-  };
-
-  showScreen('death-screen');
+  const shareCard=`🏴‍☠️ MAELSTROM\n⏱ ${m}:${s<10?'0':''}${s} survived\n⚓ ${score.toLocaleString()} pts\n${def.icon} Fleet: ${1+p.fleet.length}\n💀 Boss kills: ${_G.bossKills}`;
+  const ds=document.getElementById('death-share');
+  ds.textContent=shareCard;
+  ds.onclick=()=>navigator.clipboard?.writeText(shareCard).then(()=>toast('📋 Copied!'));
+  scr('death-scr');
 }
 
-// ── PAUSE ─────────────────────────────────────────────────────────
+// ── PAUSE ──────────────────────────────────────────────────────────
 function togglePause(){
   _paused=!_paused;
-  const po=document.getElementById('pause-overlay');
-  if(_paused)po.classList.add('active'); else po.classList.remove('active');
+  document.getElementById('pause-ovl').classList.toggle('on',_paused);
 }
 
 // ── MAIN LOOP ─────────────────────────────────────────────────────
 function gameLoop(ts){
-  if(!_running){return}
+  if(!_running)return;
   _animId=requestAnimationFrame(gameLoop);
-  const dt=Math.min((ts-_lastTs)/1000,.05);
-  _lastTs=ts;
-  _fpsCount++; _fpsClock+=dt;
-  if(_fpsClock>=1){_fpsVal=_fpsCount;_fpsCount=0;_fpsClock=0;document.getElementById('fps-counter').textContent=_fpsVal+'fps';}
+  const dt=Math.min((ts-_lastTs)/1000,.05); _lastTs=ts;
+  _fpsC++; _fpsT+=dt; if(_fpsT>=1){_fpsV=_fpsC;_fpsC=0;_fpsT=0;document.getElementById('fps').textContent=_fpsV+'fps';}
 
-  if(_paused){
-    if(_showUpgrade&&_G.upgradeCards.length===0){showUpgradeScreen();}
-    return;
-  }
+  if(_paused){if(_upPending&&_G.upgradeCards.length===0)showUpgScr();return;}
 
   _G.t+=dt; _G.time+=dt;
 
   // Screen shake
-  if(_G.screenShake>0){
-    _G.shakeX=rand(-_G.screenShake*7,_G.screenShake*7);
-    _G.shakeZ=rand(-_G.screenShake*7,_G.screenShake*7);
-    _G.screenShake-=dt*2.8;
-  }else{_G.shakeX=0;_G.shakeZ=0;}
+  if(_G.shake>0){_G.shX=rand(-_G.shake*7,_G.shake*7);_G.shZ=rand(-_G.shake*7,_G.shake*7);_G.shake-=dt*2.6;}
+  else{_G.shX=0;_G.shZ=0;}
 
-  // Wave scaling
-  _G.maxEnemies=Math.min(65,28+Math.floor(_G.time/100)*4);
-  _G.spawnTimer+=dt;
-  if(_G.spawnTimer>=_G.spawnInterval&&_G.enemies.length<_G.maxEnemies){
-    spawnEnemy(_G); _G.spawnTimer=0;
-  }
-  // Boss
-  if(_G.time>=_G.nextBossTime&&!_G.bossActive){spawnBoss(_G);}
+  // Spawn
+  _G.maxE=Math.min(68,30+Math.floor(_G.time/90)*4);
+  _G.spawnT+=dt;
+  if(_G.spawnT>=_G.spawnIv&&_G.enemies.length<_G.maxE){spawnEnemy(_G);_G.spawnT=0;}
+  if(_G.time>=_G.nextBoss&&!_G.bossActive)spawnBoss(_G);
   // Meta auto-tower
-  if(META.upgrades.anchor){
-    _G.towerAutoTimer+=dt;
-    if(_G.towerAutoTimer>=90){_G.towers.push(new Tower(_G.player.x+rand(-70,70),_G.player.z+rand(-70,70)));_G.towerAutoTimer=0;}
-  }
+  if(META.upgrades.anchor){_G.tAutoT+=dt;if(_G.tAutoT>=90){_G.towers.push(new Tower(_G.player.x+rand(-70,70),_G.player.z+rand(-70,70)));_G.tAutoT=0;}}
 
-  // Updates
   const p=_G.player;
-  p.update(dt,_G.enemies,_G.projectiles,_G.particles,_G.floatTexts,_G);
-  for(const fs of p.fleet)fs.update(dt,p,_G.enemies,_G.projectiles,_G.particles,META.upgrades.cannon?1.1:1);
-  for(const e of _G.enemies)e.update(dt,p,_G.projectiles,_G.particles,_G);
-  for(let i=_G.projectiles.length-1;i>=0;i--){_G.projectiles[i].update(dt);if(_G.projectiles[i].dead)_G.projectiles.splice(i,1);}
-  _G.particles.update(dt);
-  for(let i=_G.floatTexts.length-1;i>=0;i--){_G.floatTexts[i].update(dt);if(_G.floatTexts[i].life<=0)_G.floatTexts.splice(i,1);}
+  const dm=META.upgrades.cannon?1.1:1;
+  p.update(dt,_G.enemies,_G.CBs,_G.parts,_G.FTs,_G);
+  for(const fs of p.fleet)fs.update(dt,p,_G.enemies,_G.CBs,_G.parts,dm);
+  for(const e of _G.enemies)e.update(dt,p,_G.CBs,_G.parts,_G);
+  for(let i=_G.CBs.length-1;i>=0;i--){_G.CBs[i].update(dt);if(_G.CBs[i].dead)_G.CBs.splice(i,1);}
+  _G.parts.update(dt);
+  for(let i=_G.FTs.length-1;i>=0;i--){_G.FTs[i].update(dt);if(_G.FTs[i].life<=0)_G.FTs.splice(i,1);}
   for(let i=_G.loots.length-1;i>=0;i--){_G.loots[i].update(dt,_G.t);if(_G.loots[i].dead)_G.loots.splice(i,1);}
-  for(const tw of _G.towers)tw.update(dt,_G.enemies,_G.projectiles,META.upgrades.cannon?1.1:1);
+  _G.towers.forEach(t=>t.update(dt,_G.enemies,_G.CBs,dm));
   _G.towers=_G.towers.filter(t=>!t.dead);
-
-  processCollisions();
+  collide();
 
   if(p.dead){endGame();return;}
   if(_G.time>=1800){endGame(true);return;}
 
-  // Camera follow
-  const cx=p.x-HALF+_G.shakeX;
-  const cz=p.z-HALF+_G.shakeZ;
-  _camera.position.x=lerp(_camera.position.x,cx,dt*4);
-  _camera.position.z=lerp(_camera.position.z,cz+CAM_HEIGHT*1.1,dt*4);
-  _camera.position.y=CAM_HEIGHT;
-  _camera.lookAt(cx,0,cz);
+  // Camera: smooth follow with shake
+  const tx=p.x-HALF+_G.shX,tz=p.z-HALF+_G.shZ;
+  _cam.position.x=lerp(_cam.position.x,tx,dt*4.2);
+  _cam.position.z=lerp(_cam.position.z,tz+CAM_D,dt*4.2);
+  _cam.position.y=CAM_H;
+  _cam.lookAt(lerp(_cam.position.x-_G.shX,tx,dt*5),0,lerp(_cam.position.z-CAM_D,tz,dt*5));
 
-  // Ocean
-  animateOcean(_G.t);
-
-  // Render
-  _renderer.render(_scene,_camera);
-
-  // HUD + minimap
-  updateHUD(); drawMinimap();
-
-  // Skull estimate
-  _G.skullsThisRun=Math.max(_G.bossKills*5,Math.floor(p.doubloons/80));
+  animOcean(_G.t);
+  _rend.render(_scene,_cam);
+  updateHUD(); updateMinimap();
 }
 
-// ── MENU RENDER LOOP ──────────────────────────────────────────────
-let _menuT=0;
+// ── MENU BACKGROUND LOOP ──────────────────────────────────────────
+let _mLast=0,_mT=0;
 function menuLoop(ts){
   if(_running)return;
   requestAnimationFrame(menuLoop);
-  const dt=Math.min((ts-(_menuLoop_last||ts))/1000,.05);
-  _menuLoop_last=ts;
-  _menuT+=dt;
-  // Animate ocean in menu
-  if(_oceanMesh)animateOcean(_menuT);
-  // Idle camera sweep
-  _camera.position.x=Math.sin(_menuT*.08)*200;
-  _camera.position.z=Math.cos(_menuT*.06)*200+300;
-  _camera.position.y=CAM_HEIGHT+Math.sin(_menuT*.12)*20;
-  _camera.lookAt(0,0,0);
-  _renderer.render(_scene,_camera);
+  const dt=Math.min((ts-_mLast)/1000,.05); _mLast=ts; _mT+=dt;
+  animOcean(_mT);
+  _cam.position.x=Math.sin(_mT*.07)*180;
+  _cam.position.z=Math.cos(_mT*.05)*180+CAM_D;
+  _cam.position.y=CAM_H+Math.sin(_mT*.1)*18;
+  _cam.lookAt(Math.sin(_mT*.07)*40,0,Math.cos(_mT*.05)*40);
+  _rend.render(_scene,_cam);
 }
-let _menuLoop_last=0;
 
-// ── META / SHIP SCREEN RENDER ─────────────────────────────────────
+// ── META / SHIP / LB SCREENS ──────────────────────────────────────
 function renderMeta(){
-  document.getElementById('meta-skulls-display').textContent=`💀 Skulls: ${META.skulls}`;
-  const grid=document.getElementById('meta-grid');
-  grid.innerHTML='';
-  for(const node of META_NODES){
-    const owned=!!META.upgrades[node.id];
-    const afford=META.skulls>=node.cost;
+  document.getElementById('meta-skulls-d').textContent=`💀 Skulls: ${META.skulls}`;
+  const g=document.getElementById('meta-grid'); g.innerHTML='';
+  for(const n of META_TREE){
+    const own=!!META.upgrades[n.id],afford=META.skulls>=n.cost;
     const div=document.createElement('div');
-    div.className=`meta-node${owned?' node-owned':''}${!owned&&!afford?' node-locked':''}`;
-    div.innerHTML=`<div class="meta-node-icon">${node.icon}</div><div class="meta-node-name">${node.name}</div><div class="meta-node-desc">${node.desc}</div><div class="meta-node-cost">${owned?'✅ Owned':'💀 '+node.cost}</div>`;
-    if(!owned&&afford){
-      div.onclick=()=>{META.skulls-=node.cost;META.upgrades[node.id]=true;saveMeta();renderMeta();toast(`✅ ${node.name} unlocked!`);}
-    }
-    grid.appendChild(div);
+    div.className=`mnode${own?' owned':''}${!own&&!afford?' locked':''}`;
+    div.innerHTML=`<div class="mni">${n.icon}</div><div class="mnn">${n.name}</div><div class="mnd">${n.desc}</div><div class="mnc">${own?'✅ Owned':'💀 '+n.cost}</div>`;
+    if(!own&&afford){div.onclick=()=>{META.skulls-=n.cost;META.upgrades[n.id]=true;saveMeta();renderMeta();toast(`✅ ${n.name} unlocked!`);};}
+    g.appendChild(div);
   }
 }
-
-function renderShipSelect(){
-  const grid=document.getElementById('ship-grid');
-  grid.innerHTML='';
-  for(const [key,def] of Object.entries(SHIP_DEFS)){
-    const sel=META.ship===key;
-    const unlocked=key==='sloop'||META.skulls>=def.cost||META.upgrades['unlocked_'+key];
+function renderShips(){
+  const g=document.getElementById('ship-grid'); g.innerHTML='';
+  for(const[k,def]of Object.entries(SHIP_DEFS)){
+    const sel=META.ship===k,unlocked=k==='sloop'||META.upgrades['u_'+k];
     const div=document.createElement('div');
-    div.className=`ship-card${sel?' ship-selected':''}${!unlocked?' ship-locked':''}`;
-    div.innerHTML=`<div class="ship-card-icon">${def.icon}</div><div class="ship-card-name">${def.name}</div><div class="ship-card-desc">${def.desc}</div><div class="ship-card-cost">${sel?'✅ Selected':key==='sloop'?'Free':'💀 '+def.cost}</div>`;
+    div.className=`scard${sel?' ssel':''}${!unlocked?' slocked':''}`;
+    div.innerHTML=`<div class="sci">${def.icon}</div><div class="scn">${def.name}</div><div class="scd">${def.desc}</div><div class="scc">${sel?'✅ Selected':k==='sloop'?'Free':'💀 '+def.cost}</div>`;
     div.onclick=()=>{
-      if(unlocked){META.ship=key;saveMeta();renderShipSelect();toast(`⛵ ${def.name} selected!`);}
-      else if(META.skulls>=def.cost){META.skulls-=def.cost;META.upgrades['unlocked_'+key]=true;META.ship=key;saveMeta();renderShipSelect();toast(`🎉 ${def.name} unlocked!`);}
+      if(unlocked){META.ship=k;saveMeta();renderShips();toast(`⛵ ${def.name} selected!`);}
+      else if(META.skulls>=def.cost){META.skulls-=def.cost;META.upgrades['u_'+k]=true;META.ship=k;saveMeta();renderShips();toast(`🎉 ${def.name} unlocked!`);}
       else toast(`❌ Need ${def.cost-META.skulls} more Skulls`);
     };
-    grid.appendChild(div);
+    g.appendChild(div);
   }
 }
-
-function renderLeaderboard(){
-  const el=document.getElementById('lb-list');
-  const lb=META.lb||[];
-  if(!lb.length){el.innerHTML='<div style="color:#334;font-style:italic;text-align:center;padding:1em">No runs yet — set sail and make history!</div>';return;}
-  const myScore=lb[0]?.score; // just for formatting
+function renderLB(){
+  const el=document.getElementById('lb-list'); const lb=META.lb||[];
+  if(!lb.length){el.innerHTML='<div style="color:#1a3050;font-style:italic;text-align:center;padding:1em">No runs yet — set sail!</div>';return;}
   el.innerHTML=lb.slice(0,15).map((e,i)=>{
-    const m=Math.floor(e.time/60),s=Math.floor(e.time%60);
-    const icon=SHIP_DEFS[e.ship||'sloop']?.icon||'⛵';
-    return `<div class="lb-row"><span class="lb-rank">#${i+1}</span><span class="lb-ship">${icon}</span><span class="lb-name">${e.name}</span><span class="lb-score">${e.score?.toLocaleString()}</span><span class="lb-time">${m}:${s<10?'0':''}${s}</span></div>`;
+    const m=Math.floor(e.time/60),s=Math.floor(e.time%60),ico=SHIP_DEFS[e.ship||'sloop']?.icon||'⛵';
+    return `<div class="lbr"><span class="lbr-rk">#${i+1}</span><span class="lbr-ico">${ico}</span><span class="lbr-nm">${e.name||'?'}</span><span class="lbr-sc">${e.score?.toLocaleString()}</span><span class="lbr-tm">${m}:${s<10?'0':''}${s}</span></div>`;
   }).join('');
 }
-
 function updateMenuUI(){
   document.getElementById('menu-skulls').textContent=`💀 Skulls: ${META.skulls}`;
   const lb=META.lb||[];
-  if(lb.length>0){
-    document.getElementById('menu-lb-preview').innerHTML='🏆 '+lb.slice(0,3).map((e,i)=>`#${i+1} ${e.name||'?'} <b>${e.score?.toLocaleString()}</b>`).join(' &nbsp;·&nbsp; ');
-  }
-  const now=new Date(),daily=`Daily Challenge #${Math.floor(now.getTime()/86400000)%1000}`;
-  document.getElementById('menu-daily').textContent='📅 '+daily;
+  document.getElementById('menu-info').innerHTML=lb.length
+    ?'🏆 '+lb.slice(0,3).map((e,i)=>`#${i+1} ${e.name||'?'} <b>${e.score?.toLocaleString()}</b>`).join(' · ')
+    :'No runs yet — set sail and make history';
 }
 
 // ── BUTTON BINDINGS ───────────────────────────────────────────────
 function bindUI(){
-  const go=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
-  go('btn-play',()=>startGame());
-  go('btn-ships',()=>{renderShipSelect();showScreen('ship-screen')});
-  go('btn-meta',()=>{renderMeta();showScreen('meta-screen')});
-  go('btn-lb',()=>{renderLeaderboard();showScreen('lb-screen')});
-  go('btn-ships-back',()=>showScreen('menu'));
-  go('btn-meta-back',()=>showScreen('menu'));
-  go('btn-lb-back',()=>showScreen('menu'));
-  go('btn-play-again',()=>startGame());
-  go('btn-death-menu',()=>{showScreen('menu');updateMenuUI()});
-  go('btn-resume',()=>{togglePause();document.getElementById('pause-overlay').classList.remove('active')});
+  const g=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
+  g('b-play',startGame);
+  g('b-ships',()=>{renderShips();scr('ship-scr')});
+  g('b-meta',()=>{renderMeta();scr('meta-scr')});
+  g('b-lb',()=>{renderLB();scr('lb-scr')});
+  g('b-ships-back',()=>scr('menu'));
+  g('b-meta-back',()=>scr('menu'));
+  g('b-lb-back',()=>scr('menu'));
+  g('b-again',startGame);
+  g('b-dmenu',()=>{scr('menu');updateMenuUI();});
+  g('b-resume',()=>{togglePause();document.getElementById('pause-ovl').classList.remove('on');});
 }
 
 // ── START GAME ────────────────────────────────────────────────────
 function startGame(){
-  showScreen(null);
-  showHUD(true);
+  scr(null); hud(true);
   document.getElementById('boss-bar').style.display='none';
-  document.getElementById('pause-overlay').classList.remove('active');
+  document.getElementById('pause-ovl').classList.remove('on');
   document.getElementById('hud-phase').style.display='none';
-  _running=true; _paused=false; _showUpgrade=false;
+  _running=true; _paused=false; _upPending=false;
   initGame();
   _lastTs=performance.now();
   if(_animId)cancelAnimationFrame(_animId);
@@ -1833,24 +1565,14 @@ function startGame(){
 async function boot(){
   initThree();
   buildOcean();
-
-  try{
-    await preloadAssets();
-  }catch(e){
-    console.warn('Asset load error:',e);
-    setLoadStatus('Some assets failed — using fallbacks');
-    await new Promise(r=>setTimeout(r,600));
-  }
-
+  try{await preload();}
+  catch(e){console.warn('Asset error:',e);setLoadTxt('Fallback mode active');await new Promise(r=>setTimeout(r,500));}
   // Fade loading screen
-  const ls=document.getElementById('loading-screen');
-  ls.classList.add('fade-out');
-  setTimeout(()=>{ls.style.display='none'},900);
-
-  bindUI();
-  updateMenuUI();
-  renderShipSelect();
-  showScreen('menu');
+  const ls=document.getElementById('loading');
+  ls.classList.add('out');
+  setTimeout(()=>ls.style.display='none',900);
+  bindUI(); updateMenuUI(); renderShips();
+  scr('menu');
   requestAnimationFrame(menuLoop);
 }
 
