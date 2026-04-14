@@ -1,940 +1,1342 @@
-<!DOCTYPE html>
+
+                        <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body {
+                  background-color: white; /* Ensure the iframe has a white background */
+                }
+
+                
+              </style>
+                        </head>
+                        <body>
+                            <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MAELSTROM - Survive the Sea</title>
-    <style>
-        /* ==========================================
-           CORE STYLES & PIRATE AESTHETIC 
-           ========================================== */
-        :root {
-            --primary: #1a6fa8;
-            --dark: #0a192f;
-            --gold: #ffd700;
-            --ghost: #4dff9b;
-            --danger: #c00;
-        }
-
-        body { 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; 
-            background-color: var(--dark); 
-            font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; 
-            user-select: none; 
-            -webkit-user-select: none;
-            color: white;
-        }
-
-        #game-canvas { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100vw; 
-            height: 100vh; 
-            z-index: 1;
-        }
-
-        /* UI Overlays */
-        .screen { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            z-index: 10;
-            display: none; 
-            align-items: center; 
-            justify-content: center; 
-            flex-direction: column; 
-            background: radial-gradient(circle at center, rgba(10,25,47,0.7) 0%, rgba(0,0,0,0.95) 100%);
-            text-align: center;
-        }
-        .active { display: flex !important; }
-
-        h1 { font-size: 5rem; margin-bottom: 10px; color: var(--gold); text-shadow: 0 4px 15px rgba(0,0,0,0.8), 2px 2px 0px #000; letter-spacing: 4px; }
-        h2 { font-size: 2rem; margin-top: 0; color: #ddd; text-shadow: 2px 2px 4px #000; }
-        p { font-size: 1.2rem; max-width: 600px; line-height: 1.5; color: #ccc; }
-
-        button { 
-            background: linear-gradient(to bottom, var(--primary), #0d4a3e); 
-            color: var(--gold); 
-            border: 2px solid var(--gold); 
-            padding: 15px 40px; 
-            font-size: 1.8rem; 
-            font-family: 'Palatino Linotype', serif;
-            cursor: pointer; 
-            text-transform: uppercase; 
-            margin: 20px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            box-shadow: 0 6px 15px rgba(0,0,0,0.6); 
-            transition: all 0.2s ease;
-        }
-        button:hover { 
-            transform: scale(1.05); 
-            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4); 
-            background: linear-gradient(to bottom, #2389d1, #136a59);
-        }
-
-        /* HUD */
-        #hud { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 5; pointer-events: none; display: none; 
-        }
-        .hud-panel {
-            background: rgba(10, 25, 47, 0.85);
-            border: 2px solid var(--gold);
-            border-radius: 8px;
-            padding: 10px 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
-            pointer-events: none;
-        }
-
-        #top-left-hud { position: absolute; top: 20px; left: 20px; width: 250px; }
-        #hp-bar-bg { width: 100%; height: 25px; background: #222; border: 2px solid var(--dark); border-radius: 4px; overflow: hidden; margin-bottom: 5px; }
-        #hp-bar { width: 100%; height: 100%; background: linear-gradient(to right, #800, var(--danger)); transition: width 0.2s ease; }
-        
-        #top-right-hud { position: absolute; top: 20px; right: 20px; width: 250px; text-align: right; }
-        .doubloon-text { font-size: 1.5rem; color: var(--gold); font-weight: bold; margin-bottom: 5px; }
-        #exp-bar-bg { width: 100%; height: 15px; background: #222; border: 2px solid var(--dark); border-radius: 4px; overflow: hidden; }
-        #exp-bar { width: 0%; height: 100%; background: linear-gradient(to right, #1a6fa8, var(--ghost)); transition: width 0.3s ease; }
-
-        #timer-ui { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 2.5rem; font-weight: bold; color: white; text-shadow: 2px 4px 10px #000; letter-spacing: 2px; }
-
-        /* Upgrade Cards */
-        .cards { display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
-        .card { 
-            background: linear-gradient(145deg, #112240, #0a192f); 
-            border: 3px solid grey; 
-            border-radius: 12px; 
-            padding: 25px 20px; 
-            width: 220px; 
-            cursor: pointer; 
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.6); 
-            pointer-events: auto;
-        }
-        .card:hover { transform: translateY(-15px) scale(1.05); box-shadow: 0 15px 30px rgba(0,0,0,0.9); }
-        .card-common { border-color: #a0a0a0; }
-        .card-rare { border-color: #4da6ff; box-shadow: 0 0 15px rgba(77, 166, 255, 0.3); }
-        .card-epic { border-color: #a64dff; box-shadow: 0 0 15px rgba(166, 77, 255, 0.3); }
-        .card-legendary { border-color: var(--gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
-        
-        .card h3 { margin: 0 0 15px 0; font-size: 1.4rem; color: white; }
-        .card p { font-size: 1rem; color: #b0c4de; min-height: 40px; }
-        .card .rarity { font-size: 0.8rem; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-top: 15px; display: block; }
-
-        /* Cinematic Elements */
-        #warning-text { position: absolute; top: 25%; width: 100%; text-align: center; color: var(--ghost); font-size: 3.5rem; font-weight: bold; text-shadow: 0 0 20px #000, 0 0 10px var(--ghost); display: none; z-index: 8; pointer-events: none; animation: pulse 1s infinite alternate; }
-        @keyframes pulse { from { opacity: 0.5; transform: scale(0.95); } to { opacity: 1; transform: scale(1.05); } }
-
-        /* Loader */
-        #loading { background: var(--dark); z-index: 999; }
-        .loader { border: 6px solid #112240; border-top: 6px solid var(--gold); border-radius: 50%; width: 70px; height: 70px; animation: spin 1.5s linear infinite; margin-bottom: 30px; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-
-    <!-- Three.js Module Import via unpkg -->
-    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
-        }
-      }
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>⚓ MAELSTROM - Pirate Naval Survivor</title>
+  <meta name="description" content="Survive endless pirate fleets in your browser. Auto-fire cannons, grow your fleet, defeat ghost ship bosses. No download needed." />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { 
+      width: 100%; height: 100%; overflow: hidden; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0a1628; color: #e8d4a8;
+    }
+    #gameCanvas { display: block; width: 100%; height: 100%; }
+    
+    /* UI Overlay System */
+    #uiLayer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; display: flex; flex-direction: column;
+    }
+    .screen {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(10, 22, 40, 0.92);
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      pointer-events: auto; padding: 20px; text-align: center;
+      z-index: 100;
+    }
+    .screen.active { display: flex; }
+    
+    /* Main Menu */
+    #mainMenu h1 {
+      font-size: 3.5rem; margin-bottom: 0.5rem; text-shadow: 0 0 20px #4dff9b;
+      letter-spacing: 4px; color: #e8d4a8;
+    }
+    #mainMenu h2 { font-size: 1.4rem; margin-bottom: 2rem; opacity: 0.9; }
+    .btn {
+      background: linear-gradient(135deg, #1a4a7a, #0d2a4a);
+      border: 2px solid #4dff9b; color: #fff; padding: 14px 32px;
+      font-size: 1.2rem; margin: 8px; cursor: pointer; border-radius: 8px;
+      transition: all 0.2s; min-width: 220px; font-weight: 600;
+    }
+    .btn:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(77,255,155,0.5); }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: linear-gradient(135deg, #2a6a9a, #1a4a7a); border-color: #ffd700; }
+    .btn-secondary { background: linear-gradient(135deg, #3a3a5a, #2a2a4a); }
+    
+    /* HUD */
+    #hud {
+      position: absolute; top: 0; left: 0; width: 100%; padding: 12px 20px;
+      display: none; pointer-events: none; z-index: 50;
+    }
+    .hud-top { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .hud-bar {
+      background: rgba(13, 42, 74, 0.85); border: 1px solid #4a7a9a;
+      border-radius: 6px; padding: 6px 14px; font-size: 0.95rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .hp-bar { width: 180px; height: 22px; background: #2a1a1a; border-radius: 4px; overflow: hidden; position: relative; }
+    .hp-fill { height: 100%; background: linear-gradient(90deg, #ff4444, #ff8844); transition: width 0.3s; }
+    .timer { font-size: 1.8rem; font-weight: bold; color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+    .doubloons { color: #ffd700; font-weight: bold; }
+    .level-up-notice {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(26, 74, 122, 0.95); border: 3px solid #ffd700;
+      padding: 20px 40px; border-radius: 12px; text-align: center;
+      animation: pulse 1.5s infinite; display: none; pointer-events: auto;
+    }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); } 50% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); } }
+    
+    /* Upgrade Cards */
+    #upgradeScreen .cards { display: flex; gap: 20px; margin: 30px 0; flex-wrap: wrap; justify-content: center; }
+    .card {
+      width: 200px; min-height: 280px; background: linear-gradient(145deg, #1a2a4a, #0d1a3a);
+      border: 3px solid #666; border-radius: 12px; padding: 16px; cursor: pointer;
+      transition: all 0.2s; display: flex; flex-direction: column; align-items: center;
+    }
+    .card:hover { transform: translateY(-8px) scale(1.03); border-color: #ffd700; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .card.common { border-color: #999; }
+    .card.rare { border-color: #4da6ff; box-shadow: 0 0 15px rgba(77,166,255,0.3); }
+    .card.epic { border-color: #b74dff; box-shadow: 0 0 15px rgba(183,77,255,0.4); }
+    .card.legendary { border-color: #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.6); }
+    .card-icon { width: 80px; height: 80px; margin: 10px 0; background: rgba(0,0,0,0.3); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+    .card-name { font-weight: bold; margin: 8px 0 4px; font-size: 1.1rem; }
+    .card-desc { font-size: 0.85rem; opacity: 0.9; line-height: 1.3; }
+    .card-rarity { margin-top: auto; font-size: 0.8rem; font-weight: bold; }
+    
+    /* Death/Victory Screens */
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; width: 100%; max-width: 400px; }
+    .stat-item { background: rgba(26, 42, 74, 0.7); padding: 10px; border-radius: 6px; }
+    .stat-label { font-size: 0.9rem; opacity: 0.8; }
+    .stat-value { font-size: 1.4rem; font-weight: bold; color: #ffd700; }
+    
+    /* Loading */
+    #loadingScreen { z-index: 200; }
+    .loader {
+      width: 60px; height: 60px; border: 5px solid rgba(77,255,155,0.3);
+      border-top-color: #4dff9b; border-radius: 50%; animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-bar {
+      width: 300px; height: 12px; background: rgba(255,255,255,0.1);
+      border-radius: 6px; overflow: hidden; margin: 15px auto;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, #4dff9b, #ffd700);
+      width: 0%; transition: width 0.3s;
+    }
+    
+    /* Mobile Controls */
+    #mobileControls {
+      position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px;
+      display: none; pointer-events: auto; z-index: 60;
+    }
+    .joystick-base {
+      position: absolute; width: 100%; height: 100%;
+      background: rgba(26, 74, 122, 0.4); border: 2px solid #4a7a9a;
+      border-radius: 50%;
+    }
+    .joystick-knob {
+      position: absolute; width: 50px; height: 50px; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); background: rgba(77,255,155,0.7);
+      border: 2px solid #4dff9b; border-radius: 50%;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      #mainMenu h1 { font-size: 2.5rem; }
+      .btn { padding: 12px 24px; font-size: 1rem; min-width: 180px; }
+      .hud-bar { padding: 4px 10px; font-size: 0.85rem; }
+      .timer { font-size: 1.4rem; }
+      #mobileControls { display: block; }
+      .cards { flex-direction: column; align-items: center; }
+      .card { width: 90%; max-width: 320px; }
+    }
+    
+    /* Boss Warning */
+    #bossWarning {
+      position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+      background: rgba(77, 25, 25, 0.95); border: 3px solid #ff4444;
+      padding: 15px 30px; border-radius: 10px; text-align: center;
+      animation: flash 0.5s ease-in-out infinite alternate; display: none;
+      pointer-events: none; z-index: 70; color: #fff; font-weight: bold;
+    }
+    @keyframes flash { from { box-shadow: 0 0 10px #ff4444; } to { box-shadow: 0 0 30px #ff4444, 0 0 60px #ff0000; } }
+    
+    /* Minimap */
+    #minimap {
+      position: absolute; bottom: 20px; right: 20px; width: 150px; height: 150px;
+      background: rgba(10, 30, 60, 0.8); border: 2px solid #4a7a9a;
+      border-radius: 50%; display: none; pointer-events: none; z-index: 55;
+    }
+    .minimap-player {
+      position: absolute; width: 12px; height: 12px; background: #4dff9b;
+      border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    }
+  </style>
 </head>
 <body>
-    <div id="game-canvas"></div>
-    
-    <!-- Cinematic Warning -->
-    <div id="warning-text">☠️ GHOST SHIP APPROACHING ☠️</div>
-    
+  <canvas id="gameCanvas"></canvas>
+  
+  <div id="uiLayer">
     <!-- Loading Screen -->
-    <div id="loading" class="screen active">
-        <div class="loader"></div>
-        <h2>Loading the Fleet...</h2>
-        <p id="loading-text" style="color: var(--gold); font-size: 1.5rem; font-weight: bold;">0%</p>
+    <div id="loadingScreen" class="screen active">
+      <h1>⚓ MAELSTROM ⚓</h1>
+      <p style="margin: 15px 0; font-size: 1.1rem;">Loading the high seas...</p>
+      <div class="loader"></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <p id="loadingText" style="opacity: 0.8; font-size: 0.95rem;">Initializing Three.js...</p>
     </div>
 
     <!-- Main Menu -->
-    <div id="main-menu" class="screen">
-        <h1>MAELSTROM</h1>
-        <h2>Survive the Sea. Outlast the Storm.</h2>
-        <button id="btn-play">Set Sail (Play)</button>
-        <p style="margin-top: 30px; font-size: 0.9rem;">Controls: WASD / Arrow Keys or Touch/Drag</p>
+    <div id="mainMenu" class="screen">
+      <h1>⚓ MAELSTROM</h1>
+      <h2>"Survive the Sea. Outlast the Storm."</h2>
+      <button class="btn btn-primary" id="playBtn">⚔️ PLAY (Open Ocean)</button>
+      <button class="btn btn-secondary" id="upgradeBtn">💀 Upgrade Ship <span id="skullCount">0</span> Skulls</button>
+      <button class="btn btn-secondary" id="leaderboardBtn">🏆 Leaderboard</button>
+      <button class="btn btn-secondary" id="howToBtn">❓ How to Play</button>
+      <p style="margin-top: 25px; opacity: 0.7; font-size: 0.9rem;">
+        WASD or Arrow Keys to Move • Space for Special<br/>
+        Auto-fire Cannons • Collect Doubloons • Survive 30 Minutes
+      </p>
     </div>
 
-    <!-- In-Game HUD -->
+    <!-- How to Play -->
+    <div id="howToScreen" class="screen">
+      <h2 style="margin-bottom: 20px;">🎮 How to Play</h2>
+      <div style="max-width: 500px; text-align: left; line-height: 1.8;">
+        <p><strong>🎯 Auto-Combat</strong><br/>Your cannons fire automatically at nearby enemies. Focus on positioning and dodging!</p>
+        <p style="margin-top: 15px;"><strong>⚓ Fleet Growth</strong><br/>Collect doubloons to level up and choose upgrades. Build an armada to survive longer.</p>
+        <p style="margin-top: 15px;"><strong>👻 Boss Waves</strong><br/>Ghost Ships appear at 8, 16, and 24 minutes. They deal massive damage but drop huge rewards.</p>
+        <p style="margin-top: 15px;"><strong>💀 Meta-Progression</strong><br/>Earn Skulls to permanently upgrade your ships and unlock new starting vessels.</p>
+      </div>
+      <button class="btn btn-primary" id="backFromHowTo" style="margin-top: 25px;">Understood, Captain!</button>
+    </div>
+
+    <!-- Upgrade Screen (Meta) -->
+    <div id="metaUpgradeScreen" class="screen">
+      <h2>⚙️ Shipyard Upgrades</h2>
+      <p style="margin: 10px 0 20px;">💀 <span id="metaSkullCount">0</span> Skulls available</p>
+      <div id="metaUpgrades" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; max-width: 800px; width: 100%;"></div>
+      <button class="btn btn-secondary" id="backFromMeta" style="margin-top: 25px;">Return to Menu</button>
+    </div>
+
+    <!-- HUD (During Gameplay) -->
     <div id="hud">
-        <div id="top-left-hud" class="hud-panel">
-            <div style="font-size: 1rem; margin-bottom: 5px;">HULL INTEGRITY</div>
-            <div id="hp-bar-bg"><div id="hp-bar"></div></div>
+      <div class="hud-top">
+        <div class="hud-bar">
+          <span>❤️</span>
+          <div class="hp-bar"><div class="hp-fill" id="hpFill" style="width: 100%"></div></div>
+          <span id="hpText">100%</span>
         </div>
-        
-        <div id="timer-ui">00:00</div>
-        
-        <div id="top-right-hud" class="hud-panel">
-            <div class="doubloon-text">💰 <span id="doubloon-count">0</span></div>
-            <div style="font-size: 0.8rem; margin-bottom: 3px; text-align: left;">XP TO NEXT LEVEL</div>
-            <div id="exp-bar-bg"><div id="exp-bar"></div></div>
-        </div>
+        <div class="timer" id="timer">00:00</div>
+        <div class="hud-bar doubloons">🪙 <span id="doubloonCount">0</span></div>
+      </div>
+      <div class="hud-top">
+        <div class="hud-bar">⚓ Fleet: <span id="fleetCount">1</span> ships</div>
+        <div class="hud-bar">🎯 Level <span id="levelNum">1</span> <span id="xpBar" style="margin-left:8px; opacity:0.8">Next: 100</span></div>
+        <div class="hud-bar">👻 Wave <span id="waveNum">1</span> <span id="bossTimer" style="margin-left:8px; color:#4dff9b">Boss: 08:00</span></div>
+      </div>
+      <div class="level-up-notice" id="levelUpNotice">
+        <h3 style="color:#ffd700; margin-bottom:10px;">⬆️ LEVEL UP!</h3>
+        <p>Choose your upgrade wisely, Captain</p>
+        <p style="font-size:0.9rem; opacity:0.8; margin-top:5px;">Press [1] [2] [3] to select</p>
+      </div>
     </div>
 
-    <!-- Upgrade / Level Up Screen -->
-    <div id="upgrade-screen" class="screen">
-        <h2 style="color: var(--gold); font-size: 3rem;">LEVEL UP!</h2>
-        <p>Choose an addition to your armada:</p>
-        <div class="cards" id="upgrade-cards"></div>
+    <!-- Upgrade Choice Screen -->
+    <div id="upgradeScreen" class="screen">
+      <h2>## LEVEL UP!</h2>
+      <p style="margin: 10px 0 20px;">Choose your upgrade wisely, Captain</p>
+      <div class="cards" id="upgradeCards"></div>
+      <p style="opacity:0.7; font-size:0.9rem;">[1] [2] [3] to select • Click or tap a card</p>
     </div>
 
-    <!-- Game Over Screen -->
-    <div id="game-over" class="screen">
-        <h1 style="color: var(--danger);">THE SEA CLAIMS YOU</h1>
-        <h2>Survival Time: <span id="go-time" style="color: var(--gold);">00:00</span></h2>
-        <h2>Total Plunder: <span id="go-score" style="color: var(--gold);">0</span> Doubloons</h2>
-        <button id="btn-restart">Sail Again</button>
+    <!-- Boss Warning -->
+    <div id="bossWarning">👻 GHOST SHIP APPROACHING! 👻</div>
+
+    <!-- Death Screen -->
+    <div id="deathScreen" class="screen">
+      <h2 style="color:#ff6b6b; margin-bottom:10px;">☠️ THE SEA CLAIMS YOU ☠️</h2>
+      <p style="margin-bottom:20px; opacity:0.9;">"The sea has no mercy. Neither do your cannons."</p>
+      <div class="stats-grid">
+        <div class="stat-item"><div class="stat-label">Survival Time</div><div class="stat-value" id="deathTime">00:00</div></div>
+        <div class="stat-item"><div class="stat-label">Score</div><div class="stat-value" id="deathScore">0</div></div>
+        <div class="stat-item"><div class="stat-label">Level Reached</div><div class="stat-value" id="deathLevel">1</div></div>
+        <div class="stat-item"><div class="stat-label">Enemies Defeated</div><div class="stat-value" id="deathKills">0</div></div>
+        <div class="stat-item"><div class="stat-label">Skulls Earned</div><div class="stat-value" id="deathSkulls">0 💀</div></div>
+        <div class="stat-item"><div class="stat-label">Rank</div><div class="stat-value" id="deathRank">Top 15%</div></div>
+      </div>
+      <button class="btn btn-primary" id="restartBtn">⚔️ SAIL AGAIN</button>
+      <button class="btn btn-secondary" id="menuFromDeath">🏠 MAIN MENU</button>
     </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    <!-- Victory Screen -->
+    <div id="victoryScreen" class="screen">
+      <h2 style="color:#ffd700; margin-bottom:10px; text-shadow:0 0 15px #ffd700;">🏆 VICTORY! 🏆</h2>
+      <p style="margin-bottom:20px;">You survived the full 30 minutes!</p>
+      <div class="stats-grid">
+        <div class="stat-item"><div class="stat-label">Final Score</div><div class="stat-value" id="victoryScore">0</div></div>
+        <div class="stat-item"><div class="stat-label">Final Level</div><div class="stat-value" id="victoryLevel">1</div></div>
+        <div class="stat-item"><div class="stat-label">Total Kills</div><div class="stat-value" id="victoryKills">0</div></div>
+        <div class="stat-item"><div class="stat-label">Bonus Skulls</div><div class="stat-value" id="victoryBonus">+50 💀</div></div>
+      </div>
+      <button class="btn btn-primary" id="restartVictory">⚔️ SAIL AGAIN</button>
+      <button class="btn btn-secondary" id="menuFromVictory">🏠 MAIN MENU</button>
+    </div>
 
-        // ==========================================
-        // CONFIGURATION & GLOBAL STATE
-        // ==========================================
-        const CONFIG = {
-            // Using %20 to guarantee GitHub Pages processes the space in "GLB format" correctly.
-            assetPath: 'assets/Models/GLB%20format/',
-            models: [
-                'ship-pirate-small.glb',
-                'boat-row-small.glb',
-                'ship-small.glb',
-                'cannon-ball.glb',
-                'ship-ghost.glb',
-                'barrel.glb',
-                'chest.glb'
-            ],
-            playerBaseSpeed: 12,
-            playerTurnSpeed: 2.5,
-            baseFireRate: 1.5, // Seconds between volleys
-            enemySpawnRate: 2.5, // Seconds between spawns
-        };
+    <!-- Minimap -->
+    <div id="minimap"><div class="minimap-player"></div></div>
+    
+    <!-- Mobile Joystick -->
+    <div id="mobileControls">
+      <div class="joystick-base"><div class="joystick-knob" id="joystickKnob"></div></div>
+    </div>
+  </div>
 
-        const STATE = {
-            models: {},
-            screen: 'loading',
-            time: 0,
-            score: 0,
-            exp: 0,
-            level: 1,
-            expToNext: 100,
-            player: null,
-            enemies: [],
-            projectiles: [],
-            pickups: [],
-            upgrades: { cannons: 1, damage: 15, speed: 1, maxHp: 100, hp: 100, pickupRadius: 20 },
-            keys: { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false },
-            lastFireTime: 0,
-            lastSpawnTime: 0,
-            cameraOffset: new THREE.Vector3(35, 50, 35) // Isometric feel
-        };
+  <!-- Three.js + Dependencies via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simplex-noise@4.0.1/dist/simplex-noise.min.js"></script>
 
-        // ==========================================
-        // ASSET MANAGER
-        // ==========================================
-        const manager = new THREE.LoadingManager();
-        const loader = new GLTFLoader(manager);
-        
-        manager.onProgress = (url, itemsLoaded, itemsTotal) => {
-            document.getElementById('loading-text').innerText = Math.floor((itemsLoaded / itemsTotal) * 100) + '%';
-        };
+  <script>
+  // ==================== MAELSTROM GAME ENGINE ====================
+  // Single-file implementation for GitHub Pages compatibility
+  // All game logic contained here - no external JS files needed
 
-        manager.onLoad = () => {
-            setTimeout(() => {
-                setScreen('menu');
-            }, 500); // Slight delay for visual polish
-        };
+  // ===== GLOBAL CONFIG =====
+  const CONFIG = {
+    assetBase: 'assets/Models/GLB format/',
+    texturePath: 'assets/Models/GLB format/Textures/colormap.png',
+    oceanSize: 2000,
+    waveHeight: 0.8,
+    waveSpeed: 0.3,
+    playerSpeed: 8,
+    playerTurnSpeed: 2.5,
+    cannonRange: 35,
+    cannonCooldown: 0.8,
+    doubloonValue: 1,
+    levelUpThreshold: 100,
+    bossTimes: [8*60, 16*60, 24*60], // seconds
+    maxRunTime: 30*60,
+    enemySpawnRadius: 150,
+    instanceCount: { rowboat: 50, cannonball: 100, doubloon: 200 }
+  };
 
-        // Load all defined GLB models
-        CONFIG.models.forEach(modelName => {
-            loader.load(CONFIG.assetPath + modelName, (gltf) => {
-                gltf.scene.traverse(child => {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
-                STATE.models[modelName] = gltf.scene;
-            }, undefined, (err) => {
-                console.warn(`Could not load ${modelName}, utilizing fallback geometry.`);
-            });
+  // ===== GAME STATE =====
+  const GameState = {
+    loading: true,
+    playing: false,
+    paused: false,
+    levelUp: false,
+    gameOver: false,
+    victory: false,
+    
+    // Player
+    player: {
+      hp: 100, maxHp: 100,
+      speed: CONFIG.playerSpeed,
+      turnSpeed: CONFIG.playerTurnSpeed,
+      cannonCooldown: 0,
+      level: 1, xp: 0, xpToLevel: CONFIG.levelUpThreshold,
+      doubloons: 0, skulls: 0,
+      fleet: [], // array of fleet ship objects
+      upgrades: [],
+      position: new THREE.Vector3(0, 0, 0),
+      velocity: new THREE.Vector3(0, 0, 0),
+      rotation: 0
+    },
+    
+    // World
+    time: 0, // seconds elapsed
+    wave: 1,
+    enemies: [],
+    projectiles: [],
+    collectibles: [],
+    obstacles: [],
+    islands: [],
+    
+    // Meta
+    metaUpgrades: {
+      hullReinforcement: { unlocked: false, cost: 10, effect: 'Start +15% HP' },
+      startingFleet: { unlocked: false, cost: 20, effect: '+1 Rowboat start' },
+      treasureMagnet: { unlocked: false, cost: 15, effect: '+30% pickup radius' },
+      cannonMaster: { unlocked: false, cost: 25, effect: '+10% cannon damage' }
+    },
+    
+    // Input
+    keys: {},
+    touch: { active: false, x: 0, y: 0, startX: 0, startY: 0 },
+    
+    // Assets loaded
+    assets: {},
+    loadedAssets: 0,
+    totalAssets: 12 // Core assets for MVP
+  };
+
+  // ===== THREE.JS SETUP =====
+  let scene, camera, renderer, clock, oceanMesh, playerMesh;
+  let gltfLoader, simplex;
+  const projectilesPool = [];
+  const enemyPool = [];
+
+  // ===== INITIALIZATION =====
+  async function init() {
+    updateLoading('Initializing Three.js...');
+    
+    // Scene setup
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a1628);
+    scene.fog = new THREE.Fog(0x0a1628, 100, 400);
+    
+    // Camera - isometric top-down
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 80, 60);
+    camera.lookAt(0, 0, 0);
+    
+    // Renderer
+    renderer = new THREE.WebGLRenderer({ 
+      canvas: document.getElementById('gameCanvas'),
+      antialias: true, powerPreference: 'high-performance'
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
+    // Lighting
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambient);
+    
+    const sun = new THREE.DirectionalLight(0xffeecc, 0.8);
+    sun.position.set(50, 100, 30);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 10;
+    sun.shadow.camera.far = 300;
+    sun.shadow.camera.left = -100;
+    sun.shadow.camera.right = 100;
+    sun.shadow.camera.top = 100;
+    sun.shadow.camera.bottom = -100;
+    scene.add(sun);
+    
+    // Rim light for cartoon effect
+    const rim = new THREE.DirectionalLight(0x4dff9b, 0.3);
+    rim.position.set(-30, 20, -30);
+    scene.add(rim);
+    
+    // Loaders
+    gltfLoader = new THREE.GLTFLoader();
+    simplex = new SimplexNoise();
+    clock = new THREE.Clock();
+    
+    // Create ocean
+    createOcean();
+    
+    // Load core assets
+    await loadCoreAssets();
+    
+    // Setup input
+    setupInput();
+    
+    // Setup UI events
+    setupUI();
+    
+    // Hide loading, show menu
+    GameState.loading = false;
+    document.getElementById('loadingScreen').classList.remove('active');
+    document.getElementById('mainMenu').classList.add('active');
+    
+    // Start loop
+    animate();
+  }
+
+  function createOcean() {
+    updateLoading('Generating ocean...');
+    
+    // Ocean geometry with wave animation
+    const oceanGeo = new THREE.PlaneGeometry(CONFIG.oceanSize, CONFIG.oceanSize, 128, 128);
+    const oceanMat = new THREE.MeshStandardMaterial({
+      color: 0x1a6fa8,
+      roughness: 0.8,
+      metalness: 0.1,
+      side: THREE.DoubleSide
+    });
+    
+    oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
+    oceanMesh.rotation.x = -Math.PI / 2;
+    oceanMesh.receiveShadow = true;
+    scene.add(oceanMesh);
+    
+    // Add subtle foam particles
+    const foamGeo = new THREE.BufferGeometry();
+    const foamCount = 500;
+    const foamPos = new Float32Array(foamCount * 3);
+    for(let i = 0; i < foamCount; i++) {
+      foamPos[i*3] = (Math.random() - 0.5) * CONFIG.oceanSize;
+      foamPos[i*3+1] = 0.1;
+      foamPos[i*3+2] = (Math.random() - 0.5) * CONFIG.oceanSize;
+    }
+    foamGeo.setAttribute('position', new THREE.BufferAttribute(foamPos, 3));
+    const foamMat = new THREE.PointsMaterial({
+      color: 0x88ccff, size: 0.5, transparent: true, opacity: 0.6
+    });
+    const foam = new THREE.Points(foamGeo, foamMat);
+    scene.add(foam);
+  }
+
+  async function loadCoreAssets() {
+    const assetsToLoad = [
+      { name: 'playerShip', path: 'ship-pirate-small.glb' },
+      { name: 'enemySmall', path: 'ship-small.glb' },
+      { name: 'rowboat', path: 'boat-row-small.glb' },
+      { name: 'cannonball', path: 'cannon-ball.glb' },
+      { name: 'chest', path: 'chest.glb' },
+      { name: 'ghostShip', path: 'ship-ghost.glb' }
+    ];
+    
+    GameState.totalAssets = assetsToLoad.length;
+    
+    for(const asset of assetsToLoad) {
+      try {
+        const gltf = await gltfLoader.loadAsync(CONFIG.assetBase + asset.path);
+        GameState.assets[asset.name] = gltf.scene;
+        GameState.loadedAssets++;
+        updateLoading(`Loaded ${asset.name} (${GameState.loadedAssets}/${GameState.totalAssets})`);
+        updateProgress((GameState.loadedAssets / GameState.totalAssets) * 100);
+      } catch(err) {
+        console.warn(`Failed to load ${asset.path}:`, err);
+        // Create placeholder for missing assets
+        GameState.assets[asset.name] = createPlaceholder(asset.name);
+        GameState.loadedAssets++;
+        updateProgress((GameState.loadedAssets / GameState.totalAssets) * 100);
+      }
+    }
+  }
+
+  function createPlaceholder(name) {
+    const geo = new THREE.BoxGeometry(2, 2, 4);
+    const mat = new THREE.MeshStandardMaterial({ 
+      color: name.includes('ghost') ? 0x44ff99 : 0x8b4513,
+      emissive: name.includes('ghost') ? 0x22aa55 : 0x000000
+    });
+    return new THREE.Mesh(geo, mat);
+  }
+
+  function updateLoading(text) {
+    document.getElementById('loadingText').textContent = text;
+  }
+
+  function updateProgress(percent) {
+    document.getElementById('progressFill').style.width = percent + '%';
+  }
+
+  // ===== INPUT HANDLING =====
+  function setupInput() {
+    // Keyboard
+    window.addEventListener('keydown', e => {
+      GameState.keys[e.key.toLowerCase()] = true;
+      if(GameState.playing && !GameState.paused && !GameState.levelUp) {
+        if(e.key === ' ') useSpecialAbility();
+      }
+    });
+    window.addEventListener('keyup', e => {
+      GameState.keys[e.key.toLowerCase()] = false;
+    });
+    
+    // Touch/Mobile joystick
+    const joystick = document.getElementById('mobileControls');
+    const knob = document.getElementById('joystickKnob');
+    let joystickActive = false;
+    
+    joystick.addEventListener('touchstart', e => {
+      e.preventDefault();
+      joystickActive = true;
+      const touch = e.touches[0];
+      const rect = joystick.getBoundingClientRect();
+      GameState.touch.startX = rect.left + rect.width/2;
+      GameState.touch.startY = rect.top + rect.height/2;
+      GameState.touch.active = true;
+    });
+    
+    joystick.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if(!joystickActive) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - GameState.touch.startX;
+      const dy = touch.clientY - GameState.touch.startY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const maxDist = 35;
+      
+      if(dist > maxDist) {
+        knob.style.transform = `translate(calc(-50% + ${dx/maxDist*maxDist}px), calc(-50% + ${dy/maxDist*maxDist}px))`;
+        GameState.touch.x = dx / maxDist;
+        GameState.touch.y = dy / maxDist;
+      } else {
+        knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        GameState.touch.x = dx / maxDist;
+        GameState.touch.y = dy / maxDist;
+      }
+    });
+    
+    const endJoystick = () => {
+      joystickActive = false;
+      GameState.touch.active = false;
+      GameState.touch.x = 0;
+      GameState.touch.y = 0;
+      knob.style.transform = 'translate(-50%, -50%)';
+    };
+    joystick.addEventListener('touchend', endJoystick);
+    joystick.addEventListener('touchcancel', endJoystick);
+    
+    // Resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+
+  // ===== UI SETUP =====
+  function setupUI() {
+    // Main menu buttons
+    document.getElementById('playBtn').onclick = startGame;
+    document.getElementById('upgradeBtn').onclick = showMetaUpgrades;
+    document.getElementById('leaderboardBtn').onclick = () => alert('Leaderboard coming soon! Connect to earn rewards.');
+    document.getElementById('howToBtn').onclick = () => {
+      document.getElementById('mainMenu').classList.remove('active');
+      document.getElementById('howToScreen').classList.add('active');
+    };
+    
+    // How to play
+    document.getElementById('backFromHowTo').onclick = () => {
+      document.getElementById('howToScreen').classList.remove('active');
+      document.getElementById('mainMenu').classList.add('active');
+    };
+    
+    // Meta upgrades
+    document.getElementById('backFromMeta').onclick = () => {
+      document.getElementById('metaUpgradeScreen').classList.remove('active');
+      document.getElementById('mainMenu').classList.add('active');
+    };
+    
+    // Death/Victory
+    document.getElementById('restartBtn').onclick = restartGame;
+    document.getElementById('menuFromDeath').onclick = () => {
+      document.getElementById('deathScreen').classList.remove('active');
+      document.getElementById('mainMenu').classList.add('active');
+      document.getElementById('hud').style.display = 'none';
+    };
+    document.getElementById('restartVictory').onclick = restartGame;
+    document.getElementById('menuFromVictory').onclick = () => {
+      document.getElementById('victoryScreen').classList.remove('active');
+      document.getElementById('mainMenu').classList.add('active');
+      document.getElementById('hud').style.display = 'none';
+    };
+    
+    // Keyboard shortcuts for upgrade selection
+    window.addEventListener('keydown', e => {
+      if(GameState.levelUp && !GameState.paused) {
+        if(e.key === '1') selectUpgrade(0);
+        if(e.key === '2') selectUpgrade(1);
+        if(e.key === '3') selectUpgrade(2);
+      }
+    });
+  }
+
+  // ===== GAME LOGIC =====
+  function startGame() {
+    document.getElementById('mainMenu').classList.remove('active');
+    document.getElementById('hud').style.display = 'block';
+    document.getElementById('minimap').style.display = 'block';
+    
+    // Reset game state
+    GameState.playing = true;
+    GameState.gameOver = false;
+    GameState.victory = false;
+    GameState.time = 0;
+    GameState.wave = 1;
+    GameState.player.hp = GameState.metaUpgrades.hullReinforcement.unlocked ? 115 : 100;
+    GameState.player.maxHp = GameState.player.hp;
+    GameState.player.doubloons = 0;
+    GameState.player.level = 1;
+    GameState.player.xp = 0;
+    GameState.player.xpToLevel = CONFIG.levelUpThreshold;
+    GameState.player.fleet = [];
+    GameState.enemies = [];
+    GameState.projectiles = [];
+    GameState.collectibles = [];
+    
+    // Create player ship
+    if(!playerMesh) {
+      const ship = GameState.assets.playerShip.clone();
+      ship.scale.set(1.5, 1.5, 1.5);
+      ship.position.set(0, 0, 0);
+      ship.castShadow = true;
+      ship.traverse(n => { if(n.isMesh) n.castShadow = true; });
+      playerMesh = ship;
+      scene.add(playerMesh);
+    } else {
+      playerMesh.position.set(0, 0, 0);
+      playerMesh.visible = true;
+    }
+    
+    // Add starting fleet if unlocked
+    if(GameState.metaUpgrades.startingFleet.unlocked) {
+      addFleetShip('rowboat');
+    }
+    
+    // Start spawning
+    spawnInitialEnemies();
+    
+    updateHUD();
+  }
+
+  function restartGame() {
+    // Cleanup
+    GameState.enemies.forEach(e => { if(e.mesh) scene.remove(e.mesh); });
+    GameState.projectiles.forEach(p => { if(p.mesh) scene.remove(p.mesh); });
+    GameState.collectibles.forEach(c => { if(c.mesh) scene.remove(c.mesh); });
+    
+    if(playerMesh) playerMesh.visible = false;
+    
+    document.getElementById('deathScreen').classList.remove('active');
+    document.getElementById('victoryScreen').classList.remove('active');
+    startGame();
+  }
+
+  function spawnInitialEnemies() {
+    // Spawn rowboat raiders
+    for(let i = 0; i < 8; i++) {
+      spawnEnemy('rowboat', {
+        x: (Math.random() - 0.5) * CONFIG.enemySpawnRadius,
+        z: (Math.random() - 0.5) * CONFIG.enemySpawnRadius
+      });
+    }
+    // Spawn a sloop hunter
+    setTimeout(() => {
+      if(GameState.playing && !GameState.gameOver) {
+        spawnEnemy('enemySmall', {
+          x: (Math.random() - 0.5) * CONFIG.enemySpawnRadius * 1.2,
+          z: (Math.random() - 0.5) * CONFIG.enemySpawnRadius * 1.2
         });
+      }
+    }, 3000);
+  }
 
-        // ==========================================
-        // SCENE, CAMERA, LIGHTING & RENDERER
-        // ==========================================
-        const container = document.getElementById('game-canvas');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a6fa8); // Deep ocean blue
-        scene.fog = new THREE.FogExp2(0x1a6fa8, 0.005); // Atmospheric depth fog
+  function spawnEnemy(type, pos) {
+    const template = GameState.assets[type === 'rowboat' ? 'rowboat' : 'enemySmall'];
+    if(!template) return null;
+    
+    const mesh = template.clone();
+    mesh.scale.set(type === 'rowboat' ? 0.8 : 1.2, 0.8, 1.2);
+    mesh.position.set(pos.x, 0, pos.z);
+    mesh.rotation.y = Math.random() * Math.PI * 2;
+    mesh.castShadow = true;
+    mesh.traverse(n => { if(n.isMesh) n.castShadow = true; });
+    
+    const enemy = {
+      mesh,
+      type,
+      hp: type === 'rowboat' ? 15 : 40,
+      maxHp: type === 'rowboat' ? 15 : 40,
+      speed: type === 'rowboat' ? 6 : 3,
+      damage: type === 'rowboat' ? 3 : 8,
+      cooldown: 0,
+      position: new THREE.Vector3(pos.x, 0, pos.z),
+      target: new THREE.Vector3(0, 0, 0)
+    };
+    
+    scene.add(mesh);
+    GameState.enemies.push(enemy);
+    return enemy;
+  }
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
+  function addFleetShip(type) {
+    // Simplified fleet system - visual followers
+    const template = GameState.assets.rowboat;
+    if(!template) return;
+    
+    const mesh = template.clone();
+    mesh.scale.set(0.7, 0.7, 0.7);
+    mesh.position.copy(playerMesh.position);
+    mesh.rotation.y = playerMesh.rotation.y;
+    mesh.castShadow = true;
+    
+    const offset = new THREE.Vector3(
+      Math.cos(GameState.player.fleet.length * 2) * 8,
+      0,
+      Math.sin(GameState.player.fleet.length * 2) * 8
+    );
+    
+    const fleetShip = {
+      mesh,
+      offset,
+      type: 'follower'
+    };
+    
+    scene.add(mesh);
+    GameState.player.fleet.push(fleetShip);
+    updateHUD();
+  }
 
-        // Lighting System
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
+  function fireCannon(target) {
+    if(!GameState.assets.cannonball) return;
+    
+    // Get from pool or create new
+    let projectile = projectilesPool.find(p => !p.active);
+    if(!projectile) {
+      const mesh = GameState.assets.cannonball.clone();
+      mesh.scale.set(0.4, 0.4, 0.4);
+      mesh.castShadow = true;
+      projectile = { mesh, active: false };
+      projectilesPool.push(projectile);
+      scene.add(mesh);
+    }
+    
+    // Position at player
+    projectile.mesh.position.copy(playerMesh.position);
+    projectile.mesh.position.y = 2;
+    
+    // Calculate trajectory
+    const direction = new THREE.Vector3().subVectors(target, playerMesh.position).normalize();
+    projectile.velocity = direction.multiplyScalar(25);
+    projectile.damage = 10 * (GameState.metaUpgrades.cannonMaster.unlocked ? 1.1 : 1);
+    projectile.active = true;
+    projectile.life = 3; // seconds
+    
+    GameState.projectiles.push(projectile);
+    
+    // Muzzle flash effect (simple)
+    const flash = new THREE.PointLight(0xffaa00, 1, 15);
+    flash.position.copy(playerMesh.position);
+    flash.position.y = 3;
+    scene.add(flash);
+    setTimeout(() => scene.remove(flash), 100);
+  }
 
-        const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
-        dirLight.position.set(60, 100, 40);
-        dirLight.castShadow = true;
-        dirLight.shadow.camera.top = 100;
-        dirLight.shadow.camera.bottom = -100;
-        dirLight.shadow.camera.left = -100;
-        dirLight.shadow.camera.right = 100;
-        dirLight.shadow.camera.near = 0.1;
-        dirLight.shadow.camera.far = 300;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        scene.add(dirLight);
+  function spawnCollectible(position, type = 'doubloon') {
+    if(!GameState.assets.chest && type === 'chest') return;
+    
+    const template = type === 'chest' ? GameState.assets.chest : createPlaceholder('doubloon');
+    const mesh = template.clone();
+    mesh.scale.set(type === 'chest' ? 1 : 0.5, 1, 1);
+    mesh.position.set(position.x, 1, position.z);
+    
+    // Bobbing animation
+    mesh.userData = { bobOffset: Math.random() * Math.PI * 2 };
+    
+    const collectible = {
+      mesh,
+      type,
+      value: type === 'chest' ? 25 : CONFIG.doubloonValue,
+      position: new THREE.Vector3(position.x, 1, position.z),
+      radius: type === 'chest' ? 3 : 2
+    };
+    
+    scene.add(mesh);
+    GameState.collectibles.push(collectible);
+  }
 
-        // Procedural Ocean (Displacement Shader via onBeforeCompile)
-        const oceanGeo = new THREE.PlaneGeometry(1200, 1200, 128, 128);
-        oceanGeo.rotateX(-Math.PI / 2); // Align to XZ plane
-        
-        const oceanMat = new THREE.MeshStandardMaterial({
-            color: 0x1a6fa8,
-            roughness: 0.1,
-            metalness: 0.2,
-            flatShading: true
+  function levelUp() {
+    GameState.levelUp = true;
+    GameState.paused = true;
+    document.getElementById('levelUpNotice').style.display = 'block';
+    document.getElementById('upgradeScreen').classList.add('active');
+    
+    // Generate 3 random upgrades
+    const upgrades = generateUpgradeCards();
+    const container = document.getElementById('upgradeCards');
+    container.innerHTML = '';
+    
+    upgrades.forEach((upg, idx) => {
+      const card = document.createElement('div');
+      card.className = `card ${upg.rarity}`;
+      card.innerHTML = `
+        <div class="card-icon">${upg.icon}</div>
+        <div class="card-name">${upg.name}</div>
+        <div class="card-desc">${upg.desc}</div>
+        <div class="card-rarity">${upg.rarity.toUpperCase()}</div>
+      `;
+      card.onclick = () => selectUpgrade(idx);
+      container.appendChild(card);
+    });
+  }
+
+  function generateUpgradeCards() {
+    const pool = [
+      { name: 'Extra Cannon', rarity: 'common', icon: '⚔️', desc: '+1 cannon fires at second-nearest enemy', effect: () => { GameState.player.cannonCooldown *= 0.9; }},
+      { name: 'Recruit Rowboats', rarity: 'common', icon: '⛵', desc: 'Add 2 rowboat flankers to fleet', effect: () => { addFleetShip('rowboat'); addFleetShip('rowboat'); }},
+      { name: 'Reinforce Mast', rarity: 'common', icon: '🛡️', desc: 'Flagship HP +20%', effect: () => { GameState.player.maxHp *= 1.2; GameState.player.hp = Math.min(GameState.player.hp + 20, GameState.player.maxHp); }},
+      { name: 'Mobile Cannon', rarity: 'rare', icon: '🎯', desc: '360° rotating cannon on deck', effect: () => { GameState.player.cannonCooldown *= 0.85; }},
+      { name: 'Treasure Magnet', rarity: 'rare', icon: '🧲', desc: '+40% doubloon pickup radius', effect: () => {}},
+      { name: 'Cannonball Storm', rarity: 'epic', icon: '💥', desc: 'Fire 8 cannonballs in spread pattern', effect: () => {}},
+      { name: 'Ghost Breaker', rarity: 'legendary', icon: '👻', desc: '+100% damage to Ghost Ships', effect: () => {}},
+      { name: 'Stolen Sails', rarity: 'epic', icon: '⛵', desc: '+35% movement speed', effect: () => { GameState.player.speed *= 1.35; }}
+    ];
+    
+    // Weighted random by rarity
+    const weights = { common: 50, rare: 30, epic: 15, legendary: 5 };
+    const cards = [];
+    
+    while(cards.length < 3) {
+      const candidate = pool[Math.floor(Math.random() * pool.length)];
+      if(!cards.find(c => c.name === candidate.name)) {
+        // Apply weight
+        if(Math.random() * 100 < weights[candidate.rarity]) {
+          cards.push(candidate);
+        }
+      }
+    }
+    
+    return cards.slice(0, 3);
+  }
+
+  function selectUpgrade(index) {
+    const upgrades = generateUpgradeCards(); // Re-generate for consistency (in real game, store the array)
+    const chosen = upgrades[index];
+    if(chosen && chosen.effect) chosen.effect();
+    
+    GameState.player.level++;
+    GameState.player.xp = 0;
+    GameState.player.xpToLevel = Math.floor(GameState.player.xpToLevel * 1.3);
+    
+    // Close upgrade screen
+    GameState.levelUp = false;
+    GameState.paused = false;
+    document.getElementById('levelUpNotice').style.display = 'none';
+    document.getElementById('upgradeScreen').classList.remove('active');
+    
+    updateHUD();
+  }
+
+  function showMetaUpgrades() {
+    document.getElementById('mainMenu').classList.remove('active');
+    document.getElementById('metaUpgradeScreen').classList.add('active');
+    document.getElementById('metaSkullCount').textContent = GameState.player.skulls;
+    
+    const container = document.getElementById('metaUpgrades');
+    container.innerHTML = '';
+    
+    Object.entries(GameState.metaUpgrades).forEach(([key, upg]) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'background:rgba(26,42,74,0.7);padding:12px;border-radius:8px;border:1px solid #4a7a9a;';
+      div.innerHTML = `
+        <div style="font-weight:bold;margin-bottom:5px">${upg.effect}</div>
+        <div style="font-size:0.9rem;opacity:0.8">Cost: ${upg.cost} 💀</div>
+        <button class="btn" style="margin-top:8px;padding:6px 12px;font-size:0.9rem" 
+          ${upg.unlocked || GameState.player.skulls < upg.cost ? 'disabled' : ''}
+          onclick="buyMetaUpgrade('${key}')">
+          ${upg.unlocked ? '✓ Owned' : 'Purchase'}
+        </button>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  window.buyMetaUpgrade = function(key) {
+    const upg = GameState.metaUpgrades[key];
+    if(GameState.player.skulls >= upg.cost && !upg.unlocked) {
+      GameState.player.skulls -= upg.cost;
+      upg.unlocked = true;
+      document.getElementById('metaSkullCount').textContent = GameState.player.skulls;
+      showMetaUpgrades(); // Refresh
+    }
+  };
+
+  function updateHUD() {
+    document.getElementById('hpFill').style.width = (GameState.player.hp / GameState.player.maxHp * 100) + '%';
+    document.getElementById('hpText').textContent = Math.round(GameState.player.hp / GameState.player.maxHp * 100) + '%';
+    document.getElementById('doubloonCount').textContent = GameState.player.doubloons;
+    document.getElementById('levelNum').textContent = GameState.player.level;
+    document.getElementById('xpBar').textContent = `Next: ${GameState.player.xpToLevel}`;
+    document.getElementById('fleetCount').textContent = 1 + GameState.player.fleet.length;
+    document.getElementById('waveNum').textContent = GameState.wave;
+    document.getElementById('skullCount').textContent = GameState.player.skulls;
+    
+    // Boss timer
+    const nextBoss = CONFIG.bossTimes.find(t => t > GameState.time);
+    if(nextBoss) {
+      const remaining = nextBoss - GameState.time;
+      const mins = Math.floor(remaining / 60);
+      const secs = Math.floor(remaining % 60);
+      document.getElementById('bossTimer').textContent = `Boss: ${mins}:${secs.toString().padStart(2,'0')}`;
+      
+      // Warning at 10 seconds
+      if(remaining <= 10 && remaining > 0) {
+        document.getElementById('bossWarning').style.display = 'block';
+      } else {
+        document.getElementById('bossWarning').style.display = 'none';
+      }
+    }
+  }
+
+  function useSpecialAbility() {
+    // Placeholder for special ability
+    console.log('Special ability used!');
+  }
+
+  function gameOver(victory = false) {
+    GameState.playing = false;
+    GameState.gameOver = !victory;
+    GameState.victory = victory;
+    
+    // Calculate rewards
+    const skullsEarned = Math.floor(GameState.player.doubloons / 100);
+    const bonusSkulls = victory ? 50 : 0;
+    GameState.player.skulls += skullsEarned + bonusSkulls;
+    
+    // Save to localStorage
+    try {
+      const save = JSON.parse(localStorage.getItem('maelstrom_save') || '{}');
+      save.skulls = GameState.player.skulls;
+      save.highScore = Math.max(save.highScore || 0, GameState.player.doubloons);
+      localStorage.setItem('maelstrom_save', JSON.stringify(save));
+    } catch(e) {}
+    
+    // Show appropriate screen
+    if(victory) {
+      document.getElementById('victoryScore').textContent = GameState.player.doubloons;
+      document.getElementById('victoryLevel').textContent = GameState.player.level;
+      document.getElementById('victoryKills').textContent = GameState.enemies.length; // Simplified
+      document.getElementById('victoryBonus').textContent = `+${bonusSkulls} 💀`;
+      document.getElementById('victoryScreen').classList.add('active');
+    } else {
+      const mins = Math.floor(GameState.time / 60);
+      const secs = Math.floor(GameState.time % 60);
+      document.getElementById('deathTime').textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+      document.getElementById('deathScore').textContent = GameState.player.doubloons;
+      document.getElementById('deathLevel').textContent = GameState.player.level;
+      document.getElementById('deathKills').textContent = GameState.enemies.filter(e => e.hp <= 0).length;
+      document.getElementById('deathSkulls').textContent = `+${skullsEarned} 💀`;
+      document.getElementById('deathScreen').classList.add('active');
+    }
+    
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('minimap').style.display = 'none';
+    
+    if(playerMesh) playerMesh.visible = false;
+  }
+
+  // ===== UPDATE LOOP =====
+  function animate() {
+    requestAnimationFrame(animate);
+    
+    const delta = clock.getDelta();
+    
+    if(GameState.playing && !GameState.paused && !GameState.levelUp && !GameState.gameOver && !GameState.victory) {
+      updateGame(delta);
+    }
+    
+    // Animate ocean waves
+    if(oceanMesh) {
+      const positions = oceanMesh.geometry.attributes.position;
+      for(let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i);
+        const z = positions.getZ(i);
+        const y = simplex.noise2D(x * 0.02 + GameState.time * CONFIG.waveSpeed, 
+                                  z * 0.02 + GameState.time * CONFIG.waveSpeed) * CONFIG.waveHeight;
+        positions.setY(i, y);
+      }
+      positions.needsUpdate = true;
+    }
+    
+    // Animate collectibles (bobbing)
+    GameState.collectibles.forEach(c => {
+      if(c.mesh) {
+        c.mesh.position.y = 1 + Math.sin(GameState.time * 3 + c.mesh.userData.bobOffset) * 0.3;
+        c.mesh.rotation.y += delta * 2;
+      }
+    });
+    
+    // Update projectiles
+    updateProjectiles(delta);
+    
+    // Camera follow player
+    if(playerMesh && GameState.playing) {
+      const targetPos = playerMesh.position.clone();
+      targetPos.y += 80;
+      targetPos.z += 60;
+      camera.position.lerp(targetPos, 0.05);
+      camera.lookAt(playerMesh.position);
+    }
+    
+    renderer.render(scene, camera);
+  }
+
+  function updateGame(delta) {
+    GameState.time += delta;
+    
+    // Update timer display
+    const mins = Math.floor(GameState.time / 60);
+    const secs = Math.floor(GameState.time % 60);
+    document.getElementById('timer').textContent = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+    
+    // Victory condition
+    if(GameState.time >= CONFIG.maxRunTime) {
+      gameOver(true);
+      return;
+    }
+    
+    // Player movement
+    let moveX = 0, moveZ = 0;
+    if(GameState.keys['w'] || GameState.keys['arrowup']) moveZ = -1;
+    if(GameState.keys['s'] || GameState.keys['arrowdown']) moveZ = 1;
+    if(GameState.keys['a'] || GameState.keys['arrowleft']) moveX = -1;
+    if(GameState.keys['d'] || GameState.keys['arrowright']) moveX = 1;
+    
+    // Mobile joystick
+    if(GameState.touch.active) {
+      moveX = GameState.touch.x;
+      moveZ = GameState.touch.y;
+    }
+    
+    if(moveX !== 0 || moveZ !== 0) {
+      const dir = new THREE.Vector2(moveX, moveZ).normalize();
+      GameState.player.velocity.x = dir.x * GameState.player.speed;
+      GameState.player.velocity.z = dir.y * GameState.player.speed;
+      
+      // Rotate player towards movement
+      const targetRot = Math.atan2(dir.x, dir.y);
+      playerMesh.rotation.y += THREE.MathUtils.dampAngle(
+        playerMesh.rotation.y, targetRot, GameState.player.turnSpeed * delta, 0.1
+      );
+    } else {
+      // Slow down
+      GameState.player.velocity.x *= 0.95;
+      GameState.player.velocity.z *= 0.95;
+    }
+    
+    // Apply movement
+    playerMesh.position.x += GameState.player.velocity.x * delta;
+    playerMesh.position.z += GameState.player.velocity.z * delta;
+    GameState.player.position.copy(playerMesh.position);
+    
+    // Keep player in bounds
+    const bounds = CONFIG.oceanSize / 2 - 20;
+    playerMesh.position.x = THREE.MathUtils.clamp(playerMesh.position.x, -bounds, bounds);
+    playerMesh.position.z = THREE.MathUtils.clamp(playerMesh.position.z, -bounds, bounds);
+    
+    // Update fleet followers
+    GameState.player.fleet.forEach((ship, idx) => {
+      const angle = idx * 2 + GameState.time;
+      ship.mesh.position.x = playerMesh.position.x + Math.cos(angle) * 8;
+      ship.mesh.position.z = playerMesh.position.z + Math.sin(angle) * 8;
+      ship.mesh.rotation.y = playerMesh.rotation.y;
+    });
+    
+    // Auto-fire cannons
+    if(GameState.player.cannonCooldown > 0) {
+      GameState.player.cannonCooldown -= delta;
+    } else {
+      // Find nearest enemy
+      let nearest = null;
+      let nearestDist = CONFIG.cannonRange;
+      
+      GameState.enemies.forEach(enemy => {
+        if(enemy.hp > 0) {
+          const dist = enemy.position.distanceTo(playerMesh.position);
+          if(dist < nearestDist) {
+            nearestDist = dist;
+            nearest = enemy.position;
+          }
+        }
+      });
+      
+      if(nearest) {
+        fireCannon(nearest);
+        GameState.player.cannonCooldown = CONFIG.cannonCooldown;
+      }
+    }
+    
+    // Update enemies
+    updateEnemies(delta);
+    
+    // Spawn new enemies based on wave/time
+    updateSpawning(delta);
+    
+    // Check collectibles
+    checkCollectibles();
+    
+    // Check player death
+    if(GameState.player.hp <= 0) {
+      gameOver(false);
+    }
+    
+    updateHUD();
+  }
+
+  function updateEnemies(delta) {
+    GameState.enemies.forEach(enemy => {
+      if(enemy.hp <= 0) return;
+      
+      // Move toward player
+      const toPlayer = new THREE.Vector3().subVectors(playerMesh.position, enemy.position).normalize();
+      enemy.position.add(toPlayer.multiplyScalar(enemy.speed * delta));
+      enemy.mesh.position.copy(enemy.position);
+      
+      // Rotate to face player
+      enemy.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+      
+      // Enemy attack (collision damage)
+      const dist = enemy.position.distanceTo(playerMesh.position);
+      if(dist < 4) {
+        if(enemy.cooldown <= 0) {
+          GameState.player.hp -= enemy.damage * 0.1; // Small tick damage
+          enemy.cooldown = 0.5;
+        }
+      }
+      if(enemy.cooldown > 0) enemy.cooldown -= delta;
+      
+      // Check projectile hits
+      GameState.projectiles.forEach(proj => {
+        if(proj.active && proj.mesh) {
+          const pDist = proj.mesh.position.distanceTo(enemy.position);
+          if(pDist < 3) {
+            enemy.hp -= proj.damage;
+            proj.active = false;
+            if(proj.mesh) proj.mesh.position.y = -100; // Hide
+            
+            // Spawn doubloons on death
+            if(enemy.hp <= 0) {
+              spawnCollectible(enemy.position, 'doubloon');
+              // Chance for chest
+              if(Math.random() < 0.15) spawnCollectible(enemy.position, 'chest');
+            }
+          }
+        }
+      });
+    });
+    
+    // Remove dead enemies
+    GameState.enemies = GameState.enemies.filter(e => {
+      if(e.hp <= 0) {
+        if(e.mesh) scene.remove(e.mesh);
+        return false;
+      }
+      return true;
+    });
+  }
+
+  function updateProjectiles(delta) {
+    GameState.projectiles.forEach(proj => {
+      if(!proj.active || !proj.mesh) return;
+      
+      // Move projectile
+      proj.mesh.position.add(proj.velocity.clone().multiplyScalar(delta));
+      proj.mesh.rotation.y += delta * 5; // Spin effect
+      
+      // Gravity arc
+      proj.mesh.position.y -= delta * 3;
+      
+      // Remove if too low or out of bounds
+      if(proj.mesh.position.y < -5 || 
+         Math.abs(proj.mesh.position.x) > CONFIG.oceanSize/2 ||
+         Math.abs(proj.mesh.position.z) > CONFIG.oceanSize/2) {
+        proj.active = false;
+        proj.mesh.position.y = -100;
+      }
+      
+      proj.life -= delta;
+      if(proj.life <= 0) {
+        proj.active = false;
+        proj.mesh.position.y = -100;
+      }
+    });
+  }
+
+  function updateSpawning(delta) {
+    // Increase wave every 60 seconds
+    const newWave = Math.floor(GameState.time / 60) + 1;
+    if(newWave > GameState.wave) {
+      GameState.wave = newWave;
+      // Spawn bonus enemies on wave change
+      for(let i = 0; i < Math.min(GameState.wave, 5); i++) {
+        const type = Math.random() < 0.7 ? 'rowboat' : 'enemySmall';
+        spawnEnemy(type, {
+          x: (Math.random() - 0.5) * CONFIG.enemySpawnRadius * (1 + GameState.wave * 0.1),
+          z: (Math.random() - 0.5) * CONFIG.enemySpawnRadius * (1 + GameState.wave * 0.1)
         });
+      }
+    }
+    
+    // Random spawns
+    if(Math.random() < 0.02 + GameState.wave * 0.005) {
+      const type = Math.random() < 0.8 ? 'rowboat' : 'enemySmall';
+      const angle = Math.random() * Math.PI * 2;
+      const dist = CONFIG.enemySpawnRadius + Math.random() * 50;
+      spawnEnemy(type, {
+        x: Math.cos(angle) * dist,
+        z: Math.sin(angle) * dist
+      });
+    }
+  }
 
-        // Inject vertex manipulation to create seamless moving waves
-        oceanMat.onBeforeCompile = (shader) => {
-            shader.uniforms.time = { value: 0 };
-            shader.vertexShader = 'uniform float time;\n' + shader.vertexShader;
-            shader.vertexShader = shader.vertexShader.replace(
-                '#include <begin_vertex>',
-                `
-                vec3 transformed = vec3(position);
-                // Calculate world position to prevent texture sliding when plane follows camera
-                vec4 worldPos = modelMatrix * vec4(position, 1.0);
-                float wave = sin(worldPos.x * 0.15 + time) * cos(worldPos.z * 0.15 + time) * 1.5;
-                transformed.y += wave;
-                `
-            );
-            oceanMat.userData.shader = shader;
-        };
-        
-        const ocean = new THREE.Mesh(oceanGeo, oceanMat);
-        ocean.receiveShadow = true;
-        scene.add(ocean);
-
-        // Fallback Materials & Geometries
-        const sphereGeo = new THREE.SphereGeometry(1, 16, 16);
-        const boxGeo = new THREE.BoxGeometry(2, 2, 2);
-        const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.2, metalness: 0.8 });
-        const dummyShipMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-
-        // ==========================================
-        // GAME ENTITIES
-        // ==========================================
-        class Player {
-            constructor() {
-                this.mesh = new THREE.Group();
-                scene.add(this.mesh);
-                
-                if (STATE.models['ship-pirate-small.glb']) {
-                    const model = STATE.models['ship-pirate-small.glb'].clone();
-                    model.position.y = -0.3; // Sit in water
-                    this.mesh.add(model);
-                } else {
-                    const box = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 6), dummyShipMat);
-                    box.position.y = 1;
-                    this.mesh.add(box);
-                }
-                
-                this.position = new THREE.Vector3(0, 0, 0);
-                this.velocity = new THREE.Vector3(0, 0, 0);
-                this.rotationY = 0;
-                this.targetRotationY = 0;
-                
-                // Fleet Group (visual representation of extra cannons)
-                this.fleetGroup = new THREE.Group();
-                this.mesh.add(this.fleetGroup);
-            }
-
-            update(dt) {
-                // Movement Input
-                let moveDir = new THREE.Vector3(0, 0, 0);
-                if (STATE.keys.w || STATE.keys.ArrowUp) moveDir.z -= 1;
-                if (STATE.keys.s || STATE.keys.ArrowDown) moveDir.z += 1;
-                if (STATE.keys.a || STATE.keys.ArrowLeft) moveDir.x -= 1;
-                if (STATE.keys.d || STATE.keys.ArrowRight) moveDir.x += 1;
-
-                if (moveDir.lengthSq() > 0) {
-                    moveDir.normalize();
-                    this.targetRotationY = Math.atan2(moveDir.x, moveDir.z);
-                    const speed = CONFIG.playerBaseSpeed * STATE.upgrades.speed;
-                    this.velocity.lerp(moveDir.multiplyScalar(speed), dt * 3);
-                } else {
-                    // Ocean friction drift
-                    this.velocity.lerp(new THREE.Vector3(0,0,0), dt * 1.5);
-                }
-
-                // Smooth rotation with wrap-around fix
-                let diff = this.targetRotationY - this.rotationY;
-                while (diff < -Math.PI) diff += Math.PI * 2;
-                while (diff > Math.PI) diff -= Math.PI * 2;
-                this.rotationY += diff * dt * CONFIG.playerTurnSpeed;
-
-                this.mesh.rotation.y = this.rotationY;
-                this.position.addScaledVector(this.velocity, dt);
-                
-                // Aesthetic bobbing on waves
-                this.mesh.position.copy(this.position);
-                this.mesh.position.y = Math.sin(Date.now() * 0.002) * 0.4;
-                this.mesh.rotation.z = Math.sin(Date.now() * 0.001) * 0.08;
-                this.mesh.rotation.x = Math.cos(Date.now() * 0.0015) * 0.05;
-
-                // Smooth Camera Follow
-                camera.position.lerp(
-                    new THREE.Vector3(
-                        this.position.x + STATE.cameraOffset.x,
-                        this.position.y + STATE.cameraOffset.y,
-                        this.position.z + STATE.cameraOffset.z
-                    ),
-                    dt * 4
-                );
-                camera.lookAt(this.position);
-            }
-
-            addFleetShip() {
-                if (STATE.models['boat-row-small.glb']) {
-                    const ally = STATE.models['boat-row-small.glb'].clone();
-                    // Arrange in a circle based on cannon count
-                    const index = STATE.upgrades.cannons - 1;
-                    const angle = index * (Math.PI / 2);
-                    const radius = 6;
-                    ally.position.set(Math.cos(angle)*radius, -0.3, Math.sin(angle)*radius);
-                    this.fleetGroup.add(ally);
-                }
-            }
+  function checkCollectibles() {
+    const pickupRadius = 3 * (GameState.metaUpgrades.treasureMagnet.unlocked ? 1.4 : 1);
+    
+    GameState.collectibles = GameState.collectibles.filter(c => {
+      if(!c.mesh) return false;
+      
+      const dist = c.position.distanceTo(playerMesh.position);
+      if(dist < pickupRadius) {
+        // Collect!
+        if(c.type === 'doubloon') {
+          GameState.player.doubloons += c.value;
+          GameState.player.xp += c.value;
+          
+          // Level up check
+          if(GameState.player.xp >= GameState.player.xpToLevel && !GameState.levelUp) {
+            levelUp();
+          }
         }
+        if(c.mesh) scene.remove(c.mesh);
+        return false;
+      }
+      return true;
+    });
+  }
 
-        class Enemy {
-            constructor(type, spawnPos) {
-                this.mesh = new THREE.Group();
-                scene.add(this.mesh);
-                this.type = type;
-                
-                // Scale stats by survival time
-                const timeScaler = 1 + (STATE.time / 300); // 10% harder every 30s
-                
-                this.hp = (type === 'boss' ? 800 : (type === 'medium' ? 60 : 20)) * timeScaler;
-                this.maxHp = this.hp;
-                this.speed = type === 'boss' ? 5 : (type === 'medium' ? 7 : 9);
-                this.damage = type === 'boss' ? 25 : 10;
-                this.scoreValue = type === 'boss' ? 250 : (type === 'medium' ? 20 : 5);
+  // ===== START =====
+  // Load saved meta progress
+  try {
+    const save = JSON.parse(localStorage.getItem('maelstrom_save') || '{}');
+    if(save.skulls) GameState.player.skulls = save.skulls;
+  } catch(e) {}
 
-                let modelName = 'boat-row-small.glb';
-                if(type === 'medium') modelName = 'ship-small.glb';
-                if(type === 'boss') modelName = 'ship-ghost.glb';
-
-                if (STATE.models[modelName]) {
-                    const model = STATE.models[modelName].clone();
-                    model.position.y = -0.3;
-                    
-                    // Curse shader effect for Ghost Boss
-                    if (type === 'boss') {
-                        model.scale.set(2.2, 2.2, 2.2);
-                        model.traverse(c => {
-                            if (c.isMesh && c.material) {
-                                c.material = c.material.clone();
-                                c.material.color.setHex(0x4dff9b);
-                                c.material.emissive.setHex(0x0d4a3e);
-                                c.material.transparent = true;
-                                c.material.opacity = 0.85;
-                            }
-                        });
-                    }
-                    this.mesh.add(model);
-                } else {
-                    const size = type === 'boss' ? 5 : 2;
-                    const box = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), new THREE.MeshStandardMaterial({color: 0xaa3333}));
-                    box.position.y = size/2;
-                    this.mesh.add(box);
-                }
-
-                this.mesh.position.copy(spawnPos);
-                this.isDead = false;
-                this.flashTimer = 0;
-            }
-
-            update(dt, playerPos) {
-                if (this.isDead) return;
-
-                // Move logic
-                const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position);
-                const dist = dir.length();
-                
-                if (dist > 1.0) {
-                    dir.normalize();
-                    this.mesh.position.addScaledVector(dir, this.speed * dt);
-                    // Point at player smoothly
-                    const targetRot = Math.atan2(dir.x, dir.z);
-                    this.mesh.rotation.y = targetRot; 
-                }
-
-                // Bobbing based on world pos mapping to ocean shader
-                this.mesh.position.y = Math.sin(this.mesh.position.x * 0.15 + STATE.time) * 0.5;
-
-                // Handle damage flash reset
-                if (this.flashTimer > 0) {
-                    this.flashTimer -= dt;
-                    if (this.flashTimer <= 0) {
-                        this.mesh.traverse(c => {
-                            if(c.isMesh && c.material) c.material.emissive.setHex(this.type === 'boss' ? 0x0d4a3e : 0x000000);
-                        });
-                    }
-                }
-
-                // Collision with player (Damage Loop)
-                if (dist < (this.type === 'boss' ? 7 : 3)) {
-                    STATE.upgrades.hp -= this.damage * dt;
-                    updateHUD();
-                    
-                    // Visually sink player slightly on hit
-                    STATE.player.mesh.position.y -= 0.5;
-                    
-                    if (STATE.upgrades.hp <= 0) {
-                        endGame();
-                    }
-                }
-            }
-
-            takeDamage(amount) {
-                this.hp -= amount;
-                
-                // Visual Hit Feedback
-                this.flashTimer = 0.1;
-                this.mesh.position.y -= 1.0; // Knock down
-                this.mesh.traverse(c => {
-                    if(c.isMesh && c.material) c.material.emissive.setHex(0x555555); // Flash white
-                });
-                
-                if (this.hp <= 0 && !this.isDead) {
-                    this.isDead = true;
-                    // Explode into loot
-                    const numDrops = this.type === 'boss' ? 15 : (this.type === 'medium' ? 3 : 1);
-                    for(let i=0; i<numDrops; i++) {
-                        const offset = new THREE.Vector3((Math.random()-0.5)*5, 0, (Math.random()-0.5)*5);
-                        STATE.pickups.push(new Pickup(this.mesh.position.clone().add(offset), this.type === 'boss'));
-                    }
-                    STATE.score += this.scoreValue;
-                    scene.remove(this.mesh);
-                }
-            }
-        }
-
-        class Projectile {
-            constructor(startPos, targetPos) {
-                this.mesh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({color: 0x222222}));
-                this.mesh.scale.set(0.6, 0.6, 0.6);
-                
-                if (STATE.models['cannon-ball.glb']) {
-                    this.mesh.geometry.dispose();
-                    this.mesh.material.dispose();
-                    this.mesh = STATE.models['cannon-ball.glb'].clone();
-                }
-                
-                this.mesh.position.copy(startPos);
-                this.mesh.position.y += 1.5; // Fire from deck height
-                scene.add(this.mesh);
-
-                this.target = targetPos.clone();
-                const dir = new THREE.Vector3().subVectors(this.target, startPos);
-                this.distTotal = dir.length();
-                dir.normalize();
-                
-                this.velocity = dir.multiplyScalar(45); // Cannonball speed
-                this.life = 0;
-                this.maxLife = this.distTotal / 45;
-                this.active = true;
-            }
-
-            update(dt) {
-                if (!this.active) return;
-                
-                this.life += dt;
-                const t = this.life / this.maxLife;
-                
-                this.mesh.position.addScaledVector(this.velocity, dt);
-                // Parabolic trajectory
-                this.mesh.position.y = 1.5 + Math.sin(t * Math.PI) * (this.distTotal * 0.2);
-
-                if (this.life >= this.maxLife) {
-                    this.active = false;
-                    scene.remove(this.mesh);
-                    
-                    // Area of Effect Damage on Impact
-                    STATE.enemies.forEach(enemy => {
-                        if (enemy.isDead) return;
-                        if (enemy.mesh.position.distanceTo(this.mesh.position) < 4.5) {
-                            enemy.takeDamage(STATE.upgrades.damage);
-                        }
-                    });
-                }
-            }
-        }
-
-        class Pickup {
-            constructor(pos, isChest = false) {
-                this.active = true;
-                this.isChest = isChest;
-                this.value = isChest ? 50 : 5; // Chests give massive XP
-
-                this.mesh = new THREE.Group();
-                scene.add(this.mesh);
-
-                let modelName = isChest ? 'chest.glb' : 'barrel.glb'; // Barrel acts as doubloon proxy
-                if (STATE.models[modelName]) {
-                    const model = STATE.models[modelName].clone();
-                    if(!isChest) model.scale.set(0.6, 0.6, 0.6);
-                    this.mesh.add(model);
-                } else {
-                    const sphere = new THREE.Mesh(sphereGeo, goldMat);
-                    sphere.scale.set(0.6, 0.6, 0.6);
-                    this.mesh.add(sphere);
-                }
-
-                this.mesh.position.copy(pos);
-            }
-
-            update(dt, playerPos) {
-                if (!this.active) return;
-                
-                // Float animation
-                this.mesh.position.y = Math.sin(Date.now() * 0.004 + this.mesh.position.x) * 0.3 + 0.2;
-                this.mesh.rotation.y += dt * 1.5;
-
-                const dist = this.mesh.position.distanceTo(playerPos);
-                
-                // Magnetic collection
-                if (dist < STATE.upgrades.pickupRadius) {
-                    const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position).normalize();
-                    this.mesh.position.addScaledVector(dir, 35 * dt); // Suck in fast
-
-                    if (dist < 3) {
-                        this.active = false;
-                        scene.remove(this.mesh);
-                        gainExp(this.value);
-                    }
-                }
-            }
-        }
-
-        // ==========================================
-        // SYSTEM LOGIC & UI
-        // ==========================================
-        const UPGRADE_POOL = [
-            { id: 'cannon', name: 'Recruit Sloop', desc: '+1 Cannon & Fleet Ship', rarity: 'legendary', color: 'var(--gold)' },
-            { id: 'damage', name: 'Heavy Broadside', desc: '+5 Cannon Damage', rarity: 'rare', color: '#4da6ff' },
-            { id: 'speed', name: 'Stolen Sails', desc: '+15% Movement Speed', rarity: 'epic', color: '#a64dff' },
-            { id: 'maxhp', name: 'Reinforce Hull', desc: '+20 Max HP & Full Heal', rarity: 'rare', color: '#4da6ff' },
-            { id: 'hp', name: 'Patch Leaks', desc: 'Restore 50 HP', rarity: 'common', color: '#a0a0a0' },
-            { id: 'magnet', name: 'Treasure Lure', desc: '+30% Pickup Radius', rarity: 'epic', color: '#a64dff' }
-        ];
-
-        function setScreen(screenName) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            if (screenName !== 'playing') {
-                const target = document.getElementById(screenName === 'menu' ? 'main-menu' : screenName + '-screen');
-                if(target) target.classList.add('active');
-            }
-            STATE.screen = screenName;
-            document.getElementById('hud').style.display = screenName === 'playing' ? 'block' : 'none';
-        }
-
-        function startGame() {
-            // Reset Core State
-            STATE.time = 0;
-            STATE.score = 0;
-            STATE.exp = 0;
-            STATE.level = 1;
-            STATE.expToNext = 100;
-            STATE.upgrades = { cannons: 1, damage: 15, speed: 1, maxHp: 100, hp: 100, pickupRadius: 20 };
-            
-            // Cleanup previous session
-            if (STATE.player) scene.remove(STATE.player.mesh);
-            STATE.enemies.forEach(e => scene.remove(e.mesh));
-            STATE.projectiles.forEach(p => scene.remove(p.mesh));
-            STATE.pickups.forEach(p => scene.remove(p.mesh));
-            
-            STATE.enemies = [];
-            STATE.projectiles = [];
-            STATE.pickups = [];
-
-            // Init Player
-            STATE.player = new Player();
-            
-            updateHUD();
-            setScreen('playing');
-        }
-
-        function endGame() {
-            setScreen('game-over');
-            document.getElementById('go-time').innerText = formatTime(STATE.time);
-            document.getElementById('go-score').innerText = STATE.score;
-        }
-
-        function formatTime(seconds) {
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
-            return (m < 10 ? '0'+m : m) + ':' + (s < 10 ? '0'+s : s);
-        }
-
-        function updateHUD() {
-            const hpPct = Math.max(0, (STATE.upgrades.hp / STATE.upgrades.maxHp) * 100);
-            document.getElementById('hp-bar').style.width = hpPct + '%';
-            document.getElementById('timer-ui').innerText = formatTime(STATE.time);
-            document.getElementById('doubloon-count').innerText = STATE.score;
-            
-            const expPct = Math.min(100, (STATE.exp / STATE.expToNext) * 100);
-            document.getElementById('exp-bar').style.width = expPct + '%';
-        }
-
-        function gainExp(amount) {
-            STATE.exp += amount;
-            STATE.score += amount;
-            
-            if (STATE.exp >= STATE.expToNext) {
-                STATE.exp -= STATE.expToNext;
-                STATE.level++;
-                STATE.expToNext = Math.floor(STATE.expToNext * 1.3); // Escalating requirement
-                triggerLevelUp();
-            }
-            updateHUD();
-        }
-
-        function triggerLevelUp() {
-            setScreen('upgrade');
-            
-            // Randomly select 3 unique upgrades
-            const shuffled = [...UPGRADE_POOL].sort(() => 0.5 - Math.random());
-            const choices = shuffled.slice(0, 3);
-            
-            const container = document.getElementById('upgrade-cards');
-            container.innerHTML = '';
-            
-            choices.forEach(choice => {
-                const card = document.createElement('div');
-                card.className = `card card-${choice.rarity}`;
-                card.innerHTML = `
-                    <h3 style="color:${choice.color}">${choice.name}</h3>
-                    <p>${choice.desc}</p>
-                    <span class="rarity" style="color:${choice.color}">${choice.rarity}</span>
-                `;
-                card.onclick = () => applyUpgrade(choice.id);
-                container.appendChild(card);
-            });
-        }
-
-        function applyUpgrade(id) {
-            switch(id) {
-                case 'cannon': 
-                    STATE.upgrades.cannons++; 
-                    STATE.player.addFleetShip(); // Visually append to armada
-                    break;
-                case 'damage': STATE.upgrades.damage += 8; break;
-                case 'speed': STATE.upgrades.speed += 0.15; break;
-                case 'maxhp': 
-                    STATE.upgrades.maxHp += 20;
-                    STATE.upgrades.hp = STATE.upgrades.maxHp; 
-                    break;
-                case 'hp': 
-                    STATE.upgrades.hp = Math.min(STATE.upgrades.maxHp, STATE.upgrades.hp + 50); 
-                    break;
-                case 'magnet': STATE.upgrades.pickupRadius *= 1.3; break;
-            }
-            updateHUD();
-            setScreen('playing');
-        }
-
-        // ==========================================
-        // CORE GAME LOOP (SPAWN & COMBAT)
-        // ==========================================
-        const clock = new THREE.Clock();
-
-        function manageSpawning(dt) {
-            STATE.lastSpawnTime += dt;
-            
-            // Difficulty curve: spawn faster over time
-            const spawnInterval = Math.max(0.6, CONFIG.enemySpawnRate - (STATE.time / 100));
-            
-            if (STATE.lastSpawnTime > spawnInterval) {
-                STATE.lastSpawnTime = 0;
-                
-                // Spawn in a ring outside camera view
-                const angle = Math.random() * Math.PI * 2;
-                const dist = 60 + Math.random() * 20; 
-                const spawnPos = new THREE.Vector3(
-                    STATE.player.position.x + Math.cos(angle) * dist,
-                    0,
-                    STATE.player.position.z + Math.sin(angle) * dist
-                );
-
-                // Type calculation based on time survived
-                let type = 'small';
-                const r = Math.random();
-                if (STATE.time > 60 && r < 0.25) type = 'medium';
-                if (STATE.time > 180 && r < 0.5) type = 'medium';
-                
-                // Ghost Ship Boss every 2 minutes exactly
-                if (Math.floor(STATE.time) > 0 && Math.floor(STATE.time) % 120 === 0 && r < 0.08) {
-                    type = 'boss';
-                    // Show dramatic UI text
-                    const warning = document.getElementById('warning-text');
-                    warning.style.display = 'block';
-                    setTimeout(() => warning.style.display = 'none', 4000);
-                }
-
-                STATE.enemies.push(new Enemy(type, spawnPos));
-            }
-        }
-
-        function manageAutoFire(dt) {
-            STATE.lastFireTime += dt;
-            
-            // Fire rate scales slightly with cannon count to feel rhythmic
-            const fireInterval = Math.max(0.3, CONFIG.baseFireRate - (STATE.upgrades.cannons * 0.1));
-            
-            if (STATE.lastFireTime > fireInterval) {
-                STATE.lastFireTime = 0;
-                
-                // Get enemies within range (70 units)
-                const targets = STATE.enemies
-                    .filter(e => !e.isDead && e.mesh.position.distanceTo(STATE.player.position) < 70)
-                    .sort((a, b) => 
-                        a.mesh.position.distanceTo(STATE.player.position) - 
-                        b.mesh.position.distanceTo(STATE.player.position)
-                    );
-
-                // Fire up to N cannons at the N nearest enemies
-                const numShots = Math.min(STATE.upgrades.cannons, targets.length);
-                
-                for(let i=0; i < numShots; i++) {
-                    const targetPos = targets[i].mesh.position.clone();
-                    // Slight inaccuracy scatter for visual flair
-                    targetPos.add(new THREE.Vector3((Math.random()-0.5)*3, 0, (Math.random()-0.5)*3));
-                    STATE.projectiles.push(new Projectile(STATE.player.position, targetPos));
-                }
-            }
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const dt = Math.min(clock.getDelta(), 0.1); // Cap delta time to prevent physics clipping
-
-            // Update Ocean Shader Time
-            if (oceanMat.userData.shader) {
-                oceanMat.userData.shader.uniforms.time.value += dt * 1.5;
-            }
-
-            if (STATE.screen === 'playing') {
-                STATE.time += dt;
-                
-                if (Math.floor(STATE.time * 10) % 10 === 0) updateHUD();
-
-                // Logic Updates
-                STATE.player.update(dt);
-                manageSpawning(dt);
-                manageAutoFire(dt);
-
-                STATE.enemies.forEach(e => e.update(dt, STATE.player.position));
-                STATE.projectiles.forEach(p => p.update(dt));
-                STATE.pickups.forEach(p => p.update(dt, STATE.player.position));
-
-                // Infinite Ocean Trick: Move the plane to follow camera, shader handles world-space lock
-                ocean.position.x = camera.position.x;
-                ocean.position.z = camera.position.z;
-
-                // Garbage Collect Arrays
-                STATE.enemies = STATE.enemies.filter(e => !e.isDead);
-                STATE.projectiles = STATE.projectiles.filter(p => p.active);
-                STATE.pickups = STATE.pickups.filter(p => p.active);
-
-            } else if (STATE.screen === 'menu') {
-                // Cinematic panning camera around the ocean
-                camera.position.x = Math.sin(Date.now() * 0.0003) * 60;
-                camera.position.z = Math.cos(Date.now() * 0.0003) * 60;
-                camera.lookAt(0, 0, 0);
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // ==========================================
-        // INPUT LISTENERS (Desktop & Mobile)
-        // ==========================================
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        window.addEventListener('keydown', (e) => {
-            if (STATE.keys.hasOwnProperty(e.key.toLowerCase())) STATE.keys[e.key.toLowerCase()] = true;
-            if (STATE.keys.hasOwnProperty(e.key)) STATE.keys[e.key] = true;
-        });
-
-        window.addEventListener('keyup', (e) => {
-            if (STATE.keys.hasOwnProperty(e.key.toLowerCase())) STATE.keys[e.key.toLowerCase()] = false;
-            if (STATE.keys.hasOwnProperty(e.key)) STATE.keys[e.key] = false;
-        });
-
-        // Virtual Touch Joystick
-        let touchStartX = 0;
-        let touchStartY = 0;
-        window.addEventListener('touchstart', e => {
-            if(STATE.screen !== 'playing') return;
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, {passive: false});
-
-        window.addEventListener('touchmove', e => {
-            if(STATE.screen !== 'playing') return;
-            e.preventDefault(); // Prevent pull-to-refresh
-            const dx = e.touches[0].clientX - touchStartX;
-            const dy = e.touches[0].clientY - touchStartY;
-            
-            const deadzone = 20;
-            STATE.keys.w = dy < -deadzone;
-            STATE.keys.s = dy > deadzone;
-            STATE.keys.a = dx < -deadzone;
-            STATE.keys.d = dx > deadzone;
-        }, {passive: false});
-
-        window.addEventListener('touchend', () => {
-            STATE.keys.w = STATE.keys.s = STATE.keys.a = STATE.keys.d = false;
-        });
-
-        // UI Buttons
-        document.getElementById('btn-play').addEventListener('click', startGame);
-        document.getElementById('btn-restart').addEventListener('click', startGame);
-
-    </script>
+  // Initialize when DOM ready
+  if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  </script>
 </body>
 </html>
+
+<!-- ✅ Reliable CDN imports -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"></script>
+
+
+
+              <script>
+                              // ✅ Correct path for GitHub Pages
+const CONFIG = {
+  assetBase: 'assets/Models/GLB format/',  // Matches your repo structure
+  texturePath: 'assets/Models/GLB format/Textures/colormap.png'
+};
+
+// ✅ If GLB fails to load, create placeholder mesh
+function createPlaceholder(name) {
+  const geo = new THREE.BoxGeometry(2, 2, 4);
+  const mat = new THREE.MeshStandardMaterial({ 
+    color: name.includes('ghost') ? 0x44ff99 : 0x8b4513 
+  });
+  return new THREE.Mesh(geo, mat);
+}
+
+
+              </script>
+                        </body>
+                        </html>
+                    
