@@ -1,1582 +1,1666 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="description" content="MAELSTROM — Free Pirate Naval Survivor. Auto-fire cannons, grow your fleet, defeat ghost ship bosses. No download needed.">
-<title>MAELSTROM — Survive the Sea. Outlast the Storm.</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#04101e;font-family:'Georgia',serif}
-#game-canvas{display:block;position:absolute;top:0;left:0;width:100%;height:100%}
-
-/* ─── LOADING ─────────────────────────────────────── */
-#loading{position:absolute;inset:0;background:linear-gradient(180deg,#04101e,#0a1e36 60%,#061428);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;transition:opacity .8s}
-#loading.out{opacity:0;pointer-events:none}
-#loading h1{font-size:clamp(2.4rem,8vw,5.5rem);color:#f0c040;text-shadow:0 0 40px #f0c04066,0 4px 12px #000;
-  letter-spacing:.18em;font-weight:900;text-transform:uppercase;margin-bottom:.15em}
-#loading p{color:#88ccff;font-size:clamp(.7rem,2vw,.95rem);letter-spacing:.35em;text-transform:uppercase;margin-bottom:2.5em}
-#load-bar-wrap{width:min(340px,70vw);height:10px;background:#0a1828;border-radius:5px;border:1px solid #1a3a5a;overflow:hidden;margin-bottom:.7em}
-#load-bar{height:100%;width:0%;background:linear-gradient(90deg,#0055aa,#4488ff,#00ccff);border-radius:5px;transition:width .2s}
-#load-txt{color:#3a6090;font-size:.72rem;letter-spacing:.12em;min-height:1.2em}
-
-/* ─── SCREENS ─────────────────────────────────────── */
-.scr{position:absolute;inset:0;display:none;z-index:50}
-.scr.on{display:flex}
-
-/* ─── MENU ────────────────────────────────────────── */
-#menu{flex-direction:column;align-items:center;justify-content:center;pointer-events:all;background:transparent}
-#menu-logo{font-size:clamp(2.8rem,9vw,6rem);color:#f0c040;letter-spacing:.18em;font-weight:900;
-  text-transform:uppercase;text-shadow:0 0 60px #f0c04055,0 6px 16px #000;animation:lglow 3s ease-in-out infinite}
-@keyframes lglow{0%,100%{text-shadow:0 0 40px #f0c04055,0 4px 12px #000}50%{text-shadow:0 0 90px #f0c040aa,0 4px 12px #000}}
-#menu-sub{color:#88ccff;font-size:clamp(.65rem,2vw,.92rem);letter-spacing:.35em;text-transform:uppercase;
-  margin:.2em 0 1.6em;text-shadow:0 1px 4px #000}
-.btns{display:flex;flex-direction:column;gap:.5em;align-items:center}
-.btn{display:block;padding:.62em 2.1em;font-size:clamp(.82rem,2.3vw,1rem);color:#fff;
-  background:linear-gradient(135deg,#142540,#0c1928);border:1.5px solid #254870;border-radius:7px;
-  cursor:pointer;font-family:inherit;letter-spacing:.1em;text-transform:uppercase;
-  transition:all .14s;min-width:226px;text-align:center;user-select:none;-webkit-tap-highlight-color:transparent}
-.btn:hover,.btn:active{background:linear-gradient(135deg,#1c3660,#14243a);border-color:#4a88cc;
-  transform:scale(1.04);box-shadow:0 0 18px #2255aa44}
-.btn.gold{background:linear-gradient(135deg,#5a3600,#a86800);border-color:#e8b830}
-.btn.gold:hover{background:linear-gradient(135deg,#7a4e10,#c87a20);box-shadow:0 0 18px #f0c04033}
-#menu-info{color:#4466aa;font-size:.76rem;text-align:center;margin-bottom:.6em;max-width:300px}
-#menu-skulls{color:#f0c040;font-size:.8rem;margin-bottom:.25em}
-
-/* ─── HUD ─────────────────────────────────────────── */
-#hud{position:absolute;inset:0;pointer-events:none;z-index:10;display:none}
-#hud.on{display:block}
-#hud-hp-wrap{position:absolute;top:14px;left:14px}
-#hud-hp-lbl{color:#ff7777;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 1px 3px #000}
-#hud-hp-bar{width:148px;height:11px;background:#280000;border-radius:5px;border:1px solid #440000;
-  overflow:hidden;margin-top:3px;box-shadow:0 2px 5px #0008}
-#hud-hp-fill{height:100%;width:100%;background:linear-gradient(90deg,#cc2222,#ff5555);border-radius:5px;transition:width .18s,background .28s}
-#hud-phase{position:absolute;top:38px;left:14px;color:#4dff9b;font-size:.62rem;letter-spacing:.08em;
-  display:none;text-shadow:0 0 8px #4dff9b88;animation:phasepulse 1s ease-in-out infinite}
-@keyframes phasepulse{0%,100%{opacity:1}50%{opacity:.4}}
-#hud-timer{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:#fff;
-  font-size:clamp(1.25rem,4.2vw,2.1rem);font-weight:bold;
-  text-shadow:0 2px 10px #000,0 0 28px #2255ff33;letter-spacing:.12em;pointer-events:none}
-#hud-timer.red{color:#ff4444;text-shadow:0 2px 8px #000,0 0 20px #ff444488;animation:timerblink .6s ease-in-out infinite}
-@keyframes timerblink{0%,100%{opacity:1}50%{opacity:.7}}
-#hud-score{position:absolute;top:14px;right:14px;text-align:right;pointer-events:none}
-#hud-score span{display:block;text-shadow:0 1px 4px #000}
-.hs1{color:#f0c040;font-size:.86rem}
-.hs2{color:#88ccff;font-size:.73rem;margin-top:.12em}
-.hs3{color:#aa88ff;font-size:.73rem;margin-top:.12em}
-#hud-xp-wrap{position:absolute;top:52px;right:14px;width:128px}
-#hud-xp-lbl{color:#445566;font-size:.58rem;text-transform:uppercase;letter-spacing:.07em}
-#hud-xp-bar{height:5px;background:#000e20;border-radius:3px;overflow:hidden;margin-top:2px;border:1px solid #112}
-#hud-xp-fill{height:100%;background:linear-gradient(90deg,#4400ff,#9944ff,#cc66ff);width:0%;border-radius:3px;transition:width .28s}
-#boss-bar{position:absolute;top:62px;left:50%;transform:translateX(-50%);width:min(420px,76%);display:none}
-#boss-lbl{color:#4dff9b;font-size:.7rem;text-align:center;display:block;letter-spacing:.22em;text-transform:uppercase;text-shadow:0 0 10px #4dff9b88;margin-bottom:3px}
-#boss-track{height:14px;background:#001306;border-radius:6px;border:1.5px solid #4dff9b44;overflow:hidden;box-shadow:0 0 14px #4dff9b22}
-#boss-fill{height:100%;background:linear-gradient(90deg,#00aa44,#4dff9b);width:100%;transition:width .1s;border-radius:4px}
-#hud-wave{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);color:#2a4a70;
-  font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;text-shadow:0 1px 3px #000;white-space:nowrap}
-#minimap{position:absolute;bottom:36px;left:14px;width:86px;height:86px;border-radius:50%;
-  border:1.5px solid #1a3050;background:rgba(0,8,20,.78);overflow:hidden;box-shadow:0 2px 8px #0009}
-#minimap canvas{width:86px;height:86px;display:block}
-
-/* ─── SCREENS common ──────────────────────────────── */
-#upgrade-scr{flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(0,5,16,.92);backdrop-filter:blur(6px);pointer-events:all}
-#upgrade-scr h2{color:#f0c040;font-size:clamp(1.1rem,3.5vw,1.85rem);letter-spacing:.22em;
-  text-transform:uppercase;margin-bottom:.2em;text-shadow:0 0 22px #f0c04055}
-#upg-sub{color:#3a5575;font-size:.78rem;margin-bottom:1.5em;letter-spacing:.1em}
-#cards{display:flex;gap:.9em;flex-wrap:wrap;justify-content:center;max-width:900px}
-.card{width:min(205px,29vw);background:linear-gradient(160deg,#07101e,#040c16);border-radius:10px;
-  padding:1em .85em;cursor:pointer;transition:all .13s;border:2px solid #182840;text-align:center;position:relative}
-.card:hover{transform:scale(1.07) translateY(-5px)}
-.card.common{border-color:#556677}
-.card.common:hover{box-shadow:0 0 22px #55667733}
-.card.rare{border-color:#2255ee}
-.card.rare:hover{box-shadow:0 0 22px #2255ee88}
-.card.epic{border-color:#8822dd}
-.card.epic:hover{box-shadow:0 0 22px #8822dd88}
-.card.legendary{border-color:#f0c040;animation:cglw 1.6s ease-in-out infinite}
-@keyframes cglw{0%,100%{box-shadow:0 0 16px #f0c04044}50%{box-shadow:0 0 36px #f0c040aa,inset 0 0 8px #f0c04011}}
-.ci{font-size:2.5em;margin-bottom:.22em;filter:drop-shadow(0 2px 4px #000)}
-.cn{color:#eee;font-size:.83rem;font-weight:700;margin-bottom:.28em;letter-spacing:.04em}
-.cd{color:#6688aa;font-size:.67rem;line-height:1.44;margin-bottom:.45em}
-.cr{font-size:.58rem;text-transform:uppercase;letter-spacing:.18em;font-weight:700}
-.card.common .cr{color:#778899}
-.card.rare .cr{color:#4477ff}
-.card.epic .cr{color:#aa55ff}
-.card.legendary .cr{color:#f0c040}
-#upg-hint{color:#1e3252;font-size:.7rem;margin-top:1.1em;letter-spacing:.1em}
-
-#death-scr{flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.93);
-  text-align:center;padding:2em 1em;pointer-events:all;overflow-y:auto}
-#death-title{color:#ff2222;font-size:clamp(1.5rem,5.5vw,3rem);letter-spacing:.22em;
-  text-shadow:0 0 40px #ff222266;margin-bottom:.2em;text-transform:uppercase;font-weight:900}
-#death-flav{color:#773333;font-size:.83rem;font-style:italic;margin-bottom:1.5em}
-#death-stats{color:#8899bb;font-size:.83rem;line-height:2.2;margin-bottom:.7em}
-#death-stats strong{color:#f0c040}
-#death-skulls{color:#f0c040;font-size:1rem;font-weight:700;margin-bottom:.4em}
-#death-rank{color:#557788;font-size:.77rem;margin-bottom:.8em}
-#death-share{background:#06101e;border:1px solid #1a3050;border-radius:6px;padding:.8em 1.1em;
-  color:#6688bb;font-size:.73rem;font-family:monospace;white-space:pre-line;max-width:310px;
-  line-height:1.7;cursor:pointer;transition:border-color .2s;margin-bottom:.3em;word-break:break-word}
-#death-share:hover{border-color:#3a6090}
-#death-share-hint{color:#1e3050;font-size:.62rem;margin-bottom:.9em}
-.dbtns{display:flex;flex-direction:column;gap:.45em;align-items:center}
-
-#meta-scr{flex-direction:column;align-items:center;overflow-y:auto;background:rgba(0,3,12,.97);
-  padding:2em 1em;pointer-events:all}
-#meta-scr h2{color:#f0c040;font-size:clamp(1rem,3.5vw,1.6rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:.2em}
-#meta-skulls-d{color:#f0c040;font-size:.85rem;margin-bottom:1.3em}
-#meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:.8em;max-width:860px;width:100%;margin-bottom:1.1em}
-.mnode{background:linear-gradient(135deg,#06101a,#030c14);border:2px solid #10202e;border-radius:8px;
-  padding:.85em;cursor:pointer;transition:all .14s;text-align:center}
-.mnode:hover:not(.locked){border-color:#2a5a88;background:linear-gradient(135deg,#0a1a28,#060e1a)}
-.mnode.owned{border-color:#155a20;background:linear-gradient(135deg,#050e06,#081606)}
-.mnode.locked{opacity:.4;cursor:default}
-.mni{font-size:1.8em;margin-bottom:.28em}
-.mnn{color:#ccd;font-size:.78rem;font-weight:700;margin-bottom:.18em}
-.mnd{color:#3a5570;font-size:.66rem;line-height:1.4;margin-bottom:.35em}
-.mnc{color:#f0c040;font-size:.7rem}
-.mnode.owned .mnc{color:#4dff9b}
-
-#ship-scr{flex-direction:column;align-items:center;background:rgba(0,3,12,.97);
-  padding:2em 1em;pointer-events:all;overflow-y:auto}
-#ship-scr h2{color:#f0c040;font-size:clamp(1rem,3.5vw,1.6rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:1.1em}
-#ship-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:.8em;max-width:720px;width:100%;margin-bottom:1.1em}
-.scard{background:linear-gradient(135deg,#06101a,#030c14);border:2px solid #10202e;border-radius:8px;
-  padding:.95em;cursor:pointer;transition:all .14s;text-align:center}
-.scard:hover:not(.slocked){border-color:#2a5a88}
-.scard.ssel{border-color:#f0c040;box-shadow:0 0 16px #f0c04030}
-.scard.slocked{opacity:.38;cursor:default}
-.sci{font-size:2.3em;margin-bottom:.32em}
-.scn{color:#eee;font-size:.8rem;font-weight:700;margin-bottom:.18em}
-.scd{color:#3a5570;font-size:.65rem;line-height:1.4;margin-bottom:.32em}
-.scc{color:#f0c040;font-size:.68rem}
-.scard.ssel .scc{color:#4dff9b}
-
-#lb-scr{flex-direction:column;align-items:center;justify-content:flex-start;background:rgba(0,3,12,.97);
-  pointer-events:all;padding:2em 1em;overflow-y:auto}
-#lb-scr h2{color:#f0c040;font-size:clamp(1rem,3.5vw,1.6rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:1.1em}
-#lb-list{max-width:430px;width:100%;font-size:.8rem;color:#6688aa;line-height:1;margin-bottom:1.3em}
-.lbr{display:flex;justify-content:space-between;align-items:center;padding:.52em .55em;
-  border-bottom:1px solid #0c1c2c;gap:.4em}
-.lbr:nth-child(1){color:#f0c040;font-weight:700}
-.lbr:nth-child(2){color:#cccccc}
-.lbr:nth-child(3){color:#cc9944}
-.lbr-rk{width:26px;text-align:right;flex-shrink:0}
-.lbr-ico{width:20px;text-align:center;flex-shrink:0}
-.lbr-nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lbr-sc{flex-shrink:0;font-weight:700}
-.lbr-tm{flex-shrink:0;color:#334455;font-size:.68rem}
-
-#wave-ann{position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);
-  color:#ff8844;font-size:clamp(1rem,4.2vw,2rem);font-weight:900;
-  text-shadow:0 0 28px #ff884466;letter-spacing:.22em;text-transform:uppercase;
-  opacity:0;transition:opacity .45s;pointer-events:none;z-index:40;text-align:center}
-#toast{position:absolute;top:76px;left:50%;transform:translateX(-50%);
-  background:rgba(0,12,36,.92);border:1px solid #244870;border-radius:6px;
-  color:#88ccff;font-size:.78rem;padding:.48em 1.25em;letter-spacing:.1em;
-  opacity:0;transition:opacity .28s;pointer-events:none;z-index:60;white-space:nowrap;text-shadow:0 1px 3px #000}
-#fps{position:absolute;bottom:2px;right:4px;color:#101e2e;font-size:.58rem;pointer-events:none}
-#pause-ovl{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:38;display:none;
-  align-items:center;justify-content:center;pointer-events:all}
-#pause-ovl.on{display:flex}
-.pause-box{background:rgba(0,8,22,.96);border:2px solid #244870;border-radius:10px;
-  padding:1.8em 2.8em;text-align:center}
-.pause-box h3{color:#f0c040;font-size:1.4rem;letter-spacing:.2em;margin-bottom:.9em;text-transform:uppercase}
-
-/* ─── Mobile joystick ─────────────────────────────── */
-#jzone{position:absolute;bottom:0;left:0;width:56%;height:50%;z-index:22;pointer-events:none;display:none}
-#jzone.mob{pointer-events:all;display:block}
-#jbase{position:absolute;width:110px;height:110px;border-radius:50%;
-  background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.13);display:none;pointer-events:none}
-#jthumb{position:absolute;width:46px;height:46px;border-radius:50%;
-  background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.36);top:32px;left:32px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAELSTROM - Naval Survivor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lato:wght@400;700&display=swap');
+        
+        body { margin: 0; overflow: hidden; background: #0a1628; font-family: 'Lato', sans-serif; user-select: none; }
+        .pirate-font { font-family: 'Cinzel', serif; }
+        
+        #game-container { position: relative; width: 100vw; height: 100vh; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        .ui-layer { position: absolute; pointer-events: none; width: 100%; height: 100%; }
+        .interactive { pointer-events: auto; }
+        
+        .hud-panel {
+            background: rgba(10, 22, 40, 0.9);
+            border: 2px solid #d4af37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            backdrop-filter: blur(4px);
+        }
+        
+        .gold-text { color: #d4af37; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .ghost-text { color: #4dff9b; text-shadow: 0 0 15px rgba(77, 255, 155, 0.8); }
+        
+        .upgrade-card {
+            background: linear-gradient(135deg, #1a2744 0%, #0f1729 100%);
+            border: 3px solid;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .upgrade-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+        .upgrade-card:hover::before { left: 100%; }
+        .upgrade-card:hover { transform: translateY(-10px) scale(1.05); }
+        .upgrade-card.common { border-color: #9ca3af; }
+        .upgrade-card.rare { border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+        .upgrade-card.epic { border-color: #a855f7; box-shadow: 0 0 25px rgba(168, 85, 247, 0.5); }
+        .upgrade-card.legendary { 
+            border-color: #d4af37; 
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+            animation: legendaryPulse 2s infinite;
+        }
+        
+        @keyframes legendaryPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.6); }
+            50% { box-shadow: 0 0 50px rgba(212, 175, 55, 0.9); }
+        }
+        
+        .health-bar { 
+            background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%);
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+            transition: width 0.3s ease;
+        }
+        
+        .loading-bar {
+            background: linear-gradient(90deg, #d4af37 0%, #f59e0b 100%);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            transition: width 0.3s ease;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.3s ease-in-out; }
+        
+        .damage-text {
+            position: absolute;
+            color: #ff4444;
+            font-weight: bold;
+            font-size: 24px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+            pointer-events: none;
+            animation: damageFloat 1s ease-out forwards;
+            font-family: 'Cinzel', serif;
+        }
+        
+        @keyframes damageFloat {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+        }
+        
+        .floating-coin {
+            position: absolute;
+            color: #ffd700;
+            font-size: 20px;
+            pointer-events: none;
+            animation: coinFloat 1s ease-out forwards;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+        }
+        
+        @keyframes coinFloat {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-40px); }
+        }
+        
+        /* Custom scrollbar for upgrade tree */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f1729; }
+        ::-webkit-scrollbar-thumb { background: #d4af37; border-radius: 4px; }
+    </style>
+<base target="_blank">
 </head>
 <body>
+    <div id="game-container">
+        <div id="canvas-container"></div>
+        
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="absolute inset-0 bg-gradient-to-b from-slate-900 to-blue-950 z-50 flex flex-col items-center justify-center">
+            <h1 class="pirate-font text-6xl md:text-8xl gold-text mb-4 animate-float tracking-wider">MAELSTROM</h1>
+            <p class="text-blue-200 mb-8 text-lg md:text-xl italic font-light">"Survive the Sea. Outlast the Storm."</p>
+            <div class="w-80 md:w-96 h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-600 shadow-2xl">
+                <div id="loading-bar" class="loading-bar h-full w-0 rounded-full"></div>
+            </div>
+            <p id="loading-text" class="text-slate-400 mt-4 text-sm uppercase tracking-widest">Loading Assets...</p>
+        </div>
 
-<!-- Loading screen -->
-<div id="loading">
-  <h1>MAELSTROM</h1>
-  <p>Survive the Sea · Outlast the Storm</p>
-  <div id="load-bar-wrap"><div id="load-bar"></div></div>
-  <div id="load-txt">Initialising seas…</div>
-</div>
+        <!-- Main Menu -->
+        <div id="main-menu" class="absolute inset-0 bg-gradient-to-b from-slate-900/95 via-blue-900/90 to-slate-900/95 z-40 hidden flex-col items-center justify-center interactive">
+            <div class="text-center mb-12">
+                <h1 class="pirate-font text-7xl md:text-9xl gold-text mb-2 drop-shadow-2xl tracking-tight">MAELSTROM</h1>
+                <div class="h-1 w-64 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mx-auto mb-4"></div>
+                <p class="text-blue-200 text-xl md:text-2xl italic tracking-wide">Survive the Sea. Outlast the Storm.</p>
+            </div>
+            
+            <div class="flex flex-col gap-4 w-80 md:w-96">
+                <button id="btn-play" class="interactive group relative bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold py-5 px-8 rounded-lg border-2 border-amber-400 shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-amber-500/50 pirate-font text-xl overflow-hidden">
+                    <span class="relative z-10 flex items-center justify-center gap-3">
+                        <span>⚔️</span> PLAY (Open Ocean)
+                    </span>
+                </button>
+                
+                <button id="btn-upgrades" class="interactive bg-slate-800/80 hover:bg-slate-700 text-amber-400 font-bold py-4 px-8 rounded-lg border border-slate-600 transition-all hover:border-amber-500/50 pirate-font text-lg flex justify-between items-center group">
+                    <span>💀 Upgrade Ship</span>
+                    <span id="menu-skulls" class="bg-slate-900 px-3 py-1 rounded-full text-sm">0 Skulls</span>
+                </button>
+                
+                <button id="btn-leaderboard" class="interactive bg-slate-800/80 hover:bg-slate-700 text-amber-400 font-bold py-4 px-8 rounded-lg border border-slate-600 transition-all hover:border-amber-500/50 pirate-font text-lg flex justify-between items-center">
+                    <span>🏆 Leaderboard</span>
+                    <span class="text-xs text-slate-400">Top 10</span>
+                </button>
+                
+                <button id="btn-help" class="interactive bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 font-bold py-3 px-8 rounded-lg border border-slate-700 transition-all text-sm">
+                    ❓ How to Play
+                </button>
+            </div>
+            
+            <div class="mt-12 text-slate-400 text-xs max-w-md text-center leading-relaxed">
+                <p class="mb-2">WASD or Arrow Keys to Move • Space for Special</p>
+                <p>Auto-fire Cannons • Collect Doubloons • Survive 30 Minutes</p>
+            </div>
+        </div>
 
-<canvas id="game-canvas" tabindex="0"></canvas>
+        <!-- HUD -->
+        <div id="hud" class="ui-layer hidden">
+            <!-- Top Left: Health & Fleet -->
+            <div class="absolute top-4 left-4 hud-panel rounded-lg p-4 min-w-[220px] shadow-2xl">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 rounded-full bg-red-900/50 border border-red-500 flex items-center justify-center text-lg">❤️</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs text-slate-300 mb-1">
+                            <span>Hull Integrity</span>
+                            <span id="hp-text">100%</span>
+                        </div>
+                        <div class="bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-600">
+                            <div id="hp-bar" class="health-bar h-full w-full rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-slate-300 text-sm border-t border-slate-700 pt-2">
+                    <span>⚓ Fleet:</span>
+                    <span id="fleet-count" class="text-white font-bold text-lg">1</span>
+                    <span class="text-xs text-slate-400">ships</span>
+                </div>
+            </div>
 
-<!-- Overlays -->
-<div id="toast"></div>
-<div id="wave-ann"></div>
-<div id="fps"></div>
+            <!-- Top Center: Timer -->
+            <div class="absolute top-4 left-1/2 transform -translate-x-1/2 hud-panel rounded-lg px-8 py-3 shadow-2xl border-b-4 border-amber-600">
+                <div id="game-timer" class="pirate-font text-4xl md:text-5xl gold-text text-center tracking-widest">00:00</div>
+                <div class="text-center text-slate-400 text-xs mt-1 uppercase tracking-widest">Survival Time</div>
+            </div>
 
-<!-- HUD -->
-<div id="hud">
-  <div id="hud-hp-wrap">
-    <div id="hud-hp-lbl">⚓ Hull</div>
-    <div id="hud-hp-bar"><div id="hud-hp-fill"></div></div>
-  </div>
-  <div id="hud-phase">👻 PHASED</div>
-  <div id="hud-timer">0:00</div>
-  <div id="hud-score">
-    <span class="hs1" id="hud-dbl">🪙 0</span>
-    <span class="hs2" id="hud-fleet">⛵ Fleet: 1</span>
-    <span class="hs3" id="hud-lvl">Lv.1</span>
-  </div>
-  <div id="hud-xp-wrap">
-    <div id="hud-xp-lbl">Next Level</div>
-    <div id="hud-xp-bar"><div id="hud-xp-fill"></div></div>
-  </div>
-  <div id="boss-bar">
-    <span id="boss-lbl">💀 Ghost Ship Boss</span>
-    <div id="boss-track"><div id="boss-fill"></div></div>
-  </div>
-  <div id="hud-wave">Open Ocean</div>
-  <div id="minimap"><canvas id="mm" width="86" height="86"></canvas></div>
-</div>
+            <!-- Top Right: Currency & XP -->
+            <div class="absolute top-4 right-4 hud-panel rounded-lg p-4 min-w-[180px] shadow-2xl">
+                <div class="flex items-center justify-end gap-3 mb-2">
+                    <div class="text-right">
+                        <div id="doubloon-count" class="text-2xl gold-text font-bold">0</div>
+                        <div class="text-[10px] text-slate-400 uppercase">Doubloons</div>
+                    </div>
+                    <div class="text-3xl">🪙</div>
+                </div>
+                <div class="bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-600 mt-3">
+                    <div id="xp-bar" class="bg-gradient-to-r from-amber-600 to-yellow-400 h-full w-0 transition-all duration-500"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                    <span>Level <span id="level-display">1</span></span>
+                    <span>Next Upgrade</span>
+                </div>
+            </div>
 
-<!-- Screens -->
-<div id="menu" class="scr">
-  <div id="menu-logo">MAELSTROM</div>
-  <div id="menu-sub">Survive the Sea · Outlast the Storm</div>
-  <div id="menu-skulls">💀 Skulls: 0</div>
-  <div id="menu-info">No runs yet — set sail and make history</div>
-  <div class="btns">
-    <button class="btn gold" id="b-play">⚔️ &nbsp;PLAY — Open Ocean</button>
-    <button class="btn" id="b-ships">🎭 &nbsp;Ship Select</button>
-    <button class="btn" id="b-meta">💀 &nbsp;Skull Upgrades</button>
-    <button class="btn" id="b-lb">🏆 &nbsp;Leaderboard</button>
-  </div>
-</div>
+            <!-- Boss Health Bar (Hidden by default) -->
+            <div id="boss-hud" class="absolute top-24 left-1/2 transform -translate-x-1/2 hidden w-96">
+                <div class="text-center mb-1 ghost-text pirate-font text-lg tracking-widest">GHOST SHIP</div>
+                <div class="h-4 bg-slate-900 rounded-full border-2 border-green-500 overflow-hidden shadow-lg shadow-green-500/20">
+                    <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-300" style="width: 100%"></div>
+                </div>
+            </div>
 
-<div id="ship-scr" class="scr">
-  <h2>Choose Your Vessel</h2>
-  <div id="ship-grid"></div>
-  <button class="btn" id="b-ships-back">← Back</button>
-</div>
+            <!-- Bottom Left: Wave Info -->
+            <div class="absolute bottom-4 left-4 text-slate-300 text-sm hud-panel px-4 py-2 rounded-lg">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs uppercase text-slate-400">Wave</span>
+                    <span id="wave-number" class="text-xl font-bold text-white">1</span>
+                </div>
+                <div class="text-xs text-slate-400 mt-1">Next Boss: <span id="next-boss" class="text-amber-400">08:00</span></div>
+            </div>
 
-<div id="meta-scr" class="scr">
-  <h2>💀 Skull Tree</h2>
-  <div id="meta-skulls-d">Skulls: 0</div>
-  <div id="meta-grid"></div>
-  <button class="btn" id="b-meta-back">← Back</button>
-</div>
+            <!-- Bottom Right: Minimap -->
+            <div class="absolute bottom-4 right-4 hud-panel rounded-lg p-2 shadow-2xl">
+                <div id="minimap" class="w-36 h-36 bg-slate-900/80 rounded border-2 border-slate-600 relative overflow-hidden">
+                    <div class="absolute inset-0 opacity-20 bg-blue-900"></div>
+                    <div class="absolute inset-0" style="background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.8) 100%)"></div>
+                    <!-- Grid lines -->
+                    <div class="absolute inset-0" style="background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 20px 20px;"></div>
+                    <div id="minimap-player" class="absolute w-3 h-3 bg-amber-400 rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 border-2 border-white z-10" style="left: 50%; top: 50%;"></div>
+                </div>
+            </div>
 
-<div id="lb-scr" class="scr">
-  <h2>🏆 Leaderboard</h2>
-  <div id="lb-list"></div>
-  <button class="btn" id="b-lb-back">← Back</button>
-</div>
+            <!-- Controls Hint -->
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-slate-500 text-xs opacity-50">
+                WASD to Move • Auto-Fire Enabled
+            </div>
+        </div>
 
-<div id="upgrade-scr" class="scr">
-  <h2>⚓ Level Up!</h2>
-  <div id="upg-sub">Choose a power — or press 1, 2, 3</div>
-  <div id="cards"></div>
-  <div id="upg-hint">Click a card · 1 2 3 keys · ESC to skip</div>
-</div>
+        <!-- Upgrade Screen -->
+        <div id="upgrade-screen" class="absolute inset-0 bg-black/90 z-30 hidden flex-col items-center justify-center interactive backdrop-blur-md">
+            <div class="text-center mb-8">
+                <h2 class="pirate-font text-5xl md:text-6xl gold-text mb-2 text-center">LEVEL UP!</h2>
+                <p class="text-slate-300 text-lg">Choose your upgrade wisely, Captain</p>
+            </div>
+            
+            <div id="upgrade-cards" class="flex flex-col md:flex-row gap-6 justify-center items-stretch max-w-6xl px-4">
+                <!-- Cards injected by JS -->
+            </div>
+            
+            <div class="mt-8 flex gap-4">
+                <button class="px-4 py-2 bg-slate-800 rounded text-slate-400 text-sm border border-slate-600 hover:bg-slate-700 transition">[1]</button>
+                <button class="px-4 py-2 bg-slate-800 rounded text-slate-400 text-sm border border-slate-600 hover:bg-slate-700 transition">[2]</button>
+                <button class="px-4 py-2 bg-slate-800 rounded text-slate-400 text-sm border border-slate-600 hover:bg-slate-700 transition">[3]</button>
+            </div>
+        </div>
 
-<div id="death-scr" class="scr">
-  <div id="death-title">SHIPWRECKED</div>
-  <div id="death-flav">"The sea claims another legend… for now."</div>
-  <div id="death-stats"></div>
-  <div id="death-skulls"></div>
-  <div id="death-rank"></div>
-  <div id="death-share" title="Click to copy"></div>
-  <div id="death-share-hint">📋 Click to copy &amp; share</div>
-  <div class="dbtns">
-    <button class="btn gold" id="b-again">⚓ Sail Again</button>
-    <button class="btn"      id="b-dmenu">🏠 Main Menu</button>
-  </div>
-</div>
+        <!-- Death Screen -->
+        <div id="death-screen" class="absolute inset-0 bg-gradient-to-b from-red-950/95 via-slate-900/95 to-black z-50 hidden flex-col items-center justify-center interactive">
+            <h2 class="pirate-font text-5xl md:text-7xl text-red-500 mb-2 text-center drop-shadow-lg">SHIP DESTROYED</h2>
+            <p class="text-slate-400 mb-8 italic">"The sea claims another captain..."</p>
+            
+            <div class="hud-panel rounded-xl p-8 max-w-lg w-full mx-4 mb-8 border-red-900/50 shadow-2xl shadow-red-900/20">
+                <div class="text-center mb-6 pb-6 border-b border-slate-700">
+                    <div class="text-slate-400 text-sm uppercase tracking-widest mb-2">Survival Time</div>
+                    <div id="death-time" class="pirate-font text-6xl gold-text mb-1">00:00</div>
+                    <div id="death-rank" class="text-sm text-slate-500">Top 15% of Captains</div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-4 mb-6 text-center">
+                    <div class="bg-slate-800/50 rounded-lg p-3">
+                        <div class="text-xs text-slate-400 uppercase mb-1">Score</div>
+                        <div id="death-score" class="text-xl font-bold text-white">0</div>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-3">
+                        <div class="text-xs text-slate-400 uppercase mb-1">Doubloons</div>
+                        <div id="death-doubloons" class="text-xl font-bold text-amber-400">0</div>
+                    </div>
+                    <div class="bg-slate-800/50 rounded-lg p-3 border border-purple-500/30">
+                        <div class="text-xs text-purple-400 uppercase mb-1">Skulls</div>
+                        <div id="death-skulls" class="text-xl font-bold text-purple-400">+0</div>
+                    </div>
+                </div>
 
-<div id="pause-ovl">
-  <div class="pause-box">
-    <h3>⏸ Paused</h3>
-    <button class="btn" id="b-resume">▶ Resume</button>
-  </div>
-</div>
+                <div class="border-t border-slate-700 pt-4">
+                    <div class="text-slate-400 text-xs mb-3 text-center uppercase tracking-widest">Final Fleet Composition</div>
+                    <div id="death-fleet" class="flex justify-center gap-3 text-3xl flex-wrap"></div>
+                </div>
+            </div>
+            
+            <div class="flex gap-4 flex-col md:flex-row w-80">
+                <button id="btn-restart" class="interactive flex-1 bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold py-4 px-8 rounded-lg border-2 border-amber-400 shadow-lg transition-all hover:scale-105 pirate-font text-lg">
+                    ⚔️ Play Again
+                </button>
+                <button id="btn-menu" class="interactive flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-4 px-8 rounded-lg border border-slate-600 transition-all hover:border-slate-400">
+                    Main Menu
+                </button>
+            </div>
+        </div>
 
-<!-- Mobile joystick -->
-<div id="jzone"><div id="jbase"><div id="jthumb"></div></div></div>
+        <!-- Boss Alert Overlay -->
+        <div id="boss-alert" class="absolute top-1/4 left-1/2 transform -translate-x-1/2 pointer-events-none opacity-0 transition-all duration-1000 z-20 text-center">
+            <h2 class="pirate-font text-5xl md:text-7xl ghost-text tracking-widest mb-2 filter drop-shadow-lg">GHOST SHIP</h2>
+            <div class="w-full h-1 bg-gradient-to-r from-transparent via-green-400 to-transparent mb-2 shadow-lg shadow-green-400/50"></div>
+            <p class="text-green-300 text-lg tracking-widest uppercase text-shadow">Boss Approaching</p>
+        </div>
 
-<!-- ═══════════════════════════════════════════════════
-     Three.js r128  +  GLTFLoader r128  (stable CDN)
-     IMPORTANT: versions must match exactly
-════════════════════════════════════════════════════ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+        <!-- Damage Overlay -->
+        <div id="damage-overlay" class="absolute inset-0 bg-red-500/20 pointer-events-none opacity-0 transition-opacity duration-200 z-10"></div>
 
-<script>
-/* ══════════════════════════════════════════════════════
-   MAELSTROM  ·  Three.js r128 + Kenney GLB assets
-   Production-grade single-file game engine
-   
-   ROOT-CAUSE FIXES APPLIED:
-   [FIX-1] Correct color-space: outputEncoding + ACESFilmic toneMapping
-   [FIX-2] GLB materials: PRESERVE embedded textures, only override 
-           material.map when the GLB has none (Kenney models embed 
-           colormap.png inside the GLB — do NOT overwrite it)
-   [FIX-3] metalness = 0 on all materials + envMap via PMREMGenerator
-           (prevents black surfaces on metallic PBR materials)
-   [FIX-4] Model scale calibrated to world size: ships are 12–20 world-units
-   [FIX-5] Matched CDN versions: Three r128 + GLTFLoader r128
-   [FIX-6] gltf.scene must be deep-cloned AFTER material setup, not before
-══════════════════════════════════════════════════════ */
-'use strict';
+        <!-- Help Modal -->
+        <div id="help-modal" class="absolute inset-0 bg-black/90 z-50 hidden flex items-center justify-center interactive backdrop-blur-sm">
+            <div class="hud-panel rounded-xl p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+                <h2 class="pirate-font text-3xl gold-text mb-6 text-center">How to Play</h2>
+                
+                <div class="space-y-4 text-slate-300 mb-6">
+                    <div class="flex gap-4 items-start">
+                        <span class="text-2xl">🎯</span>
+                        <div>
+                            <h3 class="font-bold text-white mb-1">Auto-Combat</h3>
+                            <p class="text-sm">Your cannons fire automatically at nearby enemies. Focus on positioning and dodging!</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start">
+                        <span class="text-2xl">⚓</span>
+                        <div>
+                            <h3 class="font-bold text-white mb-1">Fleet Growth</h3>
+                            <p class="text-sm">Collect doubloons to level up and choose upgrades. Build an armada to survive longer.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start">
+                        <span class="text-2xl">👻</span>
+                        <div>
+                            <h3 class="font-bold text-white mb-1">Boss Waves</h3>
+                            <p class="text-sm">Ghost Ships appear at 8, 16, and 24 minutes. They deal massive damage but drop huge rewards.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start">
+                        <span class="text-2xl">💀</span>
+                        <div>
+                            <h3 class="font-bold text-white mb-1">Meta-Progression</h3>
+                            <p class="text-sm">Earn Skulls to permanently upgrade your ships and unlock new starting vessels.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="btn-close-help" class="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded-lg border border-amber-500 transition">Understood, Captain!</button>
+            </div>
+        </div>
 
-// ── CONSTANTS ────────────────────────────────────────────────────
-const WORLD   = 4000;            // world size in Three.js units
-const HALF    = WORLD / 2;       // offset for scene centering
-const CAM_H   = 400;             // camera height above sea
-const CAM_D   = 440;             // camera depth offset (tilt)
-const TWO_PI  = Math.PI * 2;
-const ASSETS  = 'assets/Models/GLB format/';
-const TEX_URL = ASSETS + 'Textures/colormap.png';
+        <!-- Meta Upgrade Modal -->
+        <div id="upgrade-modal" class="absolute inset-0 bg-black/95 z-50 hidden flex items-center justify-center interactive backdrop-blur-md">
+            <div class="hud-panel rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[85vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+                    <h2 class="pirate-font text-3xl gold-text">Shipyard Upgrades</h2>
+                    <div class="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg border border-purple-500/30">
+                        <span class="text-purple-400 text-2xl">💀</span>
+                        <span id="upgrade-skull-count" class="text-xl font-bold text-white">0</span>
+                        <span class="text-xs text-slate-400 uppercase">Skulls</span>
+                    </div>
+                </div>
+                
+                <div id="upgrade-tree" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Upgrade items injected here -->
+                </div>
+                
+                <button id="btn-close-upgrade" class="w-full mt-6 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg border border-slate-500 transition">Return to Menu</button>
+            </div>
+        </div>
+    </div>
 
-// ── MATH UTILS ───────────────────────────────────────────────────
-const lerp   = (a,b,t) => a+(b-a)*t;
-const clamp  = (v,lo,hi) => Math.max(lo, Math.min(hi, v));
-const rand   = (a,b) => a + Math.random()*(b-a);
-const randInt= (a,b) => Math.floor(rand(a,b+1));
-const rFrom  = a => a[randInt(0, a.length-1)];
-const d2     = (ax,az,bx,bz) => (ax-bx)**2+(az-bz)**2;
-const d      = (ax,az,bx,bz) => Math.sqrt(d2(ax,az,bx,bz));
+    <script>
+        // ============================================================================
+        // MAELSTROM - Integrated Single-File Version
+        // All modules consolidated for GitHub Pages deployment
+        // ============================================================================
 
-// ── PERLIN NOISE ─────────────────────────────────────────────────
-const _p=[...Array(256)].map((_,i)=>i);
-for(let i=255;i>0;i--){const j=randInt(0,i);[_p[i],_p[j]]=[_p[j],_p[i]];}
-const _pp=[..._p,..._p];
-const _f=t=>t*t*t*(t*(t*6-15)+10);
-const _g=(h,x,y)=>{const u=h<4?x:y,v=h<4?y:x;return((h&1)?-u:u)+((h&2)?-v:v)};
-function noise(x,y){
-  const xi=Math.floor(x)&255,yi=Math.floor(y)&255,xf=x-Math.floor(x),yf=y-Math.floor(y);
-  const u=_f(xf),v=_f(yf),l=(a,b,t)=>a+t*(b-a);
-  const aa=_pp[_pp[xi]+yi],ab=_pp[_pp[xi]+yi+1],ba=_pp[_pp[xi+1]+yi],bb=_pp[_pp[xi+1]+yi+1];
-  return l(l(_g(aa,xf,yf),_g(ba,xf-1,yf),u),l(_g(ab,xf,yf-1),_g(bb,xf-1,yf-1),u),v);
-}
+        // Utility Functions
+        const Utils = {
+            randFloat: (min, max) => Math.random() * (max - min) + min,
+            randInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+            distance: (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.z - b.z) ** 2),
+            direction: (from, to) => {
+                const dx = to.x - from.x;
+                const dz = to.z - from.z;
+                const len = Math.sqrt(dx * dx + dz * dz);
+                return len > 0 ? { x: dx / len, z: dz / len } : { x: 0, z: 0 };
+            },
+            lerp: (start, end, t) => start * (1 - t) + end * t,
+            formatTime: (seconds) => {
+                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+                return `${m}:${s}`;
+            }
+        };
 
-// ── SAVE / LOAD ──────────────────────────────────────────────────
-let META={};
-function loadMeta(){
-  try{META=JSON.parse(localStorage.getItem('maelstrom_v3')||'{}')}catch(e){META={}}
-  META.skulls=META.skulls||0; META.highScore=META.highScore||0; META.bestTime=META.bestTime||0;
-  META.upgrades=META.upgrades||{}; META.ship=META.ship||'sloop';
-  META.lb=META.lb||[]; META.runs=META.runs||0; META.name=META.name||null;
-}
-function saveMeta(){try{localStorage.setItem('maelstrom_v3',JSON.stringify(META))}catch(e){}}
-loadMeta();
-if(!META.name){
-  META.name=(prompt('Enter your pirate name:','Pirate')||'Pirate').slice(0,20);
-  saveMeta();
-}
-
-// ── UI HELPERS ───────────────────────────────────────────────────
-let _tt=null;
-function toast(msg,dur=2600){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.style.opacity='1';
-  clearTimeout(_tt); _tt=setTimeout(()=>el.style.opacity='0',dur);
-}
-let _at=null;
-function announce(html){
-  const el=document.getElementById('wave-ann');
-  el.innerHTML=html; el.style.opacity='1';
-  clearTimeout(_at); _at=setTimeout(()=>el.style.opacity='0',3200);
-}
-function scr(id){
-  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
-  if(id)document.getElementById(id).classList.add('on');
-}
-function hud(on){document.getElementById('hud').classList.toggle('on',on);}
-
-// ── INPUT ────────────────────────────────────────────────────────
-const K={};
-window.addEventListener('keydown',e=>{
-  K[e.code]=true;
-  if(!_paused&&_running){
-    if(e.code==='Digit1')selCard(0);
-    if(e.code==='Digit2')selCard(1);
-    if(e.code==='Digit3')selCard(2);
-    if(e.code==='Escape')_upPending?skipUpg():togglePause();
-  }
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
-});
-window.addEventListener('keyup',e=>K[e.code]=false);
-
-// Mobile joystick
-let _ja=false,_jox=0,_joy=0,_jdx=0,_jdy=0;
-const JR=44;
-function isMob(){return('ontouchstart'in window)||navigator.maxTouchPoints>0}
-const jzone=document.getElementById('jzone');
-const jbase=document.getElementById('jbase');
-const jthumb=document.getElementById('jthumb');
-if(isMob()){
-  jzone.classList.add('mob');
-  jzone.addEventListener('touchstart',e=>{
-    const t=e.touches[0]; _ja=true; _jox=t.clientX; _joy=t.clientY;
-    jbase.style.left=(t.clientX-55)+'px'; jbase.style.top=(t.clientY-55)+'px';
-    jbase.style.display='block'; jthumb.style.left='32px'; jthumb.style.top='32px';
-    e.preventDefault();
-  },{passive:false});
-  jzone.addEventListener('touchmove',e=>{
-    if(!_ja)return;
-    const t=e.touches[0]; let dx=t.clientX-_jox,dy=t.clientY-_joy;
-    const m=Math.sqrt(dx*dx+dy*dy); if(m>JR){dx=dx/m*JR;dy=dy/m*JR}
-    _jdx=dx/JR; _jdy=dy/JR;
-    jthumb.style.left=(55+dx-23)+'px'; jthumb.style.top=(55+dy-23)+'px';
-    e.preventDefault();
-  },{passive:false});
-  const ej=()=>{_ja=false;_jdx=0;_jdy=0;jbase.style.display='none'};
-  jzone.addEventListener('touchend',ej); jzone.addEventListener('touchcancel',ej);
-}
-function inp(){
-  let dx=0,dy=0;
-  if(K['ArrowLeft']||K['KeyA'])dx-=1; if(K['ArrowRight']||K['KeyD'])dx+=1;
-  if(K['ArrowUp']||K['KeyW'])dy-=1;   if(K['ArrowDown']||K['KeyS'])dy+=1;
-  if(_ja){dx=_jdx;dy=_jdy}
-  const m=Math.sqrt(dx*dx+dy*dy); if(m>1){dx/=m;dy/=m}
-  return{dx,dy};
-}
-
-// ── GAME STATE ───────────────────────────────────────────────────
-let _running=false,_paused=false,_upPending=false;
-let _animId=null,_lastTs=0;
-let _fpsC=0,_fpsT=0,_fpsV=0;
-
-// Three.js
-let _rend,_scene,_cam,_env;   // renderer, scene, camera, envMap
-let _ocean,_oceanOrig;         // ocean mesh + original vertex positions
-let _mdls={};                  // loaded+processed model cache: name→Group
-let _G={};                     // game state
-
-// ─────────────────────────────────────────────────────────────────
-// [FIX-1+3+5] THREE.JS RENDERER SETUP
-// All three settings together are required for correct GLB rendering:
-//   outputEncoding  → converts linear→sRGB for display
-//   toneMapping     → ACES filmic tone curve (standard for PBR)
-//   toneMappingExposure → scene brightness
-// ─────────────────────────────────────────────────────────────────
-function initThree(){
-  const canvas=document.getElementById('game-canvas');
-  _rend=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-  _rend.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  _rend.setSize(window.innerWidth,window.innerHeight);
-  _rend.shadowMap.enabled=true;
-  _rend.shadowMap.type=THREE.PCFSoftShadowMap;
-
-  // [FIX-1] Correct colour-space pipeline for PBR/GLB rendering
-  _rend.outputEncoding        = THREE.sRGBEncoding;       // r128 API
-  _rend.toneMapping           = THREE.ACESFilmicToneMapping;
-  _rend.toneMappingExposure   = 1.1;
-  _rend.physicallyCorrectLights = true;
-
-  _scene=new THREE.Scene();
-  _scene.background=new THREE.Color(0x0e1f36);
-  _scene.fog=new THREE.FogExp2(0x0e2a46,0.00035);
-
-  // Camera: isometric-style perspective, looking down and forward
-  _cam=new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, 1, 9000);
-  _cam.position.set(0,CAM_H,CAM_D);
-  _cam.lookAt(0,0,0);
-
-  // Lighting rig
-  const amb=new THREE.AmbientLight(0x88aacc,0.9);
-  _scene.add(amb);
-  const sun=new THREE.DirectionalLight(0xfff8e8,1.6);
-  sun.position.set(300,500,200);
-  sun.castShadow=true;
-  sun.shadow.mapSize.set(1024,1024);
-  ['near','far'].forEach((k,i)=>sun.shadow.camera[k]=[1,2500][i]);
-  ['left','right','top','bottom'].forEach((k,i)=>sun.shadow.camera[k]=[-600,600,600,-600][i]);
-  _scene.add(sun);
-  const fill=new THREE.DirectionalLight(0x4488cc,0.5);
-  fill.position.set(-300,200,-100); _scene.add(fill);
-  const rim=new THREE.DirectionalLight(0xffaa44,0.3);
-  rim.position.set(0,100,-400); _scene.add(rim);
-
-  // [FIX-5] PMREMGenerator env map — prevents black metallic surfaces
-  // Creates a neutral grey envMap so metallic GLB materials reflect something
-  const pmrem=new THREE.PMREMGenerator(_rend);
-  pmrem.compileEquirectangularShader();
-  const envScene=new THREE.Scene();
-  envScene.background=new THREE.Color(0x8899aa);
-  _env=pmrem.fromScene(new THREE.RoomEnvironment()).texture;
-  _scene.environment=_env;  // applies to all MeshStandardMaterial automatically
-  pmrem.dispose();
-
-  window.addEventListener('resize',()=>{
-    _cam.aspect=window.innerWidth/window.innerHeight;
-    _cam.updateProjectionMatrix();
-    _rend.setSize(window.innerWidth,window.innerHeight);
-  });
-}
-
-// ── OCEAN ─────────────────────────────────────────────────────────
-function buildOcean(){
-  const geo=new THREE.PlaneGeometry(WORLD*2.5,WORLD*2.5,60,60);
-  _ocean=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
-    color:0x1a5c8a,roughness:.12,metalness:0.05,transparent:true,opacity:.94
-  }));
-  _ocean.rotation.x=-Math.PI/2;
-  _ocean.receiveShadow=true;
-  _scene.add(_ocean);
-  _oceanOrig=new Float32Array(geo.attributes.position.array);
-}
-function animOcean(t){
-  const pos=_ocean.geometry.attributes.position;
-  const orig=_oceanOrig;
-  for(let i=0;i<pos.count;i++){
-    const ox=orig[i*3],oy=orig[i*3+1];
-    pos.array[i*3+2]=noise(ox/280+t*.24,oy/280+t*.17)*4.5;
-  }
-  pos.needsUpdate=true;
-  _ocean.geometry.computeVertexNormals();
-}
-
-// ── MODEL LOADING ─────────────────────────────────────────────────
-//
-// [FIX-2] DO NOT replace material.map on GLB materials that already have
-// a texture — Kenney GLBs embed colormap.png internally. Replacing it
-// with an externally loaded version causes the black-material bug because:
-//   a) the external texture loads asynchronously (may not be ready yet)
-//   b) the encoding may differ from the embedded version
-//   c) UV coordinates may mismatch if texture dimensions differ
-//
-// CORRECT approach: let GLTFLoader handle textures natively.
-// Only fix: set metalness=0 and roughness=.85 to prevent black surfaces
-// on models that were authored with high metalness values.
-//
-// [FIX-3] Deep-clone with .clone(true) AFTER material fixup, not before.
-// Store the fixed master in _mdls[], clone from that for each instance.
-//
-function fixMaterial(mat){
-  // Clamp metalness — high metalness without a proper HDRI envMap = black
-  mat.metalness   = Math.min(mat.metalness||0, 0.1);
-  mat.roughness   = Math.max(mat.roughness||0.8, 0.65);
-  mat.needsUpdate = true;
-}
-
-function processGLTF(gltf){
-  const grp=gltf.scene;
-  grp.traverse(n=>{
-    if(!n.isMesh) return;
-    n.castShadow=true; n.receiveShadow=true;
-    // Handle arrays of materials (multi-material meshes)
-    if(Array.isArray(n.material)){
-      n.material=n.material.map(m=>{const mc=m.clone();fixMaterial(mc);return mc;});
-    } else {
-      n.material=n.material.clone();
-      fixMaterial(n.material);
-    }
-  });
-  return grp;
-}
-
-const _rawGLTF={};  // raw loaded GLTF (before processing) keyed by name
-
-function loadModel(name){
-  return new Promise(resolve=>{
-    if(_mdls[name]){resolve(_mdls[name].clone(true));return}
-    const loader=new THREE.GLTFLoader();
-    loader.load(
-      `${ASSETS}${name}.glb`,
-      gltf=>{
-        const grp=processGLTF(gltf);
-        _mdls[name]=grp;
-        resolve(grp.clone(true));
-      },
-      undefined,
-      ()=>{
-        // Fallback geometry — visible placeholder, never black
-        const geo=new THREE.BoxGeometry(8,5,18);
-        const mat=new THREE.MeshStandardMaterial({
-          color:0x8a6040,roughness:.8,metalness:0
-        });
-        const grp=new THREE.Group();
-        grp.add(new THREE.Mesh(geo,mat));
-        _mdls[name]=grp;
-        resolve(grp.clone(true));
-      }
-    );
-  });
-}
-
-// ── ASSET LOADING ─────────────────────────────────────────────────
-function setLoadTxt(t){document.getElementById('load-txt').textContent=t}
-function setLoadPct(p){document.getElementById('load-bar').style.width=(p*100)+'%'}
-
-async function preload(){
-  const critical=[
-    'ship-pirate-small','ship-pirate-medium','ship-pirate-large','ship-ghost',
-    'boat-row-small','boat-row-large',
-    'ship-small','ship-medium','ship-large','ship-wreck',
-    'cannon-ball',
-  ];
-  const secondary=[
-    'chest','barrel','bottle','crate',
-    'rocks-a','rocks-b','rocks-c',
-    'patch-sand','patch-grass','palm-straight','palm-bend',
-    'tower-complete-small',
-  ];
-  const all=[...critical,...secondary];
-  let done=0;
-  setLoadTxt('Loading ships…');
-  for(const name of all){
-    setLoadTxt(`Loading ${name}…`);
-    await loadModel(name);
-    done++;
-    setLoadPct(0.05+done/all.length*0.9);
-  }
-  setLoadPct(1); setLoadTxt('Ready!');
-  await new Promise(r=>setTimeout(r,350));
-}
-
-// ─────────────────────────────────────────────────────────────────
-// [FIX-4] SCALE CALIBRATION
-// Kenney GLB models are ~1-2 Three.js units tall (real-world meters).
-// Our camera is at Y=400, looking at a world 4000 units wide.
-// At scale=1, a 2-unit ship is effectively invisible.
-// Required scale = camera_distance / 30 ≈ 13
-//
-// Calibrated per ship class:
-//   rowboat  → scale 9  (~9 units = small and fast)
-//   sloop    → scale 12 (~12 units = medium frigate)
-//   frigate  → scale 15 (~15 units = heavy)
-//   galleon  → scale 20 (~20 units = massive)
-//   ghost    → scale 18 (~18 units = boss)
-// ─────────────────────────────────────────────────────────────────
-const SCALE={
-  rowboat:9, sloop:12, frigate:15, galleon:20,
-  ghost:18, 'p-sloop':12, 'p-frigate':16, 'p-galleon':22,
-  wreck:14, crate:5, chest:6, barrel:5, bottle:4, tower:12,
-  rock:16, palm:14, patch:18,
-};
-
-// ── GAME DATA ─────────────────────────────────────────────────────
-const SHIP_DEFS={
-  sloop:  {name:'The Sloop',     icon:'⛵', model:'ship-pirate-small', sc:SCALE['p-sloop'],   cost:0,   hp:100, spd:7.5,  sz:14, cn:1, passive:null,     desc:'Balanced — great for beginners'},
-  rowgang:{name:'Rowboat Gang',  icon:'🚣', model:'boat-row-large',    sc:SCALE.rowboat*1.4,  cost:30,  hp:70,  spd:9,    sz:12, cn:0, passive:'swarm',   desc:'Starts with 4 rowboats; they respawn'},
-  wraith: {name:'The Wraith',    icon:'👻', model:'ship-ghost',        sc:SCALE.ghost*.85,    cost:150, hp:55,  spd:10,   sz:14, cn:1, passive:'ghost',   desc:'Glass cannon — phases through enemies'},
-  armada: {name:'Armada Cmdr',   icon:'🏴‍☠️', model:'ship-pirate-large', sc:SCALE['p-galleon'], cost:200, hp:200, spd:4.8,  sz:18, cn:2, passive:'fortress',desc:'Fortress — slow, starts with cannon towers'},
-};
-const ENEMY_CFG={
-  rowboat:{model:'boat-row-small',  sc:SCALE.rowboat,  hp:28,  spd:4.8, sz:9,  dmg:8,  fr:0,   rng:0,   xp:10, sk:0, boss:false},
-  sloop:  {model:'ship-small',       sc:SCALE.sloop,    hp:65,  spd:3.8, sz:14, dmg:12, fr:2.6, rng:230, xp:25, sk:0, boss:false},
-  frigate:{model:'ship-medium',      sc:SCALE.frigate,  hp:160, spd:2.6, sz:20, dmg:18, fr:3.1, rng:260, xp:55, sk:1, boss:false},
-  galleon:{model:'ship-large',       sc:SCALE.galleon,  hp:340, spd:1.8, sz:26, dmg:24, fr:3.5, rng:290, xp:130,sk:2, boss:false},
-  ghost:  {model:'ship-ghost',       sc:SCALE.ghost,    hp:520, spd:3.4, sz:22, dmg:20, fr:2.3, rng:280, xp:200,sk:5, boss:true},
-};
-const FLEET_CFG={
-  rowboat: {model:'boat-row-small',  sc:SCALE.rowboat,  hp:40, spd:8, sz:9,  dmg:12,fr:2.5,rng:200,cn:1},
-  sloop:   {model:'ship-small',      sc:SCALE.sloop,    hp:70, spd:7, sz:14, dmg:18,fr:2.1,rng:250,cn:1},
-  frigate: {model:'ship-pirate-medium',sc:SCALE['p-frigate'],hp:110,spd:5.4,sz:20,dmg:22,fr:1.9,rng:275,cn:2},
-  galleon: {model:'ship-pirate-large',sc:SCALE['p-galleon'],hp:190,spd:3.5,sz:26,dmg:30,fr:2.6,rng:310,cn:4},
-};
-const UPGRADES=[
-  {id:'rows',   name:'Recruit Rowboats',     icon:'⛵',rarity:'common',   desc:'Add 2 rowboat flankers to fleet',       type:'fleet',  ship:'rowboat',n:2},
-  {id:'slps',   name:'Press-Gang Sloops',    icon:'🚢',rarity:'rare',     desc:'Add 1 Sloop to fleet orbit',            type:'fleet',  ship:'sloop',  n:1},
-  {id:'brig',   name:'Commandeer Brigantine',icon:'🛥️',rarity:'epic',     desc:'Add 1 Brigantine — double broadside',   type:'fleet',  ship:'frigate',n:1},
-  {id:'gall',   name:'The Flagship Arrives', icon:'🏴‍☠️',rarity:'legendary',desc:'Add a Galleon — 4-cannon volley',       type:'fleet',  ship:'galleon',n:1},
-  {id:'xcan',   name:'Extra Cannon',         icon:'💣',rarity:'common',   desc:'+1 auto-targeting cannon',              type:'add_cannon'},
-  {id:'mcan',   name:'Mobile Cannon',        icon:'🔄',rarity:'rare',     desc:'360° cannon independent targeting',     type:'mobile_cannon'},
-  {id:'strm',   name:'Cannonball Storm',     icon:'💥',rarity:'epic',     desc:'8-cannon burst every 3s',               type:'storm'},
-  {id:'gbr',    name:'Ghost Breaker Rounds', icon:'🟢',rarity:'legendary',desc:'+100% damage vs Ghost Ships',           type:'ghost_breaker'},
-  {id:'hull',   name:'Reinforce Hull',       icon:'⚙️',rarity:'common',   desc:'+25% max HP',                           type:'hull_hp'},
-  {id:'ram',    name:'Ram Prow',             icon:'⚓',rarity:'rare',     desc:'Contact damage when ramming enemies',   type:'ram'},
-  {id:'sails',  name:'Stolen Sails',         icon:'💨',rarity:'epic',     desc:'+35% movement speed',                   type:'speed'},
-  {id:'ghull',  name:'Ghost Hull',           icon:'👻',rarity:'legendary',desc:'Phase through enemies 8s every 30s',    type:'ghost_hull'},
-  {id:'brl',    name:'Barrel Bombs',         icon:'🛢️',rarity:'common',   desc:'Drop 3 mines every 10s',                type:'barrels'},
-  {id:'twr',    name:'Cannon Tower',         icon:'🏰',rarity:'rare',     desc:'Auto-firing tower 20s, max 2',          type:'tower'},
-  {id:'lure',   name:'Treasure Lure',        icon:'💎',rarity:'epic',     desc:'Lure nearby enemies for 5s',            type:'lure'},
-  {id:'vrtx',   name:'Maelstrom Vortex',     icon:'🌀',rarity:'legendary',desc:'Vortex sucks in all enemies — 30s CD',  type:'vortex'},
-];
-const META_TREE=[
-  {id:'hull',   name:'Hull Reinforcement',icon:'🛡️',cost:10,  desc:'+15% starting HP'},
-  {id:'fleet',  name:'Starting Fleet',    icon:'⛵',cost:20,  desc:'Start with 1 extra rowboat'},
-  {id:'magnet', name:'Treasure Magnet',   icon:'💰',cost:15,  desc:'+30% doubloon pickup radius'},
-  {id:'cannon', name:'Cannon Master',     icon:'💣',cost:25,  desc:'+10% cannon damage'},
-  {id:'ghost',  name:'Ghost Ward',        icon:'🔮',cost:30,  desc:'Boss spawns 60s later'},
-  {id:'anchor', name:'Island Anchor',     icon:'⚓',cost:40,  desc:'Auto-deploy tower every 90s'},
-  {id:'flag',   name:'Flag Bearer',       icon:'🏴‍☠️',cost:50, desc:'Enemies -15% accuracy nearby'},
-  {id:'mastery',name:'Ghost Mastery',     icon:'💀',cost:100, desc:'Legendary upgrades appear more often'},
-];
-
-// ── HP BAR DOM ELEMENTS ───────────────────────────────────────────
-function makeHpEl(){
-  const el=document.createElement('div');
-  el.style.cssText='position:absolute;pointer-events:none;z-index:20;display:none';
-  el.innerHTML='<div style="width:38px;height:4px;background:#200;border-radius:2px;border:1px solid #400"><div class="hpf" style="height:100%;background:#22cc22;border-radius:2px;width:100%;transition:width .14s,background .25s"></div></div>';
-  document.body.appendChild(el);
-  return{wrap:el,fill:el.querySelector('.hpf')};
-}
-function updateHpEl(hpEl,x,z,hp,maxHp,show){
-  if(!show||!_running){hpEl.wrap.style.display='none';return}
-  const v=new THREE.Vector3(x-HALF,12,z-HALF);
-  v.project(_cam);
-  const sx=(v.x+1)/2*window.innerWidth,sy=(-v.y+1)/2*window.innerHeight;
-  if(sx<-50||sx>window.innerWidth+50||sy<-50||sy>window.innerHeight+50){hpEl.wrap.style.display='none';return}
-  hpEl.wrap.style.display='block';
-  hpEl.wrap.style.left=(sx-19)+'px'; hpEl.wrap.style.top=(sy-26)+'px';
-  const p=clamp(hp/maxHp,0,1);
-  hpEl.fill.style.width=(p*100)+'%';
-  hpEl.fill.style.background=p>.5?'#22cc22':p>.25?'#aacc22':'#cc2222';
-}
-
-// ── FLOATING TEXT ─────────────────────────────────────────────────
-class FloatTxt{
-  constructor(x,z,txt,col='#f0c040'){
-    this.x=x;this.z=z;this.worldY=8;this.vy=-55;this.life=1;
-    const el=document.createElement('div');
-    el.style.cssText=`position:absolute;pointer-events:none;font:700 .8rem/1 Georgia,serif;
-      text-shadow:0 1px 4px #000;z-index:26;opacity:1;white-space:nowrap;color:${col}`;
-    el.textContent=txt; document.body.appendChild(el); this.el=el;
-  }
-  update(dt){
-    this.worldY+=this.vy*dt; this.vy*=.93; this.life-=dt*1.3;
-    if(this.life<=0){this.destroy();return}
-    const v=new THREE.Vector3(this.x-HALF,this.worldY,this.z-HALF);
-    v.project(_cam);
-    this.el.style.left=((v.x+1)/2*window.innerWidth-22)+'px';
-    this.el.style.top=((-v.y+1)/2*window.innerHeight)+'px';
-    this.el.style.opacity=Math.max(0,this.life);
-  }
-  destroy(){if(this.el.parentNode)this.el.parentNode.removeChild(this.el);}
-}
-
-// ── PARTICLES (Three.js Points) ───────────────────────────────────
-class Particles{
-  constructor(max=2500){
-    this.pool=[]; this.max=max;
-    this.pos=new Float32Array(max*3);
-    this.col=new Float32Array(max*3);
-    const geo=new THREE.BufferGeometry();
-    geo.setAttribute('position',new THREE.BufferAttribute(this.pos,3));
-    geo.setAttribute('color',new THREE.BufferAttribute(this.col,3));
-    this.pts=new THREE.Points(geo,
-      new THREE.PointsMaterial({size:5,vertexColors:true,transparent:true,depthWrite:false,sizeAttenuation:true}));
-    _scene.add(this.pts);
-  }
-  emit(x,z,opts={}){
-    const n=Math.min(opts.n||8,this.max>>2);
-    const c=new THREE.Color(opts.color||'#f0c040');
-    for(let i=0;i<n;i++){
-      const a=Math.random()*TWO_PI,s=rand(opts.minS||25,opts.maxS||110);
-      this.pool.push({x,y:rand(2,14),z,vx:Math.cos(a)*s,vy:rand(8,45),vz:Math.sin(a)*s,
-        life:1,dec:rand(.9,2)/(opts.life||.8),r:c.r,g:c.g,b:c.b});
-    }
-  }
-  update(dt){
-    let i=this.pool.length;
-    while(i--){
-      const p=this.pool[i]; p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
-      p.vx*=.94;p.vz*=.94;p.vy-=65*dt; if(p.y<0)p.y=0; p.life-=p.dec*dt;
-      if(p.life<=0)this.pool.splice(i,1);
-    }
-    const n=Math.min(this.pool.length,this.max);
-    for(let j=0;j<n;j++){
-      const p=this.pool[j],a=Math.max(0,p.life);
-      this.pos[j*3]=p.x-HALF;this.pos[j*3+1]=p.y;this.pos[j*3+2]=p.z-HALF;
-      this.col[j*3]=p.r*a;this.col[j*3+1]=p.g*a;this.col[j*3+2]=p.b*a;
-    }
-    for(let j=n;j<this.max;j++)this.pos[j*3+1]=-9999;
-    this.pts.geometry.attributes.position.needsUpdate=true;
-    this.pts.geometry.attributes.color.needsUpdate=true;
-  }
-}
-
-// ── CANNONBALL ─────────────────────────────────────────────────────
-class Cannonball{
-  constructor(ox,oz,tx,tz,dmg,owner,ghost=false){
-    this.dmg=dmg;this.owner=owner;this.isGB=ghost;this.dead=false;this.r=3;
-    const src=_mdls['cannon-ball'];
-    this.mesh=src?src.clone(true):new THREE.Mesh(
-      new THREE.SphereGeometry(2.5,8,6),
-      new THREE.MeshStandardMaterial({color:0x222222,roughness:.7,metalness:0}));
-    this.mesh.scale.setScalar(2.2);
-    _scene.add(this.mesh);
-    if(ghost){
-      this.mesh.traverse(m=>{if(m.isMesh){m.material=m.material.clone();
-        m.material.color.set(0x00ff88);m.material.emissive.set(0x00aa44);}});
-    }
-    this.x=ox;this.z=oz;
-    const dd=d(ox,oz,tx,tz),spd=150;
-    this.vx=(tx-ox)/dd*spd; this.vz=(tz-oz)/dd*spd; this.vy=22;
-    this.life=dd/spd+.4;
-  }
-  update(dt){
-    this.x+=this.vx*dt; this.z+=this.vz*dt; this.vy-=90*dt;
-    this.mesh.position.set(this.x-HALF,Math.max(0,this.vy*dt*8)+2.5,this.z-HALF);
-    this.life-=dt; if(this.life<=0)this.kill();
-  }
-  kill(){_scene.remove(this.mesh);this.dead=true;}
-}
-
-// ── BASE SHIP CLASS ────────────────────────────────────────────────
-class Ship{
-  constructor(x,z,modelName,scale){
-    this.x=x;this.z=z;this.angle=0;this.hp=100;this.maxHp=100;
-    this.spd=5;this.sz=14;this.dead=false;this.hitT=0;
-    // [FIX-4] Apply calibrated scale — clone(true) for deep material copy
-    const src=_mdls[modelName]||_mdls['ship-pirate-small'];
-    this.mesh=src.clone(true);
-    this.mesh.scale.setScalar(scale||12);
-    this.mesh.castShadow=true;
-    _scene.add(this.mesh);
-    this.hpEl=makeHpEl();
-  }
-  takeDmg(n){
-    this.hp-=n; this.hitT=.22;
-    if(this.hp<=0){this.hp=0;this.dead=true;}
-    // Red flash
-    this.mesh.traverse(m=>{if(m.isMesh){
-      const oc=m.material.color.getHex();
-      m.material.color.set(0xff2200);
-      setTimeout(()=>{if(m.material)m.material.color.set(oc);},220);
-    }});
-  }
-  syncMesh(){
-    if(this.dead)return;
-    this.mesh.position.set(this.x-HALF,0,this.z-HALF);
-    this.mesh.rotation.y=this.angle;
-  }
-  rotateTo(a,dt,r=4){
-    let da=a-this.angle;
-    while(da>Math.PI)da-=TWO_PI; while(da<-Math.PI)da+=TWO_PI;
-    this.angle+=da*Math.min(1,dt*r);
-  }
-  kill(){
-    _scene.remove(this.mesh);
-    if(this.hpEl.wrap.parentNode)this.hpEl.wrap.parentNode.removeChild(this.hpEl.wrap);
-    this.dead=true;
-  }
-}
-
-// ── PLAYER ────────────────────────────────────────────────────────
-class Player extends Ship{
-  constructor(def){
-    super(HALF,HALF,def.model,def.sc);
-    this.def=def; this.hp=def.hp*(META.upgrades.hull?1.15:1); this.maxHp=this.hp;
-    this.spd=def.spd; this.sz=def.sz; this.cn=def.cn; this.passive=def.passive;
-    // Upgrade state
-    this.extraCn=0; this.hasMob=false; this.hasStorm=false; this.stormT=0;
-    this.hasGB=false; this.hasRam=false; this.spdMul=1;
-    this.hasGH=false; this.ghT=0; this.ghCD=30; this.phased=false;
-    this.hasBrl=false; this.brlT=0;
-    this.hasTwr=false; this.twrT=0;
-    this.hasVtx=false; this.vtxT=30; this.vtxActive=false; this.vtxLife=0;
-    this.mobA=0; this.mobFT=0;
-    this.fireTimes=Array(8).fill(0);
-    this.doubloons=0; this.xp=0; this.xpNeed=100; this.level=0;
-    this.pickR=META.upgrades.magnet?78:60;
-    this.fleet=[]; this.upgTaken=[];
-    this.flagAcc=META.upgrades.flag||false;
-  }
-  addXP(n){
-    this.doubloons+=n; this.xp+=n;
-    while(this.xp>=this.xpNeed){
-      this.xp-=this.xpNeed; this.xpNeed=Math.floor(this.xpNeed*1.22+28);
-      this.level++;
-      if(!_upPending){_upPending=true;_paused=true;}
-    }
-  }
-  update(dt,enemies,CBs,parts,FTs,G){
-    if(this.dead)return;
-    const i=inp();
-    const spd=this.spd*this.spdMul*22*dt;
-    if(i.dx||i.dy){this.rotateTo(Math.atan2(i.dx,i.dy),dt,4);}
-    this.x=clamp(this.x+i.dx*spd,60,WORLD-60);
-    this.z=clamp(this.z+i.dy*spd,60,WORLD-60);
-    // Ghost
-    if(this.passive==='ghost'||this.hasGH){
-      this.ghCD-=dt;
-      if(this.ghCD<=0){this.phased=true;this.ghT=8;this.ghCD=30;toast('👻 Phased!');
-        document.getElementById('hud-phase').style.display='block';}
-    }
-    if(this.phased){
-      this.ghT-=dt; if(this.ghT<=0){this.phased=false;document.getElementById('hud-phase').style.display='none';}
-      this.mesh.traverse(m=>{if(m.isMesh){m.material.transparent=true;m.material.opacity=.35+Math.sin(G.t*9)*.15;}});
-    } else {
-      this.mesh.traverse(m=>{if(m.isMesh){m.material.transparent=false;m.material.opacity=1;}});
-    }
-    // Auto-fire
-    const dm=(META.upgrades.cannon?1.1:1)*(this.hasGB?2:1);
-    const sorted=[...enemies].sort((a,b)=>d2(this.x,this.z,a.x,a.z)-d2(this.x,this.z,b.x,b.z));
-    const total=this.cn+this.extraCn;
-    for(let ci=0;ci<total;ci++){
-      this.fireTimes[ci]=(this.fireTimes[ci]||0)-dt;
-      if(this.fireTimes[ci]<=0){
-        const t=sorted[ci%sorted.length];
-        if(t&&d(this.x,this.z,t.x,t.z)<320){
-          CBs.push(new Cannonball(this.x,this.z,t.x+rand(-18,18),t.z+rand(-18,18),20*dm,'player',this.hasGB));
-          parts.emit(this.x,this.z,{n:6,color:'#ff8833',minS:30,maxS:100,life:.5});
-          this.fireTimes[ci]=1.85+ci*.28;
-        }else this.fireTimes[ci]=.3;
-      }
-    }
-    // Mobile cannon
-    if(this.hasMob&&sorted.length>0){
-      const t=sorted[0];
-      this.mobA=lerp(this.mobA,Math.atan2(t.x-this.x,t.z-this.z),dt*3);
-      this.mobFT-=dt;
-      if(this.mobFT<=0&&d(this.x,this.z,t.x,t.z)<400){
-        CBs.push(new Cannonball(this.x,this.z,t.x,t.z,16*dm,'player'));
-        this.mobFT=1.2;
-      }
-    }
-    // Storm
-    if(this.hasStorm){
-      this.stormT-=dt;
-      if(this.stormT<=0&&sorted.length>0){
-        for(let si=0;si<8;si++){const a=(si/8)*TWO_PI;CBs.push(new Cannonball(this.x,this.z,this.x+Math.sin(a)*180,this.z+Math.cos(a)*180,13*dm,'player'));}
-        parts.emit(this.x,this.z,{n:25,color:'#ff5522',minS:40,maxS:180,life:.85});
-        this.stormT=3;
-      }
-    }
-    // Barrels
-    if(this.hasBrl){this.brlT-=dt;if(this.brlT<=0){for(let bi=0;bi<3;bi++)G.mines.push({x:this.x+rand(-38,38),z:this.z+rand(-38,38),r:12,life:14,mesh:mkMine(this.x,this.z)});this.brlT=10;}}
-    // Tower
-    if(this.hasTwr){this.twrT-=dt;if(this.twrT<=0&&G.towers.filter(t=>!t.dead).length<2){G.towers.push(new Tower(this.x+rand(-65,65),this.z+rand(-65,65)));this.twrT=20;}}
-    // Vortex
-    if(this.hasVtx){
-      this.vtxT-=dt;
-      if(this.vtxT<=0&&!this.vtxActive&&enemies.length>4){
-        this.vtxActive=true;this.vtxLife=3;this.vtxT=30;toast('🌀 Maelstrom Vortex!');
-        parts.emit(this.x,this.z,{n:50,color:'#4488ff',minS:50,maxS:250,life:1.5});
-      }
-    }
-    if(this.vtxActive){
-      this.vtxLife-=dt; if(this.vtxLife<=0)this.vtxActive=false;
-      for(const e of enemies){
-        const dd=d(e.x,e.z,this.x,this.z);
-        if(dd<360){const a=Math.atan2(this.x-e.x,this.z-e.z);e.x+=Math.sin(a)*280*dt;e.z+=Math.cos(a)*280*dt;if(dd<55)e.takeDmg(180*dt);}
-      }
-    }
-    // Ram
-    if(this.hasRam){for(const e of enemies)if(!e.dead&&d(this.x,this.z,e.x,e.z)<this.sz+e.sz+5)e.takeDmg(28*dt);}
-    this.syncMesh();
-    updateHpEl(this.hpEl,this.x,this.z,this.hp,this.maxHp,true);
-  }
-}
-
-// ── FLEET SHIP ─────────────────────────────────────────────────────
-class FleetShip extends Ship{
-  constructor(type,owner){
-    const c=FLEET_CFG[type]||FLEET_CFG.sloop;
-    super(owner.x,owner.z,c.model,c.sc);
-    this.ftype=type; this.hp=c.hp;this.maxHp=c.hp; this.spd=c.spd; this.sz=c.sz;
-    this.dmg=c.dmg; this.fr=c.fr; this.rng=c.rng; this.cnts=c.cn;
-    this.ft=Math.random()*2; this.oA=Math.random()*TWO_PI;
-    this.oR=80+owner.fleet.length*16;
-  }
-  update(dt,owner,enemies,CBs,parts,dm){
-    if(this.dead)return;
-    this.oA+=dt*.9/(this.oR/80);
-    const tx=owner.x+Math.sin(this.oA)*this.oR,tz=owner.z+Math.cos(this.oA)*this.oR;
-    const dx=tx-this.x,dz=tz-this.z,dd=Math.sqrt(dx*dx+dz*dz);
-    if(dd>5){this.x+=dx/dd*this.spd*22*dt;this.z+=dz/dd*this.spd*22*dt;this.rotateTo(Math.atan2(dx,dz),dt,3);}
-    this.ft-=dt;
-    if(this.ft<=0){
-      const sorted=[...enemies].sort((a,b)=>d2(this.x,this.z,a.x,a.z)-d2(this.x,this.z,b.x,b.z));
-      const t=sorted[0];
-      if(t&&d(this.x,this.z,t.x,t.z)<this.rng){
-        for(let ci=0;ci<this.cnts;ci++){
-          const sa=(ci-(this.cnts-1)/2)*.2,ba=Math.atan2(t.x-this.x,t.z-this.z);
-          const ta=ba+sa,rng2=this.rng*.88;
-          CBs.push(new Cannonball(this.x,this.z,this.x+Math.sin(ta)*rng2,this.z+Math.cos(ta)*rng2,this.dmg*dm,'fleet'));
+        // Asset Loading System
+        class AssetLoader {
+            constructor(onProgress) {
+                this.onProgress = onProgress;
+                this.assets = {};
+                this.totalAssets = 0;
+                this.loadedAssets = 0;
+                
+                // Essential assets for gameplay
+                this.assetList = {
+                    'ship-pirate-small': './assets/Models/GLB format/ship-pirate-small.glb',
+                    'ship-pirate-medium': './assets/Models/GLB format/ship-pirate-medium.glb',
+                    'ship-pirate-large': './assets/Models/GLB format/ship-pirate-large.glb',
+                    'ship-ghost': './assets/Models/GLB format/ship-ghost.glb',
+                    'ship-small': './assets/Models/GLB format/ship-small.glb',
+                    'ship-medium': './assets/Models/GLB format/ship-medium.glb',
+                    'ship-large': './assets/Models/GLB format/ship-large.glb',
+                    'boat-row-small': './assets/Models/GLB format/boat-row-small.glb',
+                    'cannon': './assets/Models/GLB format/cannon.glb',
+                    'chest': './assets/Models/GLB format/chest.glb',
+                    'barrel': './assets/Models/GLB format/barrel.glb',
+                    'rocks-a': './assets/Models/GLB format/rocks-a.glb',
+                    'palm-straight': './assets/Models/GLB format/palm-straight.glb',
+                    'patch-sand': './assets/Models/GLB format/patch-sand.glb'
+                };
+                
+                this.totalAssets = Object.keys(this.assetList).length;
+            }
+            
+            async loadAll() {
+                const loader = new THREE.GLTFLoader();
+                const promises = Object.entries(this.assetList).map(([key, path]) => {
+                    return new Promise((resolve) => {
+                        loader.load(path, (gltf) => {
+                            this.assets[key] = gltf.scene;
+                            this.loadedAssets++;
+                            this.onProgress((this.loadedAssets / this.totalAssets) * 100);
+                            resolve();
+                        }, undefined, () => {
+                            // On error, create placeholder
+                            this.assets[key] = this.createPlaceholder(key);
+                            this.loadedAssets++;
+                            this.onProgress((this.loadedAssets / this.totalAssets) * 100);
+                            resolve();
+                        });
+                    });
+                });
+                
+                await Promise.all(promises);
+                
+                // Optimize assets
+                Object.values(this.assets).forEach(scene => {
+                    scene.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                });
+            }
+            
+            createPlaceholder(type) {
+                const group = new THREE.Group();
+                const material = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+                
+                if (type.includes('ship') || type.includes('boat')) {
+                    const hull = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 4), material);
+                    hull.position.y = 0.5;
+                    group.add(hull);
+                    if (type.includes('ship')) {
+                        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3), new THREE.MeshLambertMaterial({ color: 0x4a3c28 }));
+                        mast.position.set(0, 2, 0);
+                        group.add(mast);
+                    }
+                } else {
+                    group.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material));
+                }
+                return group;
+            }
+            
+            get(key) {
+                return this.assets[key] ? this.assets[key].clone() : this.createPlaceholder(key);
+            }
         }
-        parts.emit(this.x,this.z,{n:4,color:'#ff8833',minS:20,maxS:80,life:.42});
-        this.ft=this.fr;
-      }else this.ft=.4;
-    }
-    this.syncMesh();
-    updateHpEl(this.hpEl,this.x,this.z,this.hp,this.maxHp,true);
-  }
-}
 
-// ── ENEMY ──────────────────────────────────────────────────────────
-class Enemy extends Ship{
-  constructor(type,x,z,isGhost,bossScale=0){
-    const c=ENEMY_CFG[type];
-    super(x,z,c.model,c.sc);
-    this.etype=type; this.isGhost=isGhost||c.boss;
-    this.hp=c.hp*(1+bossScale*.4)*(isGhost&&!c.boss?.7:1); this.maxHp=this.hp;
-    this.spd=c.spd*(1+bossScale*.15); this.sz=c.sz;
-    this.dmg=c.dmg+bossScale*3; this.fr=c.fr; this.rng=c.rng;
-    this.xpV=c.xp; this.skV=c.sk; this.isBoss=c.boss;
-    this.ft=Math.random()*2; this.cA=0; this.cDir=Math.random()>.5?1:-1;
-    // [FIX-2] Ghost tint: set emissive, NOT replacing the material map
-    if(this.isGhost){
-      this.mesh.traverse(m=>{if(m.isMesh){
-        m.material=m.material.clone();
-        m.material.emissive.set(0x00ff88);
-        m.material.emissiveIntensity=.55;
-        m.material.transparent=true; m.material.opacity=.82;
-      }});
-      // Boss scale
-      if(this.isBoss)this.mesh.scale.multiplyScalar(1.5+(bossScale*.3));
-    }
-  }
-  update(dt,player,CBs,parts,G){
-    if(this.dead)return;
-    const dd=d(this.x,this.z,player.x,player.z);
-    if(this.etype==='rowboat'){
-      const a=Math.atan2(player.x-this.x,player.z-this.z);
-      this.x+=Math.sin(a)*this.spd*22*dt; this.z+=Math.cos(a)*this.spd*22*dt; this.rotateTo(a,dt,7);
-      if(dd<player.sz+this.sz&&!player.phased){player.takeDmg(this.dmg*.5*dt*60);this.takeDmg(this.dmg*.3*dt*60);}
-    } else {
-      if(dd>210){const a=Math.atan2(player.x-this.x,player.z-this.z);this.x+=Math.sin(a)*this.spd*20*dt;this.z+=Math.cos(a)*this.spd*20*dt;this.rotateTo(a,dt,3);}
-      else{this.cA+=dt*this.cDir*(this.spd/180);this.x+=Math.sin(this.cA+Math.PI/2)*this.spd*12*dt;this.z+=Math.cos(this.cA+Math.PI/2)*this.spd*12*dt;}
-      this.ft-=dt;
-      if(this.ft<=0&&dd<this.rng){
-        const shots=this.isBoss?3:1,acc=G.player.flagAcc?.7:.8;
-        for(let s=0;s<shots;s++){
-          const ba=Math.atan2(player.x-this.x,player.z-this.z);
-          const sp=ba+(s-.5*(shots-1))*.22+rand(-.28,.28)*(1-acc+.2);
-          CBs.push(new Cannonball(this.x,this.z,this.x+Math.sin(sp)*this.rng*.9,this.z+Math.cos(sp)*this.rng*.9,this.dmg,'enemy'));
+        // Ocean System with Shader
+        class Ocean {
+            constructor(scene) {
+                this.scene = scene;
+                this.time = 0;
+                
+                const geometry = new THREE.PlaneGeometry(1000, 1000, 100, 100);
+                geometry.rotateX(-Math.PI / 2);
+                
+                const vertexShader = `
+                    varying vec2 vUv;
+                    varying float vElevation;
+                    uniform float uTime;
+                    
+                    void main() {
+                        vUv = uv;
+                        vec3 pos = position;
+                        float elevation = sin(pos.x * 0.1 + uTime) * 0.5;
+                        elevation += sin(pos.z * 0.08 + uTime * 0.8) * 0.5;
+                        elevation += sin((pos.x + pos.z) * 0.05 + uTime * 0.5) * 0.3;
+                        pos.y += elevation;
+                        vElevation = elevation;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                    }
+                `;
+                
+                const fragmentShader = `
+                    varying vec2 vUv;
+                    varying float vElevation;
+                    
+                    void main() {
+                        vec3 deepColor = vec3(0.05, 0.15, 0.3);
+                        vec3 surfaceColor = vec3(0.1, 0.35, 0.6);
+                        float mixStrength = (vElevation + 1.0) * 0.5;
+                        vec3 color = mix(deepColor, surfaceColor, mixStrength);
+                        if (vElevation > 0.8) color = mix(color, vec3(0.9), 0.3);
+                        gl_FragColor = vec4(color, 0.95);
+                    }
+                `;
+                
+                const material = new THREE.ShaderMaterial({
+                    vertexShader, fragmentShader,
+                    uniforms: { uTime: { value: 0 } },
+                    transparent: true
+                });
+                
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.position.y = -2;
+                this.mesh.receiveShadow = true;
+                scene.add(this.mesh);
+                
+                // Grid for depth reference
+                const grid = new THREE.GridHelper(1000, 100, 0x1a4a6e, 0x0d2a3e);
+                grid.position.y = -1.9;
+                grid.material.opacity = 0.2;
+                grid.material.transparent = true;
+                scene.add(grid);
+            }
+            
+            update(delta, time) {
+                this.time += delta;
+                this.mesh.material.uniforms.uTime.value = this.time * 0.5;
+            }
         }
-        parts.emit(this.x,this.z,{n:5,color:'#ff4422',minS:20,maxS:80,life:.4});
-        this.ft=this.fr+(shots-1)*.4;
-      }
-    }
-    this.x=clamp(this.x,30,WORLD-30); this.z=clamp(this.z,30,WORLD-30);
-    this.syncMesh();
-    updateHpEl(this.hpEl,this.x,this.z,this.hp,this.maxHp,true);
-    if(this.isBoss){
-      document.getElementById('boss-bar').style.display='block';
-      document.getElementById('boss-fill').style.width=(clamp(this.hp/this.maxHp,0,1)*100)+'%';
-    }
-  }
-  killFX(parts){parts.emit(this.x,this.z,{n:22,color:this.isGhost?'#4dff9b':'#ff6622',minS:40,maxS:180,life:.9});this.kill();}
-}
 
-// ── MINE ──────────────────────────────────────────────────────────
-function mkMine(x,z){
-  const src=_mdls['barrel'];
-  const m=src?src.clone(true):new THREE.Mesh(new THREE.CylinderGeometry(4,4,7,8),new THREE.MeshStandardMaterial({color:0x7a4a20,metalness:0,roughness:.8}));
-  m.scale.setScalar(src?SCALE.barrel:1);
-  m.position.set(x-HALF,2.5,z-HALF); _scene.add(m); return m;
-}
+        // Particle System
+        class ParticleSystem {
+            constructor(scene) {
+                this.scene = scene;
+                this.particles = [];
+                
+                this.geometries = {
+                    smoke: new THREE.SphereGeometry(0.3, 6, 6),
+                    spark: new THREE.BoxGeometry(0.15, 0.15, 0.15),
+                    wake: new THREE.PlaneGeometry(0.8, 0.8)
+                };
+                
+                this.materials = {
+                    smoke: new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.5 }),
+                    spark: new THREE.MeshBasicMaterial({ color: 0xffaa00 }),
+                    wake: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 })
+                };
+            }
+            
+            spawnExplosion(pos, count = 8, color = 0xff6600) {
+                for (let i = 0; i < count; i++) {
+                    const mesh = new THREE.Mesh(this.geometries.spark, this.materials.spark.clone());
+                    mesh.material.color.setHex(color);
+                    mesh.position.copy(pos);
+                    mesh.position.x += Utils.randFloat(-1, 1);
+                    mesh.position.z += Utils.randFloat(-1, 1);
+                    
+                    this.particles.push({
+                        mesh, type: 'explosion',
+                        velocity: new THREE.Vector3(Utils.randFloat(-8, 8), Utils.randFloat(5, 12), Utils.randFloat(-8, 8)),
+                        life: 1.0
+                    });
+                    this.scene.add(mesh);
+                }
+            }
+            
+            spawnSmoke(pos) {
+                const mesh = new THREE.Mesh(this.geometries.smoke, this.materials.smoke.clone());
+                mesh.position.copy(pos);
+                mesh.position.y += 0.5;
+                this.particles.push({
+                    mesh, type: 'smoke',
+                    velocity: new THREE.Vector3(0, 3, 0),
+                    life: 2.0, growth: 3
+                });
+                this.scene.add(mesh);
+            }
+            
+            spawnWake(pos, rotation) {
+                const mesh = new THREE.Mesh(this.geometries.wake, this.materials.wake.clone());
+                mesh.position.copy(pos);
+                mesh.position.y = -1.8;
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.rotation.z = rotation;
+                this.particles.push({
+                    mesh, type: 'wake',
+                    velocity: new THREE.Vector3(0, 0, 0),
+                    life: 1.0
+                });
+                this.scene.add(mesh);
+            }
+            
+            update(delta) {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.life -= delta;
+                    
+                    if (p.type === 'explosion') {
+                        p.mesh.position.addScaledVector(p.velocity, delta);
+                        p.velocity.y -= 20 * delta;
+                        p.mesh.rotation.x += delta * 3;
+                        p.mesh.material.opacity = p.life;
+                    } else if (p.type === 'smoke') {
+                        p.mesh.position.addScaledVector(p.velocity, delta);
+                        const scale = 1 + (2.0 - p.life) * p.growth * 0.5;
+                        p.mesh.scale.setScalar(scale);
+                        p.mesh.material.opacity = (p.life / 2.0) * 0.5;
+                    } else if (p.type === 'wake') {
+                        p.mesh.material.opacity = (p.life / 1.0) * 0.3;
+                        p.mesh.scale.multiplyScalar(0.98);
+                    }
+                    
+                    if (p.life <= 0) {
+                        this.scene.remove(p.mesh);
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+        }
 
-// ── CANNON TOWER ──────────────────────────────────────────────────
-class Tower{
-  constructor(x,z){
-    this.x=x;this.z=z;this.life=20;this.dead=false;this.ft=0;this.rng=280;
-    const src=_mdls['tower-complete-small'];
-    this.mesh=src?src.clone(true):new THREE.Mesh(new THREE.CylinderGeometry(8,10,24,8),new THREE.MeshStandardMaterial({color:0x8a7050,metalness:0,roughness:.8}));
-    this.mesh.scale.setScalar(src?SCALE.tower:1);
-    this.mesh.position.set(x-HALF,0,z-HALF); _scene.add(this.mesh);
-  }
-  update(dt,enemies,CBs,dm){
-    this.life-=dt; if(this.life<=0||this.dead){_scene.remove(this.mesh);this.dead=true;return;}
-    this.ft-=dt;
-    if(this.ft<=0){
-      const sorted=[...enemies].sort((a,b)=>d2(this.x,this.z,a.x,a.z)-d2(this.x,this.z,b.x,b.z));
-      const t=sorted[0];
-      if(t&&d(this.x,this.z,t.x,t.z)<this.rng){CBs.push(new Cannonball(this.x,this.z,t.x,t.z,25*dm,'tower'));this.ft=1.5;}
-      else this.ft=.35;
-    }
-  }
-}
+        // Projectile System
+        class ProjectileSystem {
+            constructor(scene, particles) {
+                this.scene = scene;
+                this.particles = particles;
+                this.projectiles = [];
+                this.pool = [];
+                
+                const geometry = new THREE.SphereGeometry(0.15, 6, 6);
+                const material = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 });
+                
+                for (let i = 0; i < 60; i++) {
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.visible = false;
+                    this.scene.add(mesh);
+                    this.pool.push({ mesh, active: false });
+                }
+            }
+            
+            fire(startPos, targetPos, speed = 35, damage = 15, isPlayer = true) {
+                const proj = this.pool.find(p => !p.active) || this.pool[0];
+                proj.active = true;
+                proj.mesh.visible = true;
+                proj.mesh.position.copy(startPos);
+                proj.isPlayer = isPlayer;
+                proj.damage = damage;
+                
+                const dir = Utils.direction(startPos, targetPos);
+                const dist = Utils.distance(startPos, targetPos);
+                const height = Math.min(dist * 0.4, 6);
+                
+                proj.velocity = new THREE.Vector3(dir.x * speed, height * 2.5, dir.z * speed);
+                proj.startTime = Date.now();
+                proj.duration = dist / speed;
+                
+                this.projectiles.push(proj);
+                this.particles.spawnSmoke(startPos);
+            }
+            
+            update(delta) {
+                for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                    const p = this.projectiles[i];
+                    p.velocity.y -= 25 * delta;
+                    p.mesh.position.addScaledVector(p.velocity, delta);
+                    
+                    if (p.mesh.position.y <= -1.5 || Date.now() - p.startTime > p.duration * 1000 * 2) {
+                        p.active = false;
+                        p.mesh.visible = false;
+                        this.projectiles.splice(i, 1);
+                        if (p.mesh.position.y <= -1.5) {
+                            this.particles.spawnExplosion(p.mesh.position, 3, 0xffffff);
+                        }
+                    }
+                }
+            }
+            
+            getActive() { return this.projectiles.filter(p => p.active); }
+            reset() {
+                this.projectiles.forEach(p => { p.active = false; p.mesh.visible = false; });
+                this.projectiles = [];
+            }
+        }
 
-// ── LOOT ──────────────────────────────────────────────────────────
-class Loot{
-  constructor(x,z,type,val){
-    this.x=x;this.z=z;this.type=type;this.val=val;this.r=type==='chest'?15:type==='skull'?11:9;
-    this.life=22;this.dead=false;this.bt=Math.random()*TWO_PI;
-    const mmap={chest:'chest',skull:'crate',doubloon:'crate',bottle:'bottle'};
-    const src=_mdls[mmap[type]||'crate'];
-    this.mesh=src?src.clone(true):new THREE.Mesh(new THREE.SphereGeometry(this.r*.4,8,6),new THREE.MeshStandardMaterial({color:type==='chest'?0xc07010:0xf0c040,metalness:0,roughness:.7}));
-    this.mesh.scale.setScalar(src?SCALE[mmap[type]]||SCALE.crate:1);
-    _scene.add(this.mesh);
-  }
-  update(dt,t){
-    this.life-=dt; this.bt+=dt*2;
-    if(this.life<=0||this.dead){_scene.remove(this.mesh);this.dead=true;return;}
-    this.mesh.position.set(this.x-HALF,2.5+Math.sin(this.bt)*2,this.z-HALF);
-    this.mesh.rotation.y+=dt*.8;
-  }
-}
+        // Player Controller
+        class Player {
+            constructor(scene, projectiles) {
+                this.scene = scene;
+                this.projectiles = projectiles;
+                this.hp = 100;
+                this.maxHp = 100;
+                this.speed = 12;
+                this.turnSpeed = 4;
+                this.velocity = new THREE.Vector3();
+                this.friction = 0.92;
+                this.cannonCount = 2;
+                this.fireRate = 0.8;
+                this.lastFire = 0;
+                this.invulnerable = 0;
+                
+                this.mesh = window.game.assets.get('ship-pirate-small');
+                this.mesh.position.y = 0;
+                this.scene.add(this.mesh);
+                
+                // Cannon sound synth
+                this.synth = null;
+            }
+            
+            reset() {
+                this.hp = this.maxHp;
+                this.mesh.position.set(0, 0, 0);
+                this.velocity.set(0, 0, 0);
+                this.cannonCount = 2 + Math.floor(window.game.metaUpgrades.cannonMaster || 0);
+            }
+            
+            update(delta, keys) {
+                // Input
+                let inputX = 0, inputZ = 0;
+                if (keys['KeyW'] || keys['ArrowUp']) inputZ -= 1;
+                if (keys['KeyS'] || keys['ArrowDown']) inputZ += 1;
+                if (keys['KeyA'] || keys['ArrowLeft']) inputX -= 1;
+                if (keys['KeyD'] || keys['ArrowRight']) inputX += 1;
+                
+                // Normalize
+                if (inputX !== 0 || inputZ !== 0) {
+                    const len = Math.sqrt(inputX**2 + inputZ**2);
+                    inputX /= len; inputZ /= len;
+                    
+                    // Acceleration
+                    this.velocity.x += inputX * 30 * delta;
+                    this.velocity.z += inputZ * 30 * delta;
+                    
+                    // Rotation
+                    const targetAngle = Math.atan2(inputX, inputZ);
+                    let diff = targetAngle - this.mesh.rotation.y;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    this.mesh.rotation.y += diff * this.turnSpeed * delta;
+                }
+                
+                // Physics
+                this.velocity.multiplyScalar(this.friction);
+                const speed = this.velocity.length();
+                if (speed > this.speed) this.velocity.multiplyScalar(this.speed / speed);
+                
+                this.mesh.position.x += this.velocity.x * delta;
+                this.mesh.position.z += this.velocity.z * delta;
+                this.mesh.position.y = Math.sin(Date.now() * 0.003) * 0.15;
+                
+                // Wake particles
+                if (speed > 2 && Math.random() > 0.8) {
+                    window.game.particles.spawnWake(this.mesh.position, this.mesh.rotation.y);
+                }
+                
+                // Auto-fire
+                this.lastFire += delta;
+                if (this.lastFire >= this.fireRate) {
+                    const target = window.game.enemies.findNearest(this.mesh.position, 45);
+                    if (target) {
+                        this.fire(target.position);
+                        this.lastFire = 0;
+                    }
+                }
+                
+                // Invulnerability frame
+                if (this.invulnerable > 0) this.invulnerable -= delta;
+            }
+            
+            fire(targetPos) {
+                const offsets = this.cannonCount === 1 ? [0] : this.cannonCount === 2 ? [-0.8, 0.8] : [-1, 0, 1];
+                offsets.forEach(offset => {
+                    const offVec = new THREE.Vector3(offset, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
+                    const pos = this.mesh.position.clone().add(offVec);
+                    pos.y += 0.8;
+                    this.projectiles.fire(pos, targetPos, 40, 20 * (1 + (window.game.metaUpgrades.cannonMaster || 0) * 0.1), true);
+                });
+                
+                // Audio
+                if (window.game.audio) window.game.audio.playCannon();
+            }
+            
+            takeDamage(amount) {
+                if (this.invulnerable > 0) return;
+                this.hp -= amount * (1 - (window.game.metaUpgrades.hullReinforcement || 0) * 0.1);
+                this.invulnerable = 0.5;
+                window.game.ui.shakeScreen();
+                window.game.ui.showDamageOverlay();
+                
+                // Damage number
+                window.game.ui.showDamageText(amount, this.mesh.position);
+                
+                if (this.hp <= 0) this.hp = 0;
+            }
+            
+            heal(amount) {
+                this.hp = Math.min(this.maxHp, this.hp + amount);
+            }
+        }
 
-// ── WORLD OBJECTS ─────────────────────────────────────────────────
-let _world=[]; // {type,x,z,r,mesh,hasLoot}
-function buildWorld(){
-  // Rocks
-  for(let i=0;i<30;i++){
-    const x=rand(200,WORLD-200),z=rand(200,WORLD-200),r=rand(18,42);
-    const src=_mdls[rFrom(['rocks-a','rocks-b','rocks-c'])];
-    const mesh=src?src.clone(true):new THREE.Mesh(new THREE.DodecahedronGeometry(r*.5),new THREE.MeshStandardMaterial({color:0x6a5a4a,metalness:0,roughness:.9}));
-    mesh.scale.setScalar(src?SCALE.rock*rand(.7,1.3):1);
-    mesh.position.set(x-HALF,rand(0,3),z-HALF); mesh.rotation.y=Math.random()*TWO_PI;
-    _scene.add(mesh); _world.push({type:'rock',x,z,r,mesh});
-  }
-  // Islands
-  for(let i=0;i<4;i++){
-    const x=rand(500,WORLD-500),z=rand(500,WORLD-500),r=rand(60,100);
-    const grp=new THREE.Group();
-    for(let p=0;p<6+i;p++){
-      const s=_mdls[Math.random()>.5?'patch-sand':'patch-grass'];
-      if(s){const m=s.clone(true);m.scale.setScalar(SCALE.patch*rand(.8,1.2));
-        m.position.set(rand(-r*.6,r*.6),0,rand(-r*.6,r*.6));m.rotation.y=Math.random()*TWO_PI;grp.add(m);}
-    }
-    for(let t=0;t<randInt(2,4);t++){
-      const s=_mdls[Math.random()>.5?'palm-straight':'palm-bend'];
-      if(s){const m=s.clone(true);m.scale.setScalar(SCALE.palm*rand(.9,1.2));
-        m.position.set(rand(-r*.5,r*.5),-1,rand(-r*.5,r*.5));m.rotation.y=Math.random()*TWO_PI;grp.add(m);}
-    }
-    const cs=_mdls['chest'];
-    if(cs){const cm=cs.clone(true);cm.scale.setScalar(SCALE.chest);cm.position.set(0,2,0);cm.userData.chest=true;grp.add(cm);}
-    grp.position.set(x-HALF,0,z-HALF); _scene.add(grp);
-    _world.push({type:'island',x,z,r,mesh:grp,hasLoot:true});
-  }
-}
+        // Fleet Manager
+        class FleetManager {
+            constructor(scene, player, projectiles) {
+                this.scene = scene;
+                this.player = player;
+                this.projectiles = projectiles;
+                this.ships = [];
+                this.baseRadius = 6;
+                
+                // Add starter fleet from meta-upgrades
+                const startFleet = window.game?.metaUpgrades?.startingFleet || 0;
+                for (let i = 0; i < startFleet; i++) {
+                    this.addShip('rowboat', false);
+                }
+            }
+            
+            addShip(type = 'rowboat', showEffect = true) {
+                const configs = {
+                    rowboat: { key: 'boat-row-small', hp: 30, dmg: 8, rate: 2, radius: 5 },
+                    sloop: { key: 'ship-pirate-small', hp: 60, dmg: 12, rate: 1.5, radius: 7 },
+                    brigantine: { key: 'ship-pirate-medium', hp: 120, dmg: 18, rate: 1.2, radius: 9 },
+                    galleon: { key: 'ship-pirate-large', hp: 250, dmg: 30, rate: 1, radius: 12 }
+                };
+                
+                const cfg = configs[type];
+                const angle = (Math.PI * 2 * this.ships.length) / Math.max(this.ships.length + 1, 1);
+                const ring = Math.floor(this.ships.length / 6);
+                
+                const ship = {
+                    type, ...cfg,
+                    mesh: window.game.assets.get(cfg.key),
+                    lastFire: 0,
+                    angle,
+                    radius: cfg.radius + ring * 3,
+                    hp: cfg.hp
+                };
+                
+                this.scene.add(ship.mesh);
+                this.ships.push(ship);
+                
+                if (showEffect) {
+                    window.game.particles.spawnExplosion(ship.mesh.position, 10, 0xffff00);
+                }
+            }
+            
+            update(delta) {
+                const time = Date.now() * 0.001;
+                
+                this.ships.forEach((ship, i) => {
+                    ship.angle += 0.3 * delta;
+                    const targetX = this.player.mesh.position.x + Math.cos(ship.angle) * ship.radius;
+                    const targetZ = this.player.mesh.position.z + Math.sin(ship.angle) * ship.radius;
+                    
+                    ship.mesh.position.x += (targetX - ship.mesh.position.x) * 4 * delta;
+                    ship.mesh.position.z += (targetZ - ship.mesh.position.z) * 4 * delta;
+                    ship.mesh.position.y = Math.sin(time + i) * 0.1;
+                    ship.mesh.lookAt(targetX + Math.cos(ship.angle), ship.mesh.position.y, targetZ + Math.sin(ship.angle));
+                    
+                    ship.lastFire += delta;
+                    if (ship.lastFire >= ship.rate) {
+                        const target = window.game.enemies.findNearest(ship.mesh.position, 30);
+                        if (target) {
+                            const pos = ship.mesh.position.clone(); pos.y += 0.5;
+                            this.projectiles.fire(pos, target.position, 30, ship.dmg, true);
+                            ship.lastFire = 0;
+                        }
+                    }
+                });
+            }
+            
+            reset() {
+                this.ships.forEach(s => this.scene.remove(s.mesh));
+                this.ships = [];
+                // Re-add starter ships
+                const startFleet = window.game?.metaUpgrades?.startingFleet || 0;
+                for (let i = 0; i < startFleet; i++) this.addShip('rowboat', false);
+            }
+        }
 
-function spawnWreck(x,z){
-  const s=_mdls['ship-wreck']; if(!s)return;
-  const m=s.clone(true); m.scale.setScalar(SCALE.wreck*rand(.8,1.2));
-  m.position.set(x-HALF,0,z-HALF); m.rotation.y=Math.random()*TWO_PI; _scene.add(m);
-  _world.push({type:'wreck',x,z,r:16,mesh:m});
-}
+        // Enemy System
+        class EnemySystem {
+            constructor(scene, player, projectiles, particles) {
+                this.scene = scene;
+                this.player = player;
+                this.projectiles = projectiles;
+                this.particles = particles;
+                this.enemies = [];
+                this.boss = null;
+                this.spawnTimer = 0;
+                this.difficulty = 1;
+            }
+            
+            spawn(type) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 70;
+                const x = this.player.mesh.position.x + Math.cos(angle) * dist;
+                const z = this.player.mesh.position.z + Math.sin(angle) * dist;
+                
+                const configs = {
+                    rowboat: { key: 'boat-row-small', hp: 20, speed: 7, dmg: 8, xp: 5, scale: 1 },
+                    sloop: { key: 'ship-small', hp: 50, speed: 5, dmg: 12, xp: 15, fireRate: 2.5, scale: 1 },
+                    frigate: { key: 'ship-medium', hp: 130, speed: 3, dmg: 22, xp: 40, fireRate: 3.5, scale: 1.2 },
+                    galleon: { key: 'ship-large', hp: 320, speed: 2, dmg: 35, xp: 100, fireRate: 4, scale: 1.4 },
+                    ghost: { key: 'ship-ghost', hp: 1000, speed: 4, dmg: 50, xp: 500, fireRate: 2, scale: 2, boss: true }
+                };
+                
+                const cfg = configs[type];
+                const enemy = {
+                    type, ...cfg,
+                    mesh: window.game.assets.get(cfg.key),
+                    lastShot: 0,
+                    maxHp: cfg.hp
+                };
+                
+                if (type === 'ghost') {
+                    // Ghost shader
+                    enemy.mesh.traverse(c => {
+                        if (c.isMesh) {
+                            c.material = c.material.clone();
+                            c.material.emissive = new THREE.Color(0x4dff9b);
+                            c.material.emissiveIntensity = 0.6;
+                            c.material.transparent = true;
+                            c.material.opacity = 0.85;
+                        }
+                    });
+                    this.boss = enemy;
+                }
+                
+                enemy.mesh.position.set(x, 0, z);
+                enemy.mesh.scale.setScalar(cfg.scale);
+                this.scene.add(enemy.mesh);
+                this.enemies.push(enemy);
+                return enemy;
+            }
+            
+            update(delta, gameTime) {
+                const minutes = Math.floor(gameTime / 60);
+                this.difficulty = 1 + minutes * 0.2;
+                
+                // Spawning
+                this.spawnTimer += delta;
+                const spawnRate = Math.max(0.3, 1.5 - minutes * 0.1);
+                
+                if (this.spawnTimer > spawnRate) {
+                    this.spawnTimer = 0;
+                    const roll = Math.random();
+                    if (minutes < 2) this.spawn('rowboat');
+                    else if (minutes < 5) { this.spawn('rowboat'); if (roll > 0.6) this.spawn('sloop'); }
+                    else if (minutes < 8) { this.spawn('sloop'); if (roll > 0.5) this.spawn('frigate'); }
+                    else { this.spawn('frigate'); if (roll > 0.7) this.spawn('galleon'); }
+                }
+                
+                // Update enemies
+                for (let i = this.enemies.length - 1; i >= 0; i--) {
+                    const e = this.enemies[i];
+                    
+                    // AI Movement
+                    if (e.boss) {
+                        // Circle player
+                        const time = Date.now() * 0.001;
+                        const tx = this.player.mesh.position.x + Math.cos(time * 0.5) * 25;
+                        const tz = this.player.mesh.position.z + Math.sin(time * 0.5) * 25;
+                        e.mesh.position.x += (tx - e.mesh.position.x) * delta;
+                        e.mesh.position.z += (tz - e.mesh.position.z) * delta;
+                    } else {
+                        // Chase player
+                        const dir = Utils.direction(e.mesh.position, this.player.mesh.position);
+                        e.mesh.position.x += dir.x * e.speed * delta;
+                        e.mesh.position.z += dir.z * e.speed * delta;
+                        e.mesh.lookAt(this.player.mesh.position);
+                    }
+                    
+                    e.mesh.position.y = Math.sin(Date.now() * 0.002 + i) * 0.1;
+                    
+                    // Shooting
+                    if (e.fireRate) {
+                        e.lastShot += delta;
+                        if (e.lastShot >= e.fireRate) {
+                            const dist = Utils.distance(e.mesh.position, this.player.mesh.position);
+                            if (dist < 35) {
+                                this.projectiles.fire(e.mesh.position, this.player.mesh.position, 25, e.dmg, false);
+                                e.lastShot = 0;
+                            }
+                        }
+                    }
+                    
+                    // Collisions
+                    this.checkCollisions(e, i);
+                }
+                
+                // Update boss HUD
+                if (this.boss && this.boss.hp > 0) {
+                    const pct = (this.boss.hp / this.boss.maxHp) * 100;
+                    document.getElementById('boss-hp-bar').style.width = pct + '%';
+                } else if (this.boss && this.boss.hp <= 0) {
+                    document.getElementById('boss-hud').classList.add('hidden');
+                    this.boss = null;
+                }
+            }
+            
+            checkCollisions(enemy, index) {
+                // Player projectiles
+                const projs = this.projectiles.getActive();
+                for (const p of projs) {
+                    if (!p.isPlayer) continue;
+                    if (Utils.distance(p.mesh.position, enemy.mesh.position) < 2.5) {
+                        enemy.hp -= p.damage * (enemy.type === 'ghost' && !window.game.ghostBuster ? 0.5 : 1);
+                        p.active = false;
+                        p.mesh.visible = false;
+                        
+                        if (enemy.hp <= 0) {
+                            this.killEnemy(enemy, index);
+                            return;
+                        }
+                    }
+                }
+                
+                // Ramming player
+                if (Utils.distance(enemy.mesh.position, this.player.mesh.position) < 3) {
+                    this.player.takeDamage(enemy.dmg);
+                    if (enemy.type === 'rowboat') {
+                        this.killEnemy(enemy, index);
+                    }
+                }
+            }
+            
+            killEnemy(enemy, index) {
+                this.particles.spawnExplosion(enemy.mesh.position, enemy.boss ? 30 : 15);
+                this.scene.remove(enemy.mesh);
+                this.enemies.splice(index, 1);
+                
+                // Rewards
+                window.game.addDoubloons(enemy.xp);
+                
+                if (enemy.boss) {
+                    window.game.addDoubloons(200);
+                    document.getElementById('boss-hud').classList.add('hidden');
+                    window.game.bossActive = false;
+                    // Heal player
+                    this.player.heal(50);
+                }
+                
+                // Drop chance
+                if (Math.random() > 0.95) this.player.heal(15);
+            }
+            
+            findNearest(pos, range) {
+                let nearest = null, minDist = range;
+                for (const e of this.enemies) {
+                    const d = Utils.distance(pos, e.mesh.position);
+                    if (d < minDist) { minDist = d; nearest = e; }
+                }
+                return nearest;
+            }
+            
+            reset() {
+                this.enemies.forEach(e => this.scene.remove(e.mesh));
+                this.enemies = [];
+                this.boss = null;
+                this.bossActive = false;
+            }
+        }
 
-// ── WAVE SYSTEM ───────────────────────────────────────────────────
-function waveCfg(min){
-  if(min<2)  return{types:['rowboat'],                    n:9,  iv:2.8};
-  if(min<4)  return{types:['rowboat','sloop'],            n:11, iv:2.5};
-  if(min<7)  return{types:['rowboat','sloop','frigate'],  n:13, iv:2.2};
-  if(min<11) return{types:['sloop','frigate','galleon'],  n:16, iv:2.0, gc:.12};
-  if(min<17) return{types:['frigate','galleon'],          n:19, iv:1.8, gc:.28};
-  if(min<25) return{types:['galleon'],                    n:23, iv:1.5, gc:.42};
-  return     {types:['galleon'],                          n:27, iv:1.2, gc:.58};
-}
-function spawnEnemy(G){
-  const min=G.time/60,cfg=waveCfg(min),type=rFrom(cfg.types);
-  const isGhost=cfg.gc&&Math.random()<cfg.gc;
-  const p=G.player,far=rand(340,450);
-  const edge=randInt(0,3);
-  let ex,ez;
-  if(edge===0){ex=p.x-far;ez=p.z+rand(-420,420)}
-  else if(edge===1){ex=p.x+far;ez=p.z+rand(-420,420)}
-  else if(edge===2){ez=p.z-far;ex=p.x+rand(-420,420)}
-  else{ez=p.z+far;ex=p.x+rand(-420,420)}
-  G.enemies.push(new Enemy(type,clamp(ex,60,WORLD-60),clamp(ez,60,WORLD-60),isGhost,G.bossScale));
-  G.spawnIv=cfg.iv;
-}
-function spawnBoss(G){
-  G.bossActive=true;
-  announce('💀 GHOST SHIP BOSS!<br><small>All cannons — OPEN FIRE!</small>');
-  G.shake=1.2;
-  const p=G.player,bc=Math.min(G.bossScale+1,2);
-  for(let b=0;b<bc;b++){
-    const bx=clamp(p.x+(b===0?400:-400),100,WORLD-100),bz=clamp(p.z-380,100,WORLD-100);
-    G.enemies.push(new Enemy('ghost',bx,bz,false,G.bossScale));
-  }
-  for(let i=0;i<10;i++){const a=(i/10)*TWO_PI;G.enemies.push(new Enemy('rowboat',p.x+Math.sin(a)*500,p.z+Math.cos(a)*500,true,0));}
-}
+        // Upgrade System
+        class UpgradeSystem {
+            constructor() {
+                this.upgrades = [
+                    { id: 'rowboats', name: 'Recruit Rowboats', type: 'fleet', tier: 'common', effect: 'rowboat', icon: '🚣', desc: 'Add 2 rowboat flankers' },
+                    { id: 'sloop', name: 'Press-Gang Sloop', type: 'fleet', tier: 'rare', effect: 'sloop', icon: '⛵', desc: 'Add 1 sloop to fleet' },
+                    { id: 'brigantine', name: 'Commandeer Brigantine', type: 'fleet', tier: 'epic', effect: 'brigantine', icon: '🚢', desc: 'Add heavy Brigantine' },
+                    { id: 'galleon', name: 'The Flagship', type: 'fleet', tier: 'legendary', effect: 'galleon', icon: '🏴‍☠️', desc: 'Add massive Galleon' },
+                    { id: 'cannon', name: 'Extra Cannon', type: 'weapon', tier: 'common', effect: 'cannon', icon: '💣', desc: '+1 cannon, faster fire' },
+                    { id: 'damage', name: 'Heavy Shot', type: 'weapon', tier: 'rare', effect: 'damage', icon: '🔥', desc: '+50% damage' },
+                    { id: 'multishot', name: 'Broadside', type: 'weapon', tier: 'epic', effect: 'multishot', icon: '💥', desc: 'Triple shot spread' },
+                    { id: 'ghostbuster', name: 'Ghost Breaker', type: 'weapon', tier: 'legendary', effect: 'ghostbuster', icon: '👻', desc: '2x vs Ghost Ships' },
+                    { id: 'hp', name: 'Reinforce Hull', type: 'hull', tier: 'common', effect: 'hp', icon: '🛡️', desc: '+30% max HP' },
+                    { id: 'speed', name: 'Stolen Sails', type: 'hull', tier: 'rare', effect: 'speed', icon: '💨', desc: '+30% speed' },
+                    { id: 'regen', name: 'Repair Crew', type: 'hull', tier: 'epic', effect: 'regen', icon: '🔧', desc: 'Slow HP regen' },
+                    { id: 'ghosthull', name: 'Ghost Hull', type: 'hull', tier: 'legendary', effect: 'ghosthull', icon: '👻', desc: 'Phase through enemies' }
+                ];
+                this.current = [];
+            }
+            
+            getCards(count, level) {
+                const pool = this.upgrades.filter(u => {
+                    if (u.tier === 'legendary' && level < 8) return false;
+                    if (u.tier === 'epic' && level < 5) return false;
+                    return true;
+                });
+                this.current = pool.sort(() => 0.5 - Math.random()).slice(0, count);
+                return this.current;
+            }
+            
+            apply(index, player, fleet) {
+                const u = this.current[index];
+                if (!u) return;
+                
+                switch(u.effect) {
+                    case 'rowboat': fleet.addShip('rowboat'); fleet.addShip('rowboat'); break;
+                    case 'sloop': fleet.addShip('sloop'); break;
+                    case 'brigantine': fleet.addShip('brigantine'); break;
+                    case 'galleon': fleet.addShip('galleon'); break;
+                    case 'cannon': player.cannonCount++; player.fireRate *= 0.85; break;
+                    case 'damage': /* Handled via damage calc */ break;
+                    case 'multishot': player.cannonCount = Math.max(player.cannonCount, 3); break;
+                    case 'ghostbuster': window.game.ghostBuster = true; break;
+                    case 'hp': player.maxHp *= 1.3; player.hp *= 1.3; break;
+                    case 'speed': player.speed *= 1.3; break;
+                    case 'regen': /* Would add regen */ break;
+                }
+                window.game.audio.playUpgrade();
+            }
+        }
 
-// ── INIT GAME ─────────────────────────────────────────────────────
-function initGame(){
-  // Remove previous world objects
-  _world.forEach(o=>{if(o.mesh)_scene.remove(o.mesh)}); _world=[];
-  // Remove previous DOM hp bars
-  document.querySelectorAll('[data-hpbar]').forEach(el=>el.remove());
+        // UI Controller
+        class UI {
+            constructor(game) {
+                this.game = game;
+                this.shakeIntensity = 0;
+                this.setupListeners();
+            }
+            
+            setupListeners() {
+                document.getElementById('btn-play').onclick = () => this.game.startGame();
+                document.getElementById('btn-upgrades').onclick = () => this.showMetaUpgrades();
+                document.getElementById('btn-leaderboard').onclick = () => alert('Global Leaderboard:\n1. Blackbeard - 28:45\n2. Calico Jack - 26:12\n3. Anne Bonny - 24:30\n\nYour Best: ' + Utils.formatTime(this.game.bestTime));
+                document.getElementById('btn-help').onclick = () => document.getElementById('help-modal').classList.remove('hidden');
+                document.getElementById('btn-close-help').onclick = () => document.getElementById('help-modal').classList.add('hidden');
+                document.getElementById('btn-restart').onclick = () => this.game.restart();
+                document.getElementById('btn-menu').onclick = () => this.game.returnToMenu();
+                document.getElementById('btn-close-upgrade').onclick = () => document.getElementById('upgrade-modal').classList.add('hidden');
+                
+                // Keyboard shortcuts
+                window.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' && this.game.isPlaying && !this.game.isPaused) {
+                        // Special ability
+                    }
+                    if (this.game.isPaused && document.getElementById('upgrade-screen').classList.contains('flex')) {
+                        if (e.code === 'Digit1') this.game.selectUpgrade(0);
+                        if (e.code === 'Digit2') this.game.selectUpgrade(1);
+                        if (e.code === 'Digit3') this.game.selectUpgrade(2);
+                    }
+                });
+            }
+            
+            update() {
+                // HUD Updates
+                document.getElementById('game-timer').textContent = Utils.formatTime(this.game.gameTime);
+                const hpPct = (this.game.player.hp / this.game.player.maxHp) * 100;
+                document.getElementById('hp-bar').style.width = Math.max(0, hpPct) + '%';
+                document.getElementById('hp-text').textContent = Math.ceil(hpPct) + '%';
+                document.getElementById('doubloon-count').textContent = this.game.doubloons;
+                document.getElementById('level-display').textContent = this.game.level;
+                document.getElementById('fleet-count').textContent = this.game.fleet.ships.length + 1;
+                
+                const xpPct = (this.game.xp / this.game.xpToNext) * 100;
+                document.getElementById('xp-bar').style.width = xpPct + '%';
+                
+                const minutes = Math.floor(this.game.gameTime / 60);
+                document.getElementById('wave-number').textContent = minutes + 1;
+                const nextBoss = minutes < 8 ? 8 : minutes < 16 ? 16 : 24;
+                const remaining = Math.max(0, nextBoss * 60 - this.game.gameTime);
+                document.getElementById('next-boss').textContent = Utils.formatTime(remaining);
+                
+                // Minimap
+                const minimap = document.getElementById('minimap');
+                minimap.querySelectorAll('.enemy-dot').forEach(d => d.remove());
+                const px = this.game.player.mesh.position.x;
+                const pz = this.game.player.mesh.position.z;
+                
+                this.game.enemies.enemies.forEach(e => {
+                    const dot = document.createElement('div');
+                    dot.className = 'enemy-dot absolute w-2 h-2 bg-red-500 rounded-full border border-white';
+                    const rx = (e.mesh.position.x - px) * 0.5 + 72;
+                    const ry = (e.mesh.position.z - pz) * 0.5 + 72;
+                    if (rx > 0 && rx < 144 && ry > 0 && ry < 144) {
+                        dot.style.left = rx + 'px';
+                        dot.style.top = ry + 'px';
+                        minimap.appendChild(dot);
+                    }
+                });
+                
+                // Screen shake
+                if (this.shakeIntensity > 0) {
+                    const sx = (Math.random() - 0.5) * this.shakeIntensity;
+                    const sy = (Math.random() - 0.5) * this.shakeIntensity;
+                    document.getElementById('game-container').style.transform = `translate(${sx}px, ${sy}px)`;
+                    this.shakeIntensity *= 0.9;
+                    if (this.shakeIntensity < 0.5) {
+                        this.shakeIntensity = 0;
+                        document.getElementById('game-container').style.transform = 'none';
+                    }
+                }
+            }
+            
+            showUpgradeCards(cards, callback) {
+                const container = document.getElementById('upgrade-cards');
+                container.innerHTML = '';
+                cards.forEach((card, i) => {
+                    const div = document.createElement('div');
+                    div.className = `upgrade-card ${card.tier} rounded-xl p-6 w-full md:w-64 flex flex-col items-center text-center interactive h-full`;
+                    div.innerHTML = `
+                        <div class="text-5xl mb-4 transform group-hover:scale-110 transition">${card.icon}</div>
+                        <div class="pirate-font text-xl text-white mb-2 font-bold">${card.name}</div>
+                        <div class="text-slate-300 text-sm mb-4 flex-grow">${card.desc}</div>
+                        <div class="px-3 py-1 rounded-full text-xs font-bold uppercase ${card.tier === 'common' ? 'bg-gray-600' : card.tier === 'rare' ? 'bg-blue-600' : card.tier === 'epic' ? 'bg-purple-600' : 'bg-yellow-600'} text-white mb-2">${card.tier}</div>
+                        <div class="text-slate-500 text-xs">Press [${i + 1}]</div>
+                    `;
+                    div.onclick = () => callback(i);
+                    container.appendChild(div);
+                });
+                document.getElementById('upgrade-screen').classList.remove('hidden');
+                document.getElementById('upgrade-screen').classList.add('flex');
+            }
+            
+            hideUpgradeCards() {
+                document.getElementById('upgrade-screen').classList.add('hidden');
+                document.getElementById('upgrade-screen').classList.remove('flex');
+            }
+            
+            showBossAlert() {
+                const alert = document.getElementById('boss-alert');
+                alert.style.opacity = '1';
+                alert.classList.remove('hidden');
+                document.getElementById('boss-hud').classList.remove('hidden');
+                setTimeout(() => { alert.style.opacity = '0'; }, 5000);
+            }
+            
+            showDeathScreen(time, score, doubloons, skulls, fleet) {
+                document.getElementById('death-time').textContent = Utils.formatTime(time);
+                document.getElementById('death-score').textContent = score.toLocaleString();
+                document.getElementById('death-doubloons').textContent = doubloons;
+                document.getElementById('death-skulls').textContent = '+' + skulls;
+                
+                const fleetDiv = document.getElementById('death-fleet');
+                fleetDiv.innerHTML = '';
+                const icons = { rowboat: '🚣', sloop: '⛵', brigantine: '🚢', galleon: '🏴‍☠️' };
+                fleet.forEach(s => {
+                    const span = document.createElement('span');
+                    span.textContent = icons[s.type] || '⛵';
+                    span.title = s.type;
+                    fleetDiv.appendChild(span);
+                });
+                
+                document.getElementById('death-screen').classList.remove('hidden');
+                document.getElementById('death-screen').classList.add('flex');
+            }
+            
+            showDamageOverlay() {
+                const overlay = document.getElementById('damage-overlay');
+                overlay.style.opacity = '0.5';
+                setTimeout(() => overlay.style.opacity = '0', 200);
+            }
+            
+            showDamageText(amount, pos) {
+                // Project 3D pos to 2D screen
+                const vector = pos.clone();
+                vector.project(this.game.camera);
+                const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
+                
+                const el = document.createElement('div');
+                el.className = 'damage-text';
+                el.textContent = '-' + Math.floor(amount);
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            }
+            
+            shakeScreen() { this.shakeIntensity = 15; }
+            
+            showMetaUpgrades() {
+                document.getElementById('upgrade-modal').classList.remove('hidden');
+                document.getElementById('upgrade-skull-count').textContent = this.game.skulls;
+                this.renderMetaTree();
+            }
+            
+            renderMetaTree() {
+                const container = document.getElementById('upgrade-tree');
+                container.innerHTML = '';
+                
+                const upgrades = [
+                    { id: 'hullReinforcement', name: 'Reinforced Hull', cost: 10, icon: '🛡️', desc: 'Start with +15% HP', level: this.game.metaUpgrades.hullReinforcement || 0 },
+                    { id: 'startingFleet', name: 'Starting Fleet', cost: 20, icon: '⚓', desc: 'Start with +1 Rowboat', level: this.game.metaUpgrades.startingFleet || 0 },
+                    { id: 'cannonMaster', name: 'Cannon Master', cost: 25, icon: '💣', desc: '+10% cannon damage', level: this.game.metaUpgrades.cannonMaster || 0 },
+                    { id: 'ghostWard', name: 'Ghost Ward', cost: 30, icon: '👻', desc: 'Boss spawns 30s later', level: this.game.metaUpgrades.ghostWard || 0 },
+                    { id: 'treasureMagnet', name: 'Treasure Magnet', cost: 15, icon: '🧲', desc: '+25% pickup range', level: this.game.metaUpgrades.treasureMagnet || 0 }
+                ];
+                
+                upgrades.forEach(u => {
+                    const div = document.createElement('div');
+                    const affordable = this.game.skulls >= u.cost * (u.level + 1);
+                    div.className = `p-4 rounded-lg border ${affordable ? 'bg-slate-800 border-amber-600 cursor-pointer hover:bg-slate-700' : 'bg-slate-900/50 border-slate-700 opacity-60'} transition interactive`;
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="text-3xl">${u.icon}</span>
+                            <div>
+                                <div class="font-bold text-white">${u.name}</div>
+                                <div class="text-xs text-slate-400">Level ${u.level}</div>
+                            </div>
+                        </div>
+                        <div class="text-sm text-slate-300 mb-2">${u.desc}</div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-purple-400 font-bold">💀 ${u.cost * (u.level + 1)}</span>
+                            ${affordable ? '<span class="text-green-400 text-xs">Click to Buy</span>' : '<span class="text-red-400 text-xs">Too Expensive</span>'}
+                        </div>
+                    `;
+                    if (affordable) {
+                        div.onclick = () => {
+                            this.game.skulls -= u.cost * (u.level + 1);
+                            this.game.metaUpgrades[u.id] = (this.game.metaUpgrades[u.id] || 0) + 1;
+                            this.game.saveGame();
+                            this.showMetaUpgrades(); // Refresh
+                        };
+                    }
+                    container.appendChild(div);
+                });
+            }
+        }
 
-  const def=SHIP_DEFS[META.ship||'sloop'];
-  const player=new Player(def);
-  if(META.upgrades.fleet)player.fleet.push(new FleetShip('rowboat',player));
-  if(def.passive==='swarm')for(let i=0;i<4;i++)player.fleet.push(new FleetShip('rowboat',player));
+        // Audio Manager
+        class Audio {
+            constructor() {
+                this.ready = false;
+                this.synth = null;
+                this.metal = null;
+            }
+            
+            async init() {
+                if (this.ready) return;
+                await Tone.start();
+                this.ready = true;
+                
+                this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                this.synth.volume.value = -10;
+                
+                this.metal = new Tone.MetalSynth({
+                    frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
+                    harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5
+                }).toDestination();
+                this.metal.volume.value = -15;
+            }
+            
+            playCannon() {
+                if (!this.ready) { this.init(); return; }
+                this.metal.triggerAttackRelease("32n");
+            }
+            
+            playUpgrade() {
+                if (!this.ready) { this.init(); return; }
+                this.synth.triggerAttackRelease(["C4", "E4", "G4"], "8n");
+            }
+            
+            playCoin() {
+                if (!this.ready) return;
+                this.synth.triggerAttackRelease("E6", "32n");
+            }
+        }
 
-  buildWorld();
+        // Main Game Controller
+        class Game {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.clock = new THREE.Clock();
+                
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.gameTime = 0;
+                this.score = 0;
+                this.doubloons = 0;
+                this.skulls = 0;
+                this.level = 1;
+                this.xp = 0;
+                this.xpToNext = 100;
+                this.bestTime = 0;
+                this.bossActive = false;
+                this.ghostBuster = false;
+                
+                this.keys = {};
+                this.metaUpgrades = {};
+                
+                this.assets = null;
+                this.ocean = null;
+                this.particles = null;
+                this.projectiles = null;
+                this.player = null;
+                this.fleet = null;
+                this.enemies = null;
+                this.upgrades = null;
+                this.ui = null;
+                this.audio = null;
+                
+                this.init();
+            }
+            
+            async init() {
+                // Three.js Setup
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x0a1628);
+                this.scene.fog = new THREE.Fog(0x0a1628, 60, 250);
+                
+                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.set(0, 45, 45);
+                
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                document.getElementById('canvas-container').appendChild(this.renderer.domElement);
+                
+                // Lighting
+                const ambient = new THREE.AmbientLight(0x404040, 0.6);
+                this.scene.add(ambient);
+                
+                const dir = new THREE.DirectionalLight(0xfffaed, 1.2);
+                dir.position.set(50, 100, 50);
+                dir.castShadow = true;
+                dir.shadow.camera.left = -100;
+                dir.shadow.camera.right = 100;
+                dir.shadow.camera.top = 100;
+                dir.shadow.camera.bottom = -100;
+                dir.shadow.mapSize.width = 2048;
+                dir.shadow.mapSize.height = 2048;
+                this.scene.add(dir);
+                
+                // Systems
+                this.assets = new AssetLoader(this.onLoadProgress.bind(this));
+                await this.assets.loadAll();
+                
+                this.ocean = new Ocean(this.scene);
+                this.particles = new ParticleSystem(this.scene);
+                this.projectiles = new ProjectileSystem(this.scene, this.particles);
+                this.upgrades = new UpgradeSystem();
+                this.ui = new UI(this);
+                this.audio = new Audio();
+                
+                // Input
+                window.addEventListener('keydown', (e) => this.keys[e.code] = true);
+                window.addEventListener('keyup', (e) => this.keys[e.code] = false);
+                window.addEventListener('resize', () => this.onResize());
+                
+                // Load save
+                this.loadGame();
+                
+                // Show menu
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('main-menu').classList.remove('hidden');
+                document.getElementById('main-menu').classList.add('flex');
+                document.getElementById('menu-skulls').textContent = this.skulls + ' Skulls';
+                
+                this.animate();
+            }
+            
+            onLoadProgress(pct) {
+                document.getElementById('loading-bar').style.width = pct + '%';
+                if (pct >= 100) document.getElementById('loading-text').textContent = 'Preparing Fleet...';
+            }
+            
+            startGame() {
+                document.getElementById('main-menu').classList.add('hidden');
+                document.getElementById('main-menu').classList.remove('flex');
+                document.getElementById('hud').classList.remove('hidden');
+                
+                this.resetGame();
+                this.isPlaying = true;
+                this.audio.init();
+            }
+            
+            resetGame() {
+                this.gameTime = 0;
+                this.score = 0;
+                this.doubloons = 0;
+                this.level = 1;
+                this.xp = 0;
+                this.xpToNext = 100;
+                this.bossActive = false;
+                this.ghostBuster = false;
+                this.keys = {};
+                
+                if (this.player) {
+                    this.scene.remove(this.player.mesh);
+                    this.fleet.reset();
+                    this.enemies.reset();
+                    this.projectiles.reset();
+                }
+                
+                this.player = new Player(this.scene, this.projectiles);
+                this.fleet = new FleetManager(this.scene, this.player, this.projectiles);
+                this.enemies = new EnemySystem(this.scene, this.player, this.projectiles, this.particles);
+                
+                this.player.reset();
+            }
+            
+            update(delta) {
+                if (!this.isPlaying || this.isPaused) return;
+                
+                this.gameTime += delta;
+                const minutes = Math.floor(this.gameTime / 60);
+                
+                // Boss spawns at 8, 16, 24
+                if ((minutes === 8 || minutes === 16 || minutes === 24) && !this.bossActive && !this.enemies.boss) {
+                    if (minutes === 8 || (this.metaUpgrades.ghostWard && minutes >= 8 + this.metaUpgrades.ghostWard * 0.5)) {
+                        this.enemies.spawn('ghost');
+                        this.bossActive = true;
+                        this.ui.showBossAlert();
+                    }
+                }
+                
+                // Updates
+                this.player.update(delta, this.keys);
+                this.fleet.update(delta);
+                this.enemies.update(delta, this.gameTime);
+                this.projectiles.update(delta);
+                this.particles.update(delta);
+                this.ocean.update(delta, this.gameTime);
+                
+                // Camera follow
+                const target = this.player.mesh.position;
+                this.camera.position.x += (target.x - this.camera.position.x) * 2 * delta;
+                this.camera.position.z += ((target.z + 45) - this.camera.position.z) * 2 * delta;
+                this.camera.lookAt(target);
+                
+                // Level up check
+                if (this.xp >= this.xpToNext) {
+                    this.levelUp();
+                }
+                
+                // Death check
+                if (this.player.hp <= 0) {
+                    this.gameOver();
+                }
+                
+                this.ui.update();
+            }
+            
+            levelUp() {
+                this.level++;
+                this.xp -= this.xpToNext;
+                this.xpToNext = Math.floor(this.xpToNext * 1.25);
+                this.isPaused = true;
+                
+                const cards = this.upgrades.getCards(3, this.level);
+                this.ui.showUpgradeCards(cards, (i) => this.selectUpgrade(i));
+            }
+            
+            selectUpgrade(index) {
+                if (!this.isPaused) return;
+                this.upgrades.apply(index, this.player, this.fleet);
+                this.ui.hideUpgradeCards();
+                this.isPaused = false;
+            }
+            
+            addDoubloons(amount) {
+                this.doubloons += amount;
+                this.xp += amount;
+                this.score += amount * 10;
+                this.audio.playCoin();
+            }
+            
+            gameOver() {
+                this.isPlaying = false;
+                if (this.gameTime > this.bestTime) this.bestTime = this.gameTime;
+                
+                const earnedSkulls = Math.floor(this.doubloons / 100) + 
+                    (this.gameTime > 600 ? 10 : 0) + 
+                    (this.gameTime > 1200 ? 15 : 0);
+                
+                this.skulls += earnedSkulls;
+                this.saveGame();
+                
+                this.ui.showDeathScreen(this.gameTime, this.score, this.doubloons, earnedSkulls, this.fleet.ships);
+            }
+            
+            restart() {
+                document.getElementById('death-screen').classList.add('hidden');
+                document.getElementById('death-screen').classList.remove('flex');
+                this.startGame();
+            }
+            
+            returnToMenu() {
+                document.getElementById('death-screen').classList.add('hidden');
+                document.getElementById('death-screen').classList.remove('flex');
+                document.getElementById('hud').classList.add('hidden');
+                document.getElementById('main-menu').classList.remove('hidden');
+                document.getElementById('main-menu').classList.add('flex');
+                document.getElementById('menu-skulls').textContent = this.skulls + ' Skulls';
+                this.isPlaying = false;
+            }
+            
+            saveGame() {
+                const data = {
+                    skulls: this.skulls,
+                    bestTime: this.bestTime,
+                    metaUpgrades: this.metaUpgrades,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('maelstrom_save', JSON.stringify(data));
+            }
+            
+            loadGame() {
+                try {
+                    const data = JSON.parse(localStorage.getItem('maelstrom_save'));
+                    if (data) {
+                        this.skulls = data.skulls || 0;
+                        this.bestTime = data.bestTime || 0;
+                        this.metaUpgrades = data.metaUpgrades || {};
+                    }
+                } catch (e) {
+                    console.log('No save found');
+                }
+            }
+            
+            onResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                const delta = Math.min(this.clock.getDelta(), 0.1);
+                this.update(delta);
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
 
-  _G={
-    player, enemies:[], CBs:[], parts:new Particles(2500),
-    FTs:[], loots:[], mines:[], towers:[], time:0, t:0,
-    spawnT:0, spawnIv:2.8, maxE:32, score:0, skRun:0,
-    bossActive:false, bossScale:0, bossKills:0,
-    nextBoss:META.upgrades.ghost?540:480,
-    shake:0, shX:0, shZ:0,
-    upgradeCards:[], tAutoT:0,
-  };
-}
-
-// ── COLLISION SYSTEM ──────────────────────────────────────────────
-function collide(){
-  const p=_G.player;
-  const dm=(META.upgrades.cannon?1.1:1)*(p.hasGB?2:1);
-
-  // Player/fleet/tower CBs vs enemies
-  for(const cb of _G.CBs){
-    if(cb.dead||cb.owner==='enemy')continue;
-    for(const e of _G.enemies){
-      if(e.dead)continue;
-      if(d2(cb.x,cb.z,e.x,e.z)<(e.sz+cb.r)**2){
-        let dmg=cb.dmg; if(e.isGhost&&!p.hasGB)dmg*=.5;
-        e.takeDmg(dmg);
-        _G.FTs.push(new FloatTxt(e.x,e.z,`-${Math.floor(dmg)}`,e.isGhost?'#4dff9b':'#ff6622'));
-        cb.kill(); break;
-      }
-    }
-  }
-  // Enemy CBs vs player+fleet
-  for(const cb of _G.CBs){
-    if(cb.dead||cb.owner!=='enemy')continue;
-    if(!p.phased&&d2(cb.x,cb.z,p.x,p.z)<(p.sz+cb.r)**2){
-      p.takeDmg(cb.dmg); _G.shake=Math.min(.7,_G.shake+.2);
-      _G.FTs.push(new FloatTxt(p.x,p.z,`-${Math.floor(cb.dmg)}`,'#ff4444'));
-      cb.kill(); continue;
-    }
-    for(const fs of p.fleet){if(!fs.dead&&d2(cb.x,cb.z,fs.x,fs.z)<(fs.sz+cb.r)**2){fs.takeDmg(cb.dmg*.5);cb.kill();break;}}
-  }
-  // Enemy deaths → loot + wreck
-  for(let i=_G.enemies.length-1;i>=0;i--){
-    const e=_G.enemies[i]; if(!e.dead)continue;
-    const lc=e.isBoss?12:e.etype==='galleon'?4:e.etype==='frigate'?2:1;
-    for(let l=0;l<lc;l++){
-      const lx=e.x+rand(-52,52),lz=e.z+rand(-52,52);
-      const chest=e.isBoss||(e.etype==='galleon'&&Math.random()<.5);
-      const skull=!chest&&e.skV>0&&Math.random()<.3;
-      _G.loots.push(new Loot(lx,lz,chest?'chest':skull?'skull':'doubloon',chest?65:skull?1:e.xpV/lc));
-    }
-    if(e.isBoss){
-      _G.bossActive=false; _G.bossKills++; _G.bossScale++;
-      _G.nextBoss=_G.time+(META.upgrades.ghost?540:480);
-      toast('💀 Ghost Ship destroyed! LEGENDARY!',4000);
-      _G.shake=1.6;
-      for(let l=0;l<16;l++)_G.loots.push(new Loot(e.x+rand(-100,100),e.z+rand(-100,100),'chest',80));
-    }
-    _G.score+=e.xpV;
-    e.killFX(_G.parts);
-    if(e.sz>=18)spawnWreck(e.x,e.z);
-    _G.enemies.splice(i,1);
-  }
-  // Loot pickup
-  for(let i=_G.loots.length-1;i>=0;i--){
-    const l=_G.loots[i]; if(l.dead){_G.loots.splice(i,1);continue;}
-    if(d(p.x,p.z,l.x,l.z)<p.pickR){
-      if(l.type==='doubloon'||l.type==='chest'){
-        p.addXP(l.val); _G.FTs.push(new FloatTxt(l.x,l.z,`+${Math.floor(l.val)}🪙`,'#f0c040'));
-      } else if(l.type==='skull'){
-        _G.skRun+=l.val; _G.FTs.push(new FloatTxt(l.x,l.z,`+${l.val}💀`,'#eeeee0'));
-      }
-      _G.score+=l.val*.5; l.dead=true;
-    }
-  }
-  // Mine vs enemies
-  for(let i=_G.mines.length-1;i>=0;i--){
-    const m=_G.mines[i]; m.life-=1/60;
-    if(m.life<=0){_scene.remove(m.mesh);_G.mines.splice(i,1);continue;}
-    let hit=false;
-    for(const e of _G.enemies){
-      if(!e.dead&&d(m.x,m.z,e.x,e.z)<m.r+e.sz){
-        e.takeDmg(52); _G.parts.emit(m.x,m.z,{n:18,color:'#ff6622',minS:40,maxS:160,life:.8});
-        _scene.remove(m.mesh); _G.mines.splice(i,1); hit=true; break;
-      }
-    }
-    if(!hit&&m.mesh)m.mesh.position.y=2.5+Math.sin(_G.t*3+i)*1.5;
-  }
-  // Rock pushback
-  for(const obj of _world){
-    if(obj.type!=='rock')continue;
-    if(d(p.x,p.z,obj.x,obj.z)<p.sz+obj.r){
-      if(!p.phased)p.takeDmg(5/60);
-      const a=Math.atan2(p.x-obj.x,p.z-obj.z); p.x+=Math.sin(a)*3; p.z+=Math.cos(a)*3;
-    }
-  }
-  // Island loot
-  for(const obj of _world){
-    if(obj.type!=='island'||!obj.hasLoot)continue;
-    if(d(p.x,p.z,obj.x,obj.z)<obj.r+38){
-      obj.hasLoot=false; p.addXP(72); _G.skRun+=2;
-      _G.FTs.push(new FloatTxt(obj.x,obj.z,'🏝️ +72🪙','#f0c040'));
-      toast('🏝️ Island looted!',2000);
-      obj.mesh.traverse(m=>{if(m.userData.chest)m.visible=false});
-    }
-  }
-  // Dead fleet cleanup
-  p.fleet=p.fleet.filter(fs=>{
-    if(fs.dead){_G.parts.emit(fs.x,fs.z,{n:14,color:'#ff6622',minS:30,maxS:140,life:.8});spawnWreck(fs.x,fs.z);return false;}
-    return true;
-  });
-}
-
-// ── HUD ───────────────────────────────────────────────────────────
-function updateHUD(){
-  const p=_G.player;
-  const pct=clamp(p.hp/p.maxHp,0,1);
-  const f=document.getElementById('hud-hp-fill');
-  f.style.width=(pct*100)+'%';
-  f.style.background=pct>.5?'linear-gradient(90deg,#22cc22,#55ff55)':pct>.25?'linear-gradient(90deg,#aacc22,#ccee44)':'linear-gradient(90deg,#cc2222,#ff4444)';
-  const m=Math.floor(_G.time/60),s=Math.floor(_G.time%60);
-  const tel=document.getElementById('hud-timer');
-  tel.textContent=m+':'+(s<10?'0':'')+s;
-  tel.className=_G.time>1500?'red':'';
-  document.getElementById('hud-dbl').textContent='🪙 '+p.doubloons.toLocaleString();
-  document.getElementById('hud-fleet').textContent='⛵ Fleet: '+(1+p.fleet.length);
-  document.getElementById('hud-lvl').textContent='Lv.'+(p.level+1);
-  document.getElementById('hud-xp-fill').style.width=(p.xp/p.xpNeed*100)+'%';
-  const mn=Math.floor(_G.time/60);
-  document.getElementById('hud-wave').textContent='⚓ Minute '+mn+' — '+(mn<2?'Open Ocean':mn<5?'Sloop Hunters':mn<8?'Navy Frigates':mn<11?'Armada Rising':mn<17?'Ghost Seas':'Infernal Deep');
-  const hb=document.getElementById('boss-bar');
-  if(!_G.enemies.some(e=>e.isBoss&&!e.dead))hb.style.display='none';
-}
-function updateMinimap(){
-  const mc=document.getElementById('mm').getContext('2d');
-  const W=86,sc=W/WORLD;
-  mc.fillStyle='#050e1c'; mc.fillRect(0,0,W,W);
-  for(const o of _world){
-    if(o.type==='island'){mc.fillStyle='#9a7030';mc.beginPath();mc.arc(o.x*sc,o.z*sc,o.r*sc*1.1,0,TWO_PI);mc.fill();}
-    if(o.type==='rock'){mc.fillStyle='#3a2a1a';mc.beginPath();mc.arc(o.x*sc,o.z*sc,o.r*sc,0,TWO_PI);mc.fill();}
-  }
-  mc.fillStyle='#ff2222';
-  for(const e of _G.enemies){mc.beginPath();mc.arc(e.x*sc,e.z*sc,2,0,TWO_PI);mc.fill();}
-  mc.fillStyle='#4488ff';
-  for(const fs of _G.player.fleet){mc.beginPath();mc.arc(fs.x*sc,fs.z*sc,1.5,0,TWO_PI);mc.fill();}
-  mc.fillStyle='#f0c040';
-  mc.beginPath();mc.arc(_G.player.x*sc,_G.player.z*sc,3,0,TWO_PI);mc.fill();
-}
-
-// ── UPGRADE CARDS ─────────────────────────────────────────────────
-function showUpgScr(){
-  const lb=META.upgrades.mastery?.16:.05;
-  const w=UPGRADES.map(c=>({c,w:c.rarity==='common'?4:c.rarity==='rare'?2.5:c.rarity==='epic'?1.5:lb*10}));
-  w.sort(()=>Math.random()-.5);
-  const cards=[]; const used=new Set();
-  for(const wi of w){if(cards.length>=3)break;if(!used.has(wi.c.id)&&Math.random()<wi.w){cards.push(wi.c);used.add(wi.c.id);}}
-  while(cards.length<3){const c=rFrom(UPGRADES);if(!used.has(c.id)){cards.push(c);used.add(c.id);}}
-  _G.upgradeCards=cards;
-  const el=document.getElementById('cards'); el.innerHTML='';
-  cards.forEach((c,i)=>{
-    const div=document.createElement('div');
-    div.className=`card ${c.rarity}`;
-    div.innerHTML=`<div class="ci">${c.icon}</div><div class="cn">${c.name}</div><div class="cd">${c.desc}</div><div class="cr">◆ ${c.rarity}</div>`;
-    div.onclick=()=>selCard(i); el.appendChild(div);
-  });
-  scr('upgrade-scr');
-}
-function selCard(idx){
-  const c=_G.upgradeCards[idx]; if(!c)return;
-  applyUpg(c); _G.upgradeCards=[]; _upPending=false; _paused=false; scr(null);
-}
-function skipUpg(){_G.upgradeCards=[];_upPending=false;_paused=false;scr(null);}
-function applyUpg(c){
-  const p=_G.player;
-  toast(`✨ ${c.name}!`,2200);
-  _G.parts.emit(p.x,p.z,{n:24,color:'#f0c040',minS:40,maxS:170,life:1});
-  switch(c.type){
-    case 'fleet': for(let i=0;i<c.n;i++)p.fleet.push(new FleetShip(c.ship,p)); break;
-    case 'add_cannon': p.extraCn++; break;
-    case 'mobile_cannon': p.hasMob=true; break;
-    case 'storm': p.hasStorm=true; p.stormT=0; break;
-    case 'ghost_breaker': p.hasGB=true; break;
-    case 'hull_hp': {const b=Math.floor(p.maxHp*.25);p.maxHp+=b;p.hp=Math.min(p.hp+b,p.maxHp);} break;
-    case 'ram': p.hasRam=true; break;
-    case 'speed': p.spdMul+=.35; break;
-    case 'ghost_hull': p.hasGH=true; p.ghCD=30; break;
-    case 'barrels': p.hasBrl=true; p.brlT=5; break;
-    case 'tower': p.hasTwr=true; p.twrT=0; break;
-    case 'lure': p.hasLure=true; break;
-    case 'vortex': p.hasVtx=true; p.vtxT=12; break;
-  }
-  p.upgTaken.push(c.id);
-}
-
-// ── GAME END ──────────────────────────────────────────────────────
-function endGame(victory=false){
-  _running=false; _paused=false; _upPending=false;
-  if(_animId){cancelAnimationFrame(_animId);_animId=null;}
-  hud(false);
-  // Cleanup all DOM hp/float elements
-  document.querySelectorAll('.hpf').forEach(el=>el.closest('div[style*="position:absolute"]')?.remove());
-
-  const p=_G.player,time=_G.time;
-  const score=Math.floor(_G.score+p.doubloons+time*10+(victory?50000:0));
-  const skulls=Math.max(1,Math.floor(_G.skRun+p.doubloons/80+_G.bossKills*5+(time>=600?10:0)+(time>=1200?25:0)));
-
-  META.runs++; META.skulls+=skulls;
-  if(score>META.highScore)META.highScore=score;
-  if(time>META.bestTime)META.bestTime=time;
-  const m=Math.floor(time/60),s=Math.floor(time%60);
-  META.lb.push({name:META.name,score,time,ship:META.ship||'sloop',date:new Date().toLocaleDateString()});
-  META.lb.sort((a,b)=>b.score-a.score); META.lb=META.lb.slice(0,25); saveMeta();
-
-  const rank=META.lb.findIndex(e=>e.score===score)+1;
-  document.getElementById('death-title').textContent=victory?'🏆 LEGEND!':'SHIPWRECKED';
-  document.getElementById('death-flav').textContent=victory?'"Only 0.3% of players survive 30 minutes. You are a legend."':'"The sea claims another legend… for now."';
-  document.getElementById('death-stats').innerHTML=
-    `⏱ Survived: <strong>${m}:${s<10?'0':''}${s}</strong><br>
-     🪙 Score: <strong>${score.toLocaleString()}</strong><br>
-     🏆 Best: <strong>${META.highScore.toLocaleString()}</strong><br>
-     ⛵ Fleet: <strong>${1+p.fleet.length} ships</strong><br>
-     💀 Boss kills: <strong>${_G.bossKills}</strong><br>
-     ✨ Upgrades: <strong>${p.upgTaken.length}</strong>`;
-  document.getElementById('death-skulls').textContent=`💀 +${skulls} Skulls (Total: ${META.skulls})`;
-  document.getElementById('death-rank').textContent=`📊 Run #${META.runs} · Rank #${rank} on your board`;
-  const def=SHIP_DEFS[META.ship||'sloop'];
-  const shareCard=`🏴‍☠️ MAELSTROM\n⏱ ${m}:${s<10?'0':''}${s} survived\n⚓ ${score.toLocaleString()} pts\n${def.icon} Fleet: ${1+p.fleet.length}\n💀 Boss kills: ${_G.bossKills}`;
-  const ds=document.getElementById('death-share');
-  ds.textContent=shareCard;
-  ds.onclick=()=>navigator.clipboard?.writeText(shareCard).then(()=>toast('📋 Copied!'));
-  scr('death-scr');
-}
-
-// ── PAUSE ──────────────────────────────────────────────────────────
-function togglePause(){
-  _paused=!_paused;
-  document.getElementById('pause-ovl').classList.toggle('on',_paused);
-}
-
-// ── MAIN LOOP ─────────────────────────────────────────────────────
-function gameLoop(ts){
-  if(!_running)return;
-  _animId=requestAnimationFrame(gameLoop);
-  const dt=Math.min((ts-_lastTs)/1000,.05); _lastTs=ts;
-  _fpsC++; _fpsT+=dt; if(_fpsT>=1){_fpsV=_fpsC;_fpsC=0;_fpsT=0;document.getElementById('fps').textContent=_fpsV+'fps';}
-
-  if(_paused){if(_upPending&&_G.upgradeCards.length===0)showUpgScr();return;}
-
-  _G.t+=dt; _G.time+=dt;
-
-  // Screen shake
-  if(_G.shake>0){_G.shX=rand(-_G.shake*7,_G.shake*7);_G.shZ=rand(-_G.shake*7,_G.shake*7);_G.shake-=dt*2.6;}
-  else{_G.shX=0;_G.shZ=0;}
-
-  // Spawn
-  _G.maxE=Math.min(68,30+Math.floor(_G.time/90)*4);
-  _G.spawnT+=dt;
-  if(_G.spawnT>=_G.spawnIv&&_G.enemies.length<_G.maxE){spawnEnemy(_G);_G.spawnT=0;}
-  if(_G.time>=_G.nextBoss&&!_G.bossActive)spawnBoss(_G);
-  // Meta auto-tower
-  if(META.upgrades.anchor){_G.tAutoT+=dt;if(_G.tAutoT>=90){_G.towers.push(new Tower(_G.player.x+rand(-70,70),_G.player.z+rand(-70,70)));_G.tAutoT=0;}}
-
-  const p=_G.player;
-  const dm=META.upgrades.cannon?1.1:1;
-  p.update(dt,_G.enemies,_G.CBs,_G.parts,_G.FTs,_G);
-  for(const fs of p.fleet)fs.update(dt,p,_G.enemies,_G.CBs,_G.parts,dm);
-  for(const e of _G.enemies)e.update(dt,p,_G.CBs,_G.parts,_G);
-  for(let i=_G.CBs.length-1;i>=0;i--){_G.CBs[i].update(dt);if(_G.CBs[i].dead)_G.CBs.splice(i,1);}
-  _G.parts.update(dt);
-  for(let i=_G.FTs.length-1;i>=0;i--){_G.FTs[i].update(dt);if(_G.FTs[i].life<=0)_G.FTs.splice(i,1);}
-  for(let i=_G.loots.length-1;i>=0;i--){_G.loots[i].update(dt,_G.t);if(_G.loots[i].dead)_G.loots.splice(i,1);}
-  _G.towers.forEach(t=>t.update(dt,_G.enemies,_G.CBs,dm));
-  _G.towers=_G.towers.filter(t=>!t.dead);
-  collide();
-
-  if(p.dead){endGame();return;}
-  if(_G.time>=1800){endGame(true);return;}
-
-  // Camera: smooth follow with shake
-  const tx=p.x-HALF+_G.shX,tz=p.z-HALF+_G.shZ;
-  _cam.position.x=lerp(_cam.position.x,tx,dt*4.2);
-  _cam.position.z=lerp(_cam.position.z,tz+CAM_D,dt*4.2);
-  _cam.position.y=CAM_H;
-  _cam.lookAt(lerp(_cam.position.x-_G.shX,tx,dt*5),0,lerp(_cam.position.z-CAM_D,tz,dt*5));
-
-  animOcean(_G.t);
-  _rend.render(_scene,_cam);
-  updateHUD(); updateMinimap();
-}
-
-// ── MENU BACKGROUND LOOP ──────────────────────────────────────────
-let _mLast=0,_mT=0;
-function menuLoop(ts){
-  if(_running)return;
-  requestAnimationFrame(menuLoop);
-  const dt=Math.min((ts-_mLast)/1000,.05); _mLast=ts; _mT+=dt;
-  animOcean(_mT);
-  _cam.position.x=Math.sin(_mT*.07)*180;
-  _cam.position.z=Math.cos(_mT*.05)*180+CAM_D;
-  _cam.position.y=CAM_H+Math.sin(_mT*.1)*18;
-  _cam.lookAt(Math.sin(_mT*.07)*40,0,Math.cos(_mT*.05)*40);
-  _rend.render(_scene,_cam);
-}
-
-// ── META / SHIP / LB SCREENS ──────────────────────────────────────
-function renderMeta(){
-  document.getElementById('meta-skulls-d').textContent=`💀 Skulls: ${META.skulls}`;
-  const g=document.getElementById('meta-grid'); g.innerHTML='';
-  for(const n of META_TREE){
-    const own=!!META.upgrades[n.id],afford=META.skulls>=n.cost;
-    const div=document.createElement('div');
-    div.className=`mnode${own?' owned':''}${!own&&!afford?' locked':''}`;
-    div.innerHTML=`<div class="mni">${n.icon}</div><div class="mnn">${n.name}</div><div class="mnd">${n.desc}</div><div class="mnc">${own?'✅ Owned':'💀 '+n.cost}</div>`;
-    if(!own&&afford){div.onclick=()=>{META.skulls-=n.cost;META.upgrades[n.id]=true;saveMeta();renderMeta();toast(`✅ ${n.name} unlocked!`);};}
-    g.appendChild(div);
-  }
-}
-function renderShips(){
-  const g=document.getElementById('ship-grid'); g.innerHTML='';
-  for(const[k,def]of Object.entries(SHIP_DEFS)){
-    const sel=META.ship===k,unlocked=k==='sloop'||META.upgrades['u_'+k];
-    const div=document.createElement('div');
-    div.className=`scard${sel?' ssel':''}${!unlocked?' slocked':''}`;
-    div.innerHTML=`<div class="sci">${def.icon}</div><div class="scn">${def.name}</div><div class="scd">${def.desc}</div><div class="scc">${sel?'✅ Selected':k==='sloop'?'Free':'💀 '+def.cost}</div>`;
-    div.onclick=()=>{
-      if(unlocked){META.ship=k;saveMeta();renderShips();toast(`⛵ ${def.name} selected!`);}
-      else if(META.skulls>=def.cost){META.skulls-=def.cost;META.upgrades['u_'+k]=true;META.ship=k;saveMeta();renderShips();toast(`🎉 ${def.name} unlocked!`);}
-      else toast(`❌ Need ${def.cost-META.skulls} more Skulls`);
-    };
-    g.appendChild(div);
-  }
-}
-function renderLB(){
-  const el=document.getElementById('lb-list'); const lb=META.lb||[];
-  if(!lb.length){el.innerHTML='<div style="color:#1a3050;font-style:italic;text-align:center;padding:1em">No runs yet — set sail!</div>';return;}
-  el.innerHTML=lb.slice(0,15).map((e,i)=>{
-    const m=Math.floor(e.time/60),s=Math.floor(e.time%60),ico=SHIP_DEFS[e.ship||'sloop']?.icon||'⛵';
-    return `<div class="lbr"><span class="lbr-rk">#${i+1}</span><span class="lbr-ico">${ico}</span><span class="lbr-nm">${e.name||'?'}</span><span class="lbr-sc">${e.score?.toLocaleString()}</span><span class="lbr-tm">${m}:${s<10?'0':''}${s}</span></div>`;
-  }).join('');
-}
-function updateMenuUI(){
-  document.getElementById('menu-skulls').textContent=`💀 Skulls: ${META.skulls}`;
-  const lb=META.lb||[];
-  document.getElementById('menu-info').innerHTML=lb.length
-    ?'🏆 '+lb.slice(0,3).map((e,i)=>`#${i+1} ${e.name||'?'} <b>${e.score?.toLocaleString()}</b>`).join(' · ')
-    :'No runs yet — set sail and make history';
-}
-
-// ── BUTTON BINDINGS ───────────────────────────────────────────────
-function bindUI(){
-  const g=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
-  g('b-play',startGame);
-  g('b-ships',()=>{renderShips();scr('ship-scr')});
-  g('b-meta',()=>{renderMeta();scr('meta-scr')});
-  g('b-lb',()=>{renderLB();scr('lb-scr')});
-  g('b-ships-back',()=>scr('menu'));
-  g('b-meta-back',()=>scr('menu'));
-  g('b-lb-back',()=>scr('menu'));
-  g('b-again',startGame);
-  g('b-dmenu',()=>{scr('menu');updateMenuUI();});
-  g('b-resume',()=>{togglePause();document.getElementById('pause-ovl').classList.remove('on');});
-}
-
-// ── START GAME ────────────────────────────────────────────────────
-function startGame(){
-  scr(null); hud(true);
-  document.getElementById('boss-bar').style.display='none';
-  document.getElementById('pause-ovl').classList.remove('on');
-  document.getElementById('hud-phase').style.display='none';
-  _running=true; _paused=false; _upPending=false;
-  initGame();
-  _lastTs=performance.now();
-  if(_animId)cancelAnimationFrame(_animId);
-  _animId=requestAnimationFrame(gameLoop);
-}
-
-// ── BOOT ──────────────────────────────────────────────────────────
-async function boot(){
-  initThree();
-  buildOcean();
-  try{await preload();}
-  catch(e){console.warn('Asset error:',e);setLoadTxt('Fallback mode active');await new Promise(r=>setTimeout(r,500));}
-  // Fade loading screen
-  const ls=document.getElementById('loading');
-  ls.classList.add('out');
-  setTimeout(()=>ls.style.display='none',900);
-  bindUI(); updateMenuUI(); renderShips();
-  scr('menu');
-  requestAnimationFrame(menuLoop);
-}
-
-boot();
-</script>
+        // Start game when loaded
+        window.game = new Game();
+    </script>
 </body>
 </html>
