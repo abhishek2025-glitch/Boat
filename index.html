@@ -2,1665 +2,939 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAELSTROM - Naval Survivor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MAELSTROM - Survive the Sea</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lato:wght@400;700&display=swap');
-        
-        body { margin: 0; overflow: hidden; background: #0a1628; font-family: 'Lato', sans-serif; user-select: none; }
-        .pirate-font { font-family: 'Cinzel', serif; }
-        
-        #game-container { position: relative; width: 100vw; height: 100vh; }
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        
-        .ui-layer { position: absolute; pointer-events: none; width: 100%; height: 100%; }
-        .interactive { pointer-events: auto; }
-        
+        /* ==========================================
+           CORE STYLES & PIRATE AESTHETIC 
+           ========================================== */
+        :root {
+            --primary: #1a6fa8;
+            --dark: #0a192f;
+            --gold: #ffd700;
+            --ghost: #4dff9b;
+            --danger: #c00;
+        }
+
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: var(--dark); 
+            font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; 
+            user-select: none; 
+            -webkit-user-select: none;
+            color: white;
+        }
+
+        #game-canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 1;
+        }
+
+        /* UI Overlays */
+        .screen { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 10;
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            flex-direction: column; 
+            background: radial-gradient(circle at center, rgba(10,25,47,0.7) 0%, rgba(0,0,0,0.95) 100%);
+            text-align: center;
+        }
+        .active { display: flex !important; }
+
+        h1 { font-size: 5rem; margin-bottom: 10px; color: var(--gold); text-shadow: 0 4px 15px rgba(0,0,0,0.8), 2px 2px 0px #000; letter-spacing: 4px; }
+        h2 { font-size: 2rem; margin-top: 0; color: #ddd; text-shadow: 2px 2px 4px #000; }
+        p { font-size: 1.2rem; max-width: 600px; line-height: 1.5; color: #ccc; }
+
+        button { 
+            background: linear-gradient(to bottom, var(--primary), #0d4a3e); 
+            color: var(--gold); 
+            border: 2px solid var(--gold); 
+            padding: 15px 40px; 
+            font-size: 1.8rem; 
+            font-family: 'Palatino Linotype', serif;
+            cursor: pointer; 
+            text-transform: uppercase; 
+            margin: 20px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.6); 
+            transition: all 0.2s ease;
+        }
+        button:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4); 
+            background: linear-gradient(to bottom, #2389d1, #136a59);
+        }
+
+        /* HUD */
+        #hud { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 5; pointer-events: none; display: none; 
+        }
         .hud-panel {
-            background: rgba(10, 22, 40, 0.9);
-            border: 2px solid #d4af37;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-            backdrop-filter: blur(4px);
-        }
-        
-        .gold-text { color: #d4af37; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-        .ghost-text { color: #4dff9b; text-shadow: 0 0 15px rgba(77, 255, 155, 0.8); }
-        
-        .upgrade-card {
-            background: linear-gradient(135deg, #1a2744 0%, #0f1729 100%);
-            border: 3px solid;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-        .upgrade-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transition: left 0.5s;
-        }
-        .upgrade-card:hover::before { left: 100%; }
-        .upgrade-card:hover { transform: translateY(-10px) scale(1.05); }
-        .upgrade-card.common { border-color: #9ca3af; }
-        .upgrade-card.rare { border-color: #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
-        .upgrade-card.epic { border-color: #a855f7; box-shadow: 0 0 25px rgba(168, 85, 247, 0.5); }
-        .upgrade-card.legendary { 
-            border-color: #d4af37; 
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
-            animation: legendaryPulse 2s infinite;
-        }
-        
-        @keyframes legendaryPulse {
-            0%, 100% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.6); }
-            50% { box-shadow: 0 0 50px rgba(212, 175, 55, 0.9); }
-        }
-        
-        .health-bar { 
-            background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%);
-            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
-            transition: width 0.3s ease;
-        }
-        
-        .loading-bar {
-            background: linear-gradient(90deg, #d4af37 0%, #f59e0b 100%);
-            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
-            transition: width 0.3s ease;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .shake { animation: shake 0.3s ease-in-out; }
-        
-        .damage-text {
-            position: absolute;
-            color: #ff4444;
-            font-weight: bold;
-            font-size: 24px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+            background: rgba(10, 25, 47, 0.85);
+            border: 2px solid var(--gold);
+            border-radius: 8px;
+            padding: 10px 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
             pointer-events: none;
-            animation: damageFloat 1s ease-out forwards;
-            font-family: 'Cinzel', serif;
         }
+
+        #top-left-hud { position: absolute; top: 20px; left: 20px; width: 250px; }
+        #hp-bar-bg { width: 100%; height: 25px; background: #222; border: 2px solid var(--dark); border-radius: 4px; overflow: hidden; margin-bottom: 5px; }
+        #hp-bar { width: 100%; height: 100%; background: linear-gradient(to right, #800, var(--danger)); transition: width 0.2s ease; }
         
-        @keyframes damageFloat {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+        #top-right-hud { position: absolute; top: 20px; right: 20px; width: 250px; text-align: right; }
+        .doubloon-text { font-size: 1.5rem; color: var(--gold); font-weight: bold; margin-bottom: 5px; }
+        #exp-bar-bg { width: 100%; height: 15px; background: #222; border: 2px solid var(--dark); border-radius: 4px; overflow: hidden; }
+        #exp-bar { width: 0%; height: 100%; background: linear-gradient(to right, #1a6fa8, var(--ghost)); transition: width 0.3s ease; }
+
+        #timer-ui { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 2.5rem; font-weight: bold; color: white; text-shadow: 2px 4px 10px #000; letter-spacing: 2px; }
+
+        /* Upgrade Cards */
+        .cards { display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
+        .card { 
+            background: linear-gradient(145deg, #112240, #0a192f); 
+            border: 3px solid grey; 
+            border-radius: 12px; 
+            padding: 25px 20px; 
+            width: 220px; 
+            cursor: pointer; 
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6); 
+            pointer-events: auto;
         }
+        .card:hover { transform: translateY(-15px) scale(1.05); box-shadow: 0 15px 30px rgba(0,0,0,0.9); }
+        .card-common { border-color: #a0a0a0; }
+        .card-rare { border-color: #4da6ff; box-shadow: 0 0 15px rgba(77, 166, 255, 0.3); }
+        .card-epic { border-color: #a64dff; box-shadow: 0 0 15px rgba(166, 77, 255, 0.3); }
+        .card-legendary { border-color: var(--gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
         
-        .floating-coin {
-            position: absolute;
-            color: #ffd700;
-            font-size: 20px;
-            pointer-events: none;
-            animation: coinFloat 1s ease-out forwards;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
-        }
-        
-        @keyframes coinFloat {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-40px); }
-        }
-        
-        /* Custom scrollbar for upgrade tree */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f1729; }
-        ::-webkit-scrollbar-thumb { background: #d4af37; border-radius: 4px; }
+        .card h3 { margin: 0 0 15px 0; font-size: 1.4rem; color: white; }
+        .card p { font-size: 1rem; color: #b0c4de; min-height: 40px; }
+        .card .rarity { font-size: 0.8rem; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-top: 15px; display: block; }
+
+        /* Cinematic Elements */
+        #warning-text { position: absolute; top: 25%; width: 100%; text-align: center; color: var(--ghost); font-size: 3.5rem; font-weight: bold; text-shadow: 0 0 20px #000, 0 0 10px var(--ghost); display: none; z-index: 8; pointer-events: none; animation: pulse 1s infinite alternate; }
+        @keyframes pulse { from { opacity: 0.5; transform: scale(0.95); } to { opacity: 1; transform: scale(1.05); } }
+
+        /* Loader */
+        #loading { background: var(--dark); z-index: 999; }
+        .loader { border: 6px solid #112240; border-top: 6px solid var(--gold); border-radius: 50%; width: 70px; height: 70px; animation: spin 1.5s linear infinite; margin-bottom: 30px; box-shadow: 0 0 20px rgba(255,215,0,0.2); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-<base target="_blank">
+
+    <!-- Three.js Module Import via unpkg -->
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+        }
+      }
+    </script>
 </head>
 <body>
-    <div id="game-container">
-        <div id="canvas-container"></div>
+    <div id="game-canvas"></div>
+    
+    <!-- Cinematic Warning -->
+    <div id="warning-text">☠️ GHOST SHIP APPROACHING ☠️</div>
+    
+    <!-- Loading Screen -->
+    <div id="loading" class="screen active">
+        <div class="loader"></div>
+        <h2>Loading the Fleet...</h2>
+        <p id="loading-text" style="color: var(--gold); font-size: 1.5rem; font-weight: bold;">0%</p>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="screen">
+        <h1>MAELSTROM</h1>
+        <h2>Survive the Sea. Outlast the Storm.</h2>
+        <button id="btn-play">Set Sail (Play)</button>
+        <p style="margin-top: 30px; font-size: 0.9rem;">Controls: WASD / Arrow Keys or Touch/Drag</p>
+    </div>
+
+    <!-- In-Game HUD -->
+    <div id="hud">
+        <div id="top-left-hud" class="hud-panel">
+            <div style="font-size: 1rem; margin-bottom: 5px;">HULL INTEGRITY</div>
+            <div id="hp-bar-bg"><div id="hp-bar"></div></div>
+        </div>
         
-        <!-- Loading Screen -->
-        <div id="loading-screen" class="absolute inset-0 bg-gradient-to-b from-slate-900 to-blue-950 z-50 flex flex-col items-center justify-center">
-            <h1 class="pirate-font text-6xl md:text-8xl gold-text mb-4 animate-float tracking-wider">MAELSTROM</h1>
-            <p class="text-blue-200 mb-8 text-lg md:text-xl italic font-light">"Survive the Sea. Outlast the Storm."</p>
-            <div class="w-80 md:w-96 h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-600 shadow-2xl">
-                <div id="loading-bar" class="loading-bar h-full w-0 rounded-full"></div>
-            </div>
-            <p id="loading-text" class="text-slate-400 mt-4 text-sm uppercase tracking-widest">Loading Assets...</p>
-        </div>
-
-        <!-- Main Menu -->
-        <div id="main-menu" class="absolute inset-0 bg-gradient-to-b from-slate-900/95 via-blue-900/90 to-slate-900/95 z-40 hidden flex-col items-center justify-center interactive">
-            <div class="text-center mb-12">
-                <h1 class="pirate-font text-7xl md:text-9xl gold-text mb-2 drop-shadow-2xl tracking-tight">MAELSTROM</h1>
-                <div class="h-1 w-64 bg-gradient-to-r from-transparent via-yellow-500 to-transparent mx-auto mb-4"></div>
-                <p class="text-blue-200 text-xl md:text-2xl italic tracking-wide">Survive the Sea. Outlast the Storm.</p>
-            </div>
-            
-            <div class="flex flex-col gap-4 w-80 md:w-96">
-                <button id="btn-play" class="interactive group relative bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold py-5 px-8 rounded-lg border-2 border-amber-400 shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-amber-500/50 pirate-font text-xl overflow-hidden">
-                    <span class="relative z-10 flex items-center justify-center gap-3">
-                        <span>⚔️</span> PLAY (Open Ocean)
-                    </span>
-                </button>
-                
-                <button id="btn-upgrades" class="interactive bg-slate-800/80 hover:bg-slate-700 text-amber-400 font-bold py-4 px-8 rounded-lg border border-slate-600 transition-all hover:border-amber-500/50 pirate-font text-lg flex justify-between items-center group">
-                    <span>💀 Upgrade Ship</span>
-                    <span id="menu-skulls" class="bg-slate-900 px-3 py-1 rounded-full text-sm">0 Skulls</span>
-                </button>
-                
-                <button id="btn-leaderboard" class="interactive bg-slate-800/80 hover:bg-slate-700 text-amber-400 font-bold py-4 px-8 rounded-lg border border-slate-600 transition-all hover:border-amber-500/50 pirate-font text-lg flex justify-between items-center">
-                    <span>🏆 Leaderboard</span>
-                    <span class="text-xs text-slate-400">Top 10</span>
-                </button>
-                
-                <button id="btn-help" class="interactive bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 font-bold py-3 px-8 rounded-lg border border-slate-700 transition-all text-sm">
-                    ❓ How to Play
-                </button>
-            </div>
-            
-            <div class="mt-12 text-slate-400 text-xs max-w-md text-center leading-relaxed">
-                <p class="mb-2">WASD or Arrow Keys to Move • Space for Special</p>
-                <p>Auto-fire Cannons • Collect Doubloons • Survive 30 Minutes</p>
-            </div>
-        </div>
-
-        <!-- HUD -->
-        <div id="hud" class="ui-layer hidden">
-            <!-- Top Left: Health & Fleet -->
-            <div class="absolute top-4 left-4 hud-panel rounded-lg p-4 min-w-[220px] shadow-2xl">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-8 h-8 rounded-full bg-red-900/50 border border-red-500 flex items-center justify-center text-lg">❤️</div>
-                    <div class="flex-1">
-                        <div class="flex justify-between text-xs text-slate-300 mb-1">
-                            <span>Hull Integrity</span>
-                            <span id="hp-text">100%</span>
-                        </div>
-                        <div class="bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-600">
-                            <div id="hp-bar" class="health-bar h-full w-full rounded-full"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 text-slate-300 text-sm border-t border-slate-700 pt-2">
-                    <span>⚓ Fleet:</span>
-                    <span id="fleet-count" class="text-white font-bold text-lg">1</span>
-                    <span class="text-xs text-slate-400">ships</span>
-                </div>
-            </div>
-
-            <!-- Top Center: Timer -->
-            <div class="absolute top-4 left-1/2 transform -translate-x-1/2 hud-panel rounded-lg px-8 py-3 shadow-2xl border-b-4 border-amber-600">
-                <div id="game-timer" class="pirate-font text-4xl md:text-5xl gold-text text-center tracking-widest">00:00</div>
-                <div class="text-center text-slate-400 text-xs mt-1 uppercase tracking-widest">Survival Time</div>
-            </div>
-
-            <!-- Top Right: Currency & XP -->
-            <div class="absolute top-4 right-4 hud-panel rounded-lg p-4 min-w-[180px] shadow-2xl">
-                <div class="flex items-center justify-end gap-3 mb-2">
-                    <div class="text-right">
-                        <div id="doubloon-count" class="text-2xl gold-text font-bold">0</div>
-                        <div class="text-[10px] text-slate-400 uppercase">Doubloons</div>
-                    </div>
-                    <div class="text-3xl">🪙</div>
-                </div>
-                <div class="bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-600 mt-3">
-                    <div id="xp-bar" class="bg-gradient-to-r from-amber-600 to-yellow-400 h-full w-0 transition-all duration-500"></div>
-                </div>
-                <div class="flex justify-between text-[10px] text-slate-400 mt-1">
-                    <span>Level <span id="level-display">1</span></span>
-                    <span>Next Upgrade</span>
-                </div>
-            </div>
-
-            <!-- Boss Health Bar (Hidden by default) -->
-            <div id="boss-hud" class="absolute top-24 left-1/2 transform -translate-x-1/2 hidden w-96">
-                <div class="text-center mb-1 ghost-text pirate-font text-lg tracking-widest">GHOST SHIP</div>
-                <div class="h-4 bg-slate-900 rounded-full border-2 border-green-500 overflow-hidden shadow-lg shadow-green-500/20">
-                    <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-300" style="width: 100%"></div>
-                </div>
-            </div>
-
-            <!-- Bottom Left: Wave Info -->
-            <div class="absolute bottom-4 left-4 text-slate-300 text-sm hud-panel px-4 py-2 rounded-lg">
-                <div class="flex items-center gap-2">
-                    <span class="text-xs uppercase text-slate-400">Wave</span>
-                    <span id="wave-number" class="text-xl font-bold text-white">1</span>
-                </div>
-                <div class="text-xs text-slate-400 mt-1">Next Boss: <span id="next-boss" class="text-amber-400">08:00</span></div>
-            </div>
-
-            <!-- Bottom Right: Minimap -->
-            <div class="absolute bottom-4 right-4 hud-panel rounded-lg p-2 shadow-2xl">
-                <div id="minimap" class="w-36 h-36 bg-slate-900/80 rounded border-2 border-slate-600 relative overflow-hidden">
-                    <div class="absolute inset-0 opacity-20 bg-blue-900"></div>
-                    <div class="absolute inset-0" style="background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.8) 100%)"></div>
-                    <!-- Grid lines -->
-                    <div class="absolute inset-0" style="background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 20px 20px;"></div>
-                    <div id="minimap-player" class="absolute w-3 h-3 bg-amber-400 rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 border-2 border-white z-10" style="left: 50%; top: 50%;"></div>
-                </div>
-            </div>
-
-            <!-- Controls Hint -->
-            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-slate-500 text-xs opacity-50">
-                WASD to Move • Auto-Fire Enabled
-            </div>
-        </div>
-
-        <!-- Upgrade Screen -->
-        <div id="upgrade-screen" class="absolute inset-0 bg-black/90 z-30 hidden flex-col items-center justify-center interactive backdrop-blur-md">
-            <div class="text-center mb-8">
-                <h2 class="pirate-font text-5xl md:text-6xl gold-text mb-2 text-center">LEVEL UP!</h2>
-                <p class="text-slate-300 text-lg">Choose your upgrade wisely, Captain</p>
-            </div>
-            
-            <div id="upgrade-cards" class="flex flex-col md:flex-row gap-6 justify-center items-stretch max-w-6xl px-4">
-                <!-- Cards injected by JS -->
-            </div>
-            
-            <div class="mt-8 flex gap-4">
-                <button class="px-4 py-2 bg-slate-800 rounded text-slate-400 text-sm border border-slate-600 hover:bg-slate-700 transition">[1]</button>
-                <button class="px-4 py-2 bg-slate-800 rounded text-slate-400 text-sm border border-slate-600 hover:bg-slate-700 transition">[2]</button>
-                <button class="px-4 py-2 bg-slate-800 rounded text-slate-400 text-sm border border-slate-600 hover:bg-slate-700 transition">[3]</button>
-            </div>
-        </div>
-
-        <!-- Death Screen -->
-        <div id="death-screen" class="absolute inset-0 bg-gradient-to-b from-red-950/95 via-slate-900/95 to-black z-50 hidden flex-col items-center justify-center interactive">
-            <h2 class="pirate-font text-5xl md:text-7xl text-red-500 mb-2 text-center drop-shadow-lg">SHIP DESTROYED</h2>
-            <p class="text-slate-400 mb-8 italic">"The sea claims another captain..."</p>
-            
-            <div class="hud-panel rounded-xl p-8 max-w-lg w-full mx-4 mb-8 border-red-900/50 shadow-2xl shadow-red-900/20">
-                <div class="text-center mb-6 pb-6 border-b border-slate-700">
-                    <div class="text-slate-400 text-sm uppercase tracking-widest mb-2">Survival Time</div>
-                    <div id="death-time" class="pirate-font text-6xl gold-text mb-1">00:00</div>
-                    <div id="death-rank" class="text-sm text-slate-500">Top 15% of Captains</div>
-                </div>
-                
-                <div class="grid grid-cols-3 gap-4 mb-6 text-center">
-                    <div class="bg-slate-800/50 rounded-lg p-3">
-                        <div class="text-xs text-slate-400 uppercase mb-1">Score</div>
-                        <div id="death-score" class="text-xl font-bold text-white">0</div>
-                    </div>
-                    <div class="bg-slate-800/50 rounded-lg p-3">
-                        <div class="text-xs text-slate-400 uppercase mb-1">Doubloons</div>
-                        <div id="death-doubloons" class="text-xl font-bold text-amber-400">0</div>
-                    </div>
-                    <div class="bg-slate-800/50 rounded-lg p-3 border border-purple-500/30">
-                        <div class="text-xs text-purple-400 uppercase mb-1">Skulls</div>
-                        <div id="death-skulls" class="text-xl font-bold text-purple-400">+0</div>
-                    </div>
-                </div>
-
-                <div class="border-t border-slate-700 pt-4">
-                    <div class="text-slate-400 text-xs mb-3 text-center uppercase tracking-widest">Final Fleet Composition</div>
-                    <div id="death-fleet" class="flex justify-center gap-3 text-3xl flex-wrap"></div>
-                </div>
-            </div>
-            
-            <div class="flex gap-4 flex-col md:flex-row w-80">
-                <button id="btn-restart" class="interactive flex-1 bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold py-4 px-8 rounded-lg border-2 border-amber-400 shadow-lg transition-all hover:scale-105 pirate-font text-lg">
-                    ⚔️ Play Again
-                </button>
-                <button id="btn-menu" class="interactive flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-4 px-8 rounded-lg border border-slate-600 transition-all hover:border-slate-400">
-                    Main Menu
-                </button>
-            </div>
-        </div>
-
-        <!-- Boss Alert Overlay -->
-        <div id="boss-alert" class="absolute top-1/4 left-1/2 transform -translate-x-1/2 pointer-events-none opacity-0 transition-all duration-1000 z-20 text-center">
-            <h2 class="pirate-font text-5xl md:text-7xl ghost-text tracking-widest mb-2 filter drop-shadow-lg">GHOST SHIP</h2>
-            <div class="w-full h-1 bg-gradient-to-r from-transparent via-green-400 to-transparent mb-2 shadow-lg shadow-green-400/50"></div>
-            <p class="text-green-300 text-lg tracking-widest uppercase text-shadow">Boss Approaching</p>
-        </div>
-
-        <!-- Damage Overlay -->
-        <div id="damage-overlay" class="absolute inset-0 bg-red-500/20 pointer-events-none opacity-0 transition-opacity duration-200 z-10"></div>
-
-        <!-- Help Modal -->
-        <div id="help-modal" class="absolute inset-0 bg-black/90 z-50 hidden flex items-center justify-center interactive backdrop-blur-sm">
-            <div class="hud-panel rounded-xl p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-                <h2 class="pirate-font text-3xl gold-text mb-6 text-center">How to Play</h2>
-                
-                <div class="space-y-4 text-slate-300 mb-6">
-                    <div class="flex gap-4 items-start">
-                        <span class="text-2xl">🎯</span>
-                        <div>
-                            <h3 class="font-bold text-white mb-1">Auto-Combat</h3>
-                            <p class="text-sm">Your cannons fire automatically at nearby enemies. Focus on positioning and dodging!</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-4 items-start">
-                        <span class="text-2xl">⚓</span>
-                        <div>
-                            <h3 class="font-bold text-white mb-1">Fleet Growth</h3>
-                            <p class="text-sm">Collect doubloons to level up and choose upgrades. Build an armada to survive longer.</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-4 items-start">
-                        <span class="text-2xl">👻</span>
-                        <div>
-                            <h3 class="font-bold text-white mb-1">Boss Waves</h3>
-                            <p class="text-sm">Ghost Ships appear at 8, 16, and 24 minutes. They deal massive damage but drop huge rewards.</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-4 items-start">
-                        <span class="text-2xl">💀</span>
-                        <div>
-                            <h3 class="font-bold text-white mb-1">Meta-Progression</h3>
-                            <p class="text-sm">Earn Skulls to permanently upgrade your ships and unlock new starting vessels.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <button id="btn-close-help" class="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-3 rounded-lg border border-amber-500 transition">Understood, Captain!</button>
-            </div>
-        </div>
-
-        <!-- Meta Upgrade Modal -->
-        <div id="upgrade-modal" class="absolute inset-0 bg-black/95 z-50 hidden flex items-center justify-center interactive backdrop-blur-md">
-            <div class="hud-panel rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[85vh] overflow-y-auto">
-                <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-                    <h2 class="pirate-font text-3xl gold-text">Shipyard Upgrades</h2>
-                    <div class="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg border border-purple-500/30">
-                        <span class="text-purple-400 text-2xl">💀</span>
-                        <span id="upgrade-skull-count" class="text-xl font-bold text-white">0</span>
-                        <span class="text-xs text-slate-400 uppercase">Skulls</span>
-                    </div>
-                </div>
-                
-                <div id="upgrade-tree" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Upgrade items injected here -->
-                </div>
-                
-                <button id="btn-close-upgrade" class="w-full mt-6 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-lg border border-slate-500 transition">Return to Menu</button>
-            </div>
+        <div id="timer-ui">00:00</div>
+        
+        <div id="top-right-hud" class="hud-panel">
+            <div class="doubloon-text">💰 <span id="doubloon-count">0</span></div>
+            <div style="font-size: 0.8rem; margin-bottom: 3px; text-align: left;">XP TO NEXT LEVEL</div>
+            <div id="exp-bar-bg"><div id="exp-bar"></div></div>
         </div>
     </div>
 
-    <script>
-        // ============================================================================
-        // MAELSTROM - Integrated Single-File Version
-        // All modules consolidated for GitHub Pages deployment
-        // ============================================================================
+    <!-- Upgrade / Level Up Screen -->
+    <div id="upgrade-screen" class="screen">
+        <h2 style="color: var(--gold); font-size: 3rem;">LEVEL UP!</h2>
+        <p>Choose an addition to your armada:</p>
+        <div class="cards" id="upgrade-cards"></div>
+    </div>
 
-        // Utility Functions
-        const Utils = {
-            randFloat: (min, max) => Math.random() * (max - min) + min,
-            randInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
-            distance: (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.z - b.z) ** 2),
-            direction: (from, to) => {
-                const dx = to.x - from.x;
-                const dz = to.z - from.z;
-                const len = Math.sqrt(dx * dx + dz * dz);
-                return len > 0 ? { x: dx / len, z: dz / len } : { x: 0, z: 0 };
-            },
-            lerp: (start, end, t) => start * (1 - t) + end * t,
-            formatTime: (seconds) => {
-                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-                const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-                return `${m}:${s}`;
-            }
+    <!-- Game Over Screen -->
+    <div id="game-over" class="screen">
+        <h1 style="color: var(--danger);">THE SEA CLAIMS YOU</h1>
+        <h2>Survival Time: <span id="go-time" style="color: var(--gold);">00:00</span></h2>
+        <h2>Total Plunder: <span id="go-score" style="color: var(--gold);">0</span> Doubloons</h2>
+        <button id="btn-restart">Sail Again</button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // ==========================================
+        // CONFIGURATION & GLOBAL STATE
+        // ==========================================
+        const CONFIG = {
+            // Using %20 to guarantee GitHub Pages processes the space in "GLB format" correctly.
+            assetPath: 'assets/Models/GLB%20format/',
+            models: [
+                'ship-pirate-small.glb',
+                'boat-row-small.glb',
+                'ship-small.glb',
+                'cannon-ball.glb',
+                'ship-ghost.glb',
+                'barrel.glb',
+                'chest.glb'
+            ],
+            playerBaseSpeed: 12,
+            playerTurnSpeed: 2.5,
+            baseFireRate: 1.5, // Seconds between volleys
+            enemySpawnRate: 2.5, // Seconds between spawns
         };
 
-        // Asset Loading System
-        class AssetLoader {
-            constructor(onProgress) {
-                this.onProgress = onProgress;
-                this.assets = {};
-                this.totalAssets = 0;
-                this.loadedAssets = 0;
-                
-                // Essential assets for gameplay
-                this.assetList = {
-                    'ship-pirate-small': './assets/Models/GLB format/ship-pirate-small.glb',
-                    'ship-pirate-medium': './assets/Models/GLB format/ship-pirate-medium.glb',
-                    'ship-pirate-large': './assets/Models/GLB format/ship-pirate-large.glb',
-                    'ship-ghost': './assets/Models/GLB format/ship-ghost.glb',
-                    'ship-small': './assets/Models/GLB format/ship-small.glb',
-                    'ship-medium': './assets/Models/GLB format/ship-medium.glb',
-                    'ship-large': './assets/Models/GLB format/ship-large.glb',
-                    'boat-row-small': './assets/Models/GLB format/boat-row-small.glb',
-                    'cannon': './assets/Models/GLB format/cannon.glb',
-                    'chest': './assets/Models/GLB format/chest.glb',
-                    'barrel': './assets/Models/GLB format/barrel.glb',
-                    'rocks-a': './assets/Models/GLB format/rocks-a.glb',
-                    'palm-straight': './assets/Models/GLB format/palm-straight.glb',
-                    'patch-sand': './assets/Models/GLB format/patch-sand.glb'
-                };
-                
-                this.totalAssets = Object.keys(this.assetList).length;
-            }
-            
-            async loadAll() {
-                const loader = new THREE.GLTFLoader();
-                const promises = Object.entries(this.assetList).map(([key, path]) => {
-                    return new Promise((resolve) => {
-                        loader.load(path, (gltf) => {
-                            this.assets[key] = gltf.scene;
-                            this.loadedAssets++;
-                            this.onProgress((this.loadedAssets / this.totalAssets) * 100);
-                            resolve();
-                        }, undefined, () => {
-                            // On error, create placeholder
-                            this.assets[key] = this.createPlaceholder(key);
-                            this.loadedAssets++;
-                            this.onProgress((this.loadedAssets / this.totalAssets) * 100);
-                            resolve();
-                        });
-                    });
-                });
-                
-                await Promise.all(promises);
-                
-                // Optimize assets
-                Object.values(this.assets).forEach(scene => {
-                    scene.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
-                });
-            }
-            
-            createPlaceholder(type) {
-                const group = new THREE.Group();
-                const material = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-                
-                if (type.includes('ship') || type.includes('boat')) {
-                    const hull = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 4), material);
-                    hull.position.y = 0.5;
-                    group.add(hull);
-                    if (type.includes('ship')) {
-                        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3), new THREE.MeshLambertMaterial({ color: 0x4a3c28 }));
-                        mast.position.set(0, 2, 0);
-                        group.add(mast);
-                    }
-                } else {
-                    group.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material));
-                }
-                return group;
-            }
-            
-            get(key) {
-                return this.assets[key] ? this.assets[key].clone() : this.createPlaceholder(key);
-            }
-        }
+        const STATE = {
+            models: {},
+            screen: 'loading',
+            time: 0,
+            score: 0,
+            exp: 0,
+            level: 1,
+            expToNext: 100,
+            player: null,
+            enemies: [],
+            projectiles: [],
+            pickups: [],
+            upgrades: { cannons: 1, damage: 15, speed: 1, maxHp: 100, hp: 100, pickupRadius: 20 },
+            keys: { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false },
+            lastFireTime: 0,
+            lastSpawnTime: 0,
+            cameraOffset: new THREE.Vector3(35, 50, 35) // Isometric feel
+        };
 
-        // Ocean System with Shader
-        class Ocean {
-            constructor(scene) {
-                this.scene = scene;
-                this.time = 0;
-                
-                const geometry = new THREE.PlaneGeometry(1000, 1000, 100, 100);
-                geometry.rotateX(-Math.PI / 2);
-                
-                const vertexShader = `
-                    varying vec2 vUv;
-                    varying float vElevation;
-                    uniform float uTime;
-                    
-                    void main() {
-                        vUv = uv;
-                        vec3 pos = position;
-                        float elevation = sin(pos.x * 0.1 + uTime) * 0.5;
-                        elevation += sin(pos.z * 0.08 + uTime * 0.8) * 0.5;
-                        elevation += sin((pos.x + pos.z) * 0.05 + uTime * 0.5) * 0.3;
-                        pos.y += elevation;
-                        vElevation = elevation;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        // ==========================================
+        // ASSET MANAGER
+        // ==========================================
+        const manager = new THREE.LoadingManager();
+        const loader = new GLTFLoader(manager);
+        
+        manager.onProgress = (url, itemsLoaded, itemsTotal) => {
+            document.getElementById('loading-text').innerText = Math.floor((itemsLoaded / itemsTotal) * 100) + '%';
+        };
+
+        manager.onLoad = () => {
+            setTimeout(() => {
+                setScreen('menu');
+            }, 500); // Slight delay for visual polish
+        };
+
+        // Load all defined GLB models
+        CONFIG.models.forEach(modelName => {
+            loader.load(CONFIG.assetPath + modelName, (gltf) => {
+                gltf.scene.traverse(child => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
                     }
-                `;
-                
-                const fragmentShader = `
-                    varying vec2 vUv;
-                    varying float vElevation;
-                    
-                    void main() {
-                        vec3 deepColor = vec3(0.05, 0.15, 0.3);
-                        vec3 surfaceColor = vec3(0.1, 0.35, 0.6);
-                        float mixStrength = (vElevation + 1.0) * 0.5;
-                        vec3 color = mix(deepColor, surfaceColor, mixStrength);
-                        if (vElevation > 0.8) color = mix(color, vec3(0.9), 0.3);
-                        gl_FragColor = vec4(color, 0.95);
-                    }
-                `;
-                
-                const material = new THREE.ShaderMaterial({
-                    vertexShader, fragmentShader,
-                    uniforms: { uTime: { value: 0 } },
-                    transparent: true
                 });
-                
-                this.mesh = new THREE.Mesh(geometry, material);
-                this.mesh.position.y = -2;
-                this.mesh.receiveShadow = true;
+                STATE.models[modelName] = gltf.scene;
+            }, undefined, (err) => {
+                console.warn(`Could not load ${modelName}, utilizing fallback geometry.`);
+            });
+        });
+
+        // ==========================================
+        // SCENE, CAMERA, LIGHTING & RENDERER
+        // ==========================================
+        const container = document.getElementById('game-canvas');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a6fa8); // Deep ocean blue
+        scene.fog = new THREE.FogExp2(0x1a6fa8, 0.005); // Atmospheric depth fog
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // Lighting System
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+        dirLight.position.set(60, 100, 40);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.top = 100;
+        dirLight.shadow.camera.bottom = -100;
+        dirLight.shadow.camera.left = -100;
+        dirLight.shadow.camera.right = 100;
+        dirLight.shadow.camera.near = 0.1;
+        dirLight.shadow.camera.far = 300;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        // Procedural Ocean (Displacement Shader via onBeforeCompile)
+        const oceanGeo = new THREE.PlaneGeometry(1200, 1200, 128, 128);
+        oceanGeo.rotateX(-Math.PI / 2); // Align to XZ plane
+        
+        const oceanMat = new THREE.MeshStandardMaterial({
+            color: 0x1a6fa8,
+            roughness: 0.1,
+            metalness: 0.2,
+            flatShading: true
+        });
+
+        // Inject vertex manipulation to create seamless moving waves
+        oceanMat.onBeforeCompile = (shader) => {
+            shader.uniforms.time = { value: 0 };
+            shader.vertexShader = 'uniform float time;\n' + shader.vertexShader;
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `
+                vec3 transformed = vec3(position);
+                // Calculate world position to prevent texture sliding when plane follows camera
+                vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                float wave = sin(worldPos.x * 0.15 + time) * cos(worldPos.z * 0.15 + time) * 1.5;
+                transformed.y += wave;
+                `
+            );
+            oceanMat.userData.shader = shader;
+        };
+        
+        const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+        ocean.receiveShadow = true;
+        scene.add(ocean);
+
+        // Fallback Materials & Geometries
+        const sphereGeo = new THREE.SphereGeometry(1, 16, 16);
+        const boxGeo = new THREE.BoxGeometry(2, 2, 2);
+        const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.2, metalness: 0.8 });
+        const dummyShipMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+
+        // ==========================================
+        // GAME ENTITIES
+        // ==========================================
+        class Player {
+            constructor() {
+                this.mesh = new THREE.Group();
                 scene.add(this.mesh);
                 
-                // Grid for depth reference
-                const grid = new THREE.GridHelper(1000, 100, 0x1a4a6e, 0x0d2a3e);
-                grid.position.y = -1.9;
-                grid.material.opacity = 0.2;
-                grid.material.transparent = true;
-                scene.add(grid);
-            }
-            
-            update(delta, time) {
-                this.time += delta;
-                this.mesh.material.uniforms.uTime.value = this.time * 0.5;
-            }
-        }
-
-        // Particle System
-        class ParticleSystem {
-            constructor(scene) {
-                this.scene = scene;
-                this.particles = [];
-                
-                this.geometries = {
-                    smoke: new THREE.SphereGeometry(0.3, 6, 6),
-                    spark: new THREE.BoxGeometry(0.15, 0.15, 0.15),
-                    wake: new THREE.PlaneGeometry(0.8, 0.8)
-                };
-                
-                this.materials = {
-                    smoke: new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.5 }),
-                    spark: new THREE.MeshBasicMaterial({ color: 0xffaa00 }),
-                    wake: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 })
-                };
-            }
-            
-            spawnExplosion(pos, count = 8, color = 0xff6600) {
-                for (let i = 0; i < count; i++) {
-                    const mesh = new THREE.Mesh(this.geometries.spark, this.materials.spark.clone());
-                    mesh.material.color.setHex(color);
-                    mesh.position.copy(pos);
-                    mesh.position.x += Utils.randFloat(-1, 1);
-                    mesh.position.z += Utils.randFloat(-1, 1);
-                    
-                    this.particles.push({
-                        mesh, type: 'explosion',
-                        velocity: new THREE.Vector3(Utils.randFloat(-8, 8), Utils.randFloat(5, 12), Utils.randFloat(-8, 8)),
-                        life: 1.0
-                    });
-                    this.scene.add(mesh);
+                if (STATE.models['ship-pirate-small.glb']) {
+                    const model = STATE.models['ship-pirate-small.glb'].clone();
+                    model.position.y = -0.3; // Sit in water
+                    this.mesh.add(model);
+                } else {
+                    const box = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 6), dummyShipMat);
+                    box.position.y = 1;
+                    this.mesh.add(box);
                 }
+                
+                this.position = new THREE.Vector3(0, 0, 0);
+                this.velocity = new THREE.Vector3(0, 0, 0);
+                this.rotationY = 0;
+                this.targetRotationY = 0;
+                
+                // Fleet Group (visual representation of extra cannons)
+                this.fleetGroup = new THREE.Group();
+                this.mesh.add(this.fleetGroup);
             }
-            
-            spawnSmoke(pos) {
-                const mesh = new THREE.Mesh(this.geometries.smoke, this.materials.smoke.clone());
-                mesh.position.copy(pos);
-                mesh.position.y += 0.5;
-                this.particles.push({
-                    mesh, type: 'smoke',
-                    velocity: new THREE.Vector3(0, 3, 0),
-                    life: 2.0, growth: 3
-                });
-                this.scene.add(mesh);
+
+            update(dt) {
+                // Movement Input
+                let moveDir = new THREE.Vector3(0, 0, 0);
+                if (STATE.keys.w || STATE.keys.ArrowUp) moveDir.z -= 1;
+                if (STATE.keys.s || STATE.keys.ArrowDown) moveDir.z += 1;
+                if (STATE.keys.a || STATE.keys.ArrowLeft) moveDir.x -= 1;
+                if (STATE.keys.d || STATE.keys.ArrowRight) moveDir.x += 1;
+
+                if (moveDir.lengthSq() > 0) {
+                    moveDir.normalize();
+                    this.targetRotationY = Math.atan2(moveDir.x, moveDir.z);
+                    const speed = CONFIG.playerBaseSpeed * STATE.upgrades.speed;
+                    this.velocity.lerp(moveDir.multiplyScalar(speed), dt * 3);
+                } else {
+                    // Ocean friction drift
+                    this.velocity.lerp(new THREE.Vector3(0,0,0), dt * 1.5);
+                }
+
+                // Smooth rotation with wrap-around fix
+                let diff = this.targetRotationY - this.rotationY;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                this.rotationY += diff * dt * CONFIG.playerTurnSpeed;
+
+                this.mesh.rotation.y = this.rotationY;
+                this.position.addScaledVector(this.velocity, dt);
+                
+                // Aesthetic bobbing on waves
+                this.mesh.position.copy(this.position);
+                this.mesh.position.y = Math.sin(Date.now() * 0.002) * 0.4;
+                this.mesh.rotation.z = Math.sin(Date.now() * 0.001) * 0.08;
+                this.mesh.rotation.x = Math.cos(Date.now() * 0.0015) * 0.05;
+
+                // Smooth Camera Follow
+                camera.position.lerp(
+                    new THREE.Vector3(
+                        this.position.x + STATE.cameraOffset.x,
+                        this.position.y + STATE.cameraOffset.y,
+                        this.position.z + STATE.cameraOffset.z
+                    ),
+                    dt * 4
+                );
+                camera.lookAt(this.position);
             }
-            
-            spawnWake(pos, rotation) {
-                const mesh = new THREE.Mesh(this.geometries.wake, this.materials.wake.clone());
-                mesh.position.copy(pos);
-                mesh.position.y = -1.8;
-                mesh.rotation.x = -Math.PI / 2;
-                mesh.rotation.z = rotation;
-                this.particles.push({
-                    mesh, type: 'wake',
-                    velocity: new THREE.Vector3(0, 0, 0),
-                    life: 1.0
-                });
-                this.scene.add(mesh);
-            }
-            
-            update(delta) {
-                for (let i = this.particles.length - 1; i >= 0; i--) {
-                    const p = this.particles[i];
-                    p.life -= delta;
-                    
-                    if (p.type === 'explosion') {
-                        p.mesh.position.addScaledVector(p.velocity, delta);
-                        p.velocity.y -= 20 * delta;
-                        p.mesh.rotation.x += delta * 3;
-                        p.mesh.material.opacity = p.life;
-                    } else if (p.type === 'smoke') {
-                        p.mesh.position.addScaledVector(p.velocity, delta);
-                        const scale = 1 + (2.0 - p.life) * p.growth * 0.5;
-                        p.mesh.scale.setScalar(scale);
-                        p.mesh.material.opacity = (p.life / 2.0) * 0.5;
-                    } else if (p.type === 'wake') {
-                        p.mesh.material.opacity = (p.life / 1.0) * 0.3;
-                        p.mesh.scale.multiplyScalar(0.98);
-                    }
-                    
-                    if (p.life <= 0) {
-                        this.scene.remove(p.mesh);
-                        this.particles.splice(i, 1);
-                    }
+
+            addFleetShip() {
+                if (STATE.models['boat-row-small.glb']) {
+                    const ally = STATE.models['boat-row-small.glb'].clone();
+                    // Arrange in a circle based on cannon count
+                    const index = STATE.upgrades.cannons - 1;
+                    const angle = index * (Math.PI / 2);
+                    const radius = 6;
+                    ally.position.set(Math.cos(angle)*radius, -0.3, Math.sin(angle)*radius);
+                    this.fleetGroup.add(ally);
                 }
             }
         }
 
-        // Projectile System
-        class ProjectileSystem {
-            constructor(scene, particles) {
-                this.scene = scene;
-                this.particles = particles;
-                this.projectiles = [];
-                this.pool = [];
+        class Enemy {
+            constructor(type, spawnPos) {
+                this.mesh = new THREE.Group();
+                scene.add(this.mesh);
+                this.type = type;
                 
-                const geometry = new THREE.SphereGeometry(0.15, 6, 6);
-                const material = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 });
+                // Scale stats by survival time
+                const timeScaler = 1 + (STATE.time / 300); // 10% harder every 30s
                 
-                for (let i = 0; i < 60; i++) {
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.visible = false;
-                    this.scene.add(mesh);
-                    this.pool.push({ mesh, active: false });
-                }
-            }
-            
-            fire(startPos, targetPos, speed = 35, damage = 15, isPlayer = true) {
-                const proj = this.pool.find(p => !p.active) || this.pool[0];
-                proj.active = true;
-                proj.mesh.visible = true;
-                proj.mesh.position.copy(startPos);
-                proj.isPlayer = isPlayer;
-                proj.damage = damage;
-                
-                const dir = Utils.direction(startPos, targetPos);
-                const dist = Utils.distance(startPos, targetPos);
-                const height = Math.min(dist * 0.4, 6);
-                
-                proj.velocity = new THREE.Vector3(dir.x * speed, height * 2.5, dir.z * speed);
-                proj.startTime = Date.now();
-                proj.duration = dist / speed;
-                
-                this.projectiles.push(proj);
-                this.particles.spawnSmoke(startPos);
-            }
-            
-            update(delta) {
-                for (let i = this.projectiles.length - 1; i >= 0; i--) {
-                    const p = this.projectiles[i];
-                    p.velocity.y -= 25 * delta;
-                    p.mesh.position.addScaledVector(p.velocity, delta);
-                    
-                    if (p.mesh.position.y <= -1.5 || Date.now() - p.startTime > p.duration * 1000 * 2) {
-                        p.active = false;
-                        p.mesh.visible = false;
-                        this.projectiles.splice(i, 1);
-                        if (p.mesh.position.y <= -1.5) {
-                            this.particles.spawnExplosion(p.mesh.position, 3, 0xffffff);
-                        }
-                    }
-                }
-            }
-            
-            getActive() { return this.projectiles.filter(p => p.active); }
-            reset() {
-                this.projectiles.forEach(p => { p.active = false; p.mesh.visible = false; });
-                this.projectiles = [];
-            }
-        }
+                this.hp = (type === 'boss' ? 800 : (type === 'medium' ? 60 : 20)) * timeScaler;
+                this.maxHp = this.hp;
+                this.speed = type === 'boss' ? 5 : (type === 'medium' ? 7 : 9);
+                this.damage = type === 'boss' ? 25 : 10;
+                this.scoreValue = type === 'boss' ? 250 : (type === 'medium' ? 20 : 5);
 
-        // Player Controller
-        class Player {
-            constructor(scene, projectiles) {
-                this.scene = scene;
-                this.projectiles = projectiles;
-                this.hp = 100;
-                this.maxHp = 100;
-                this.speed = 12;
-                this.turnSpeed = 4;
-                this.velocity = new THREE.Vector3();
-                this.friction = 0.92;
-                this.cannonCount = 2;
-                this.fireRate = 0.8;
-                this.lastFire = 0;
-                this.invulnerable = 0;
-                
-                this.mesh = window.game.assets.get('ship-pirate-small');
-                this.mesh.position.y = 0;
-                this.scene.add(this.mesh);
-                
-                // Cannon sound synth
-                this.synth = null;
-            }
-            
-            reset() {
-                this.hp = this.maxHp;
-                this.mesh.position.set(0, 0, 0);
-                this.velocity.set(0, 0, 0);
-                this.cannonCount = 2 + Math.floor(window.game.metaUpgrades.cannonMaster || 0);
-            }
-            
-            update(delta, keys) {
-                // Input
-                let inputX = 0, inputZ = 0;
-                if (keys['KeyW'] || keys['ArrowUp']) inputZ -= 1;
-                if (keys['KeyS'] || keys['ArrowDown']) inputZ += 1;
-                if (keys['KeyA'] || keys['ArrowLeft']) inputX -= 1;
-                if (keys['KeyD'] || keys['ArrowRight']) inputX += 1;
-                
-                // Normalize
-                if (inputX !== 0 || inputZ !== 0) {
-                    const len = Math.sqrt(inputX**2 + inputZ**2);
-                    inputX /= len; inputZ /= len;
-                    
-                    // Acceleration
-                    this.velocity.x += inputX * 30 * delta;
-                    this.velocity.z += inputZ * 30 * delta;
-                    
-                    // Rotation
-                    const targetAngle = Math.atan2(inputX, inputZ);
-                    let diff = targetAngle - this.mesh.rotation.y;
-                    while (diff > Math.PI) diff -= Math.PI * 2;
-                    while (diff < -Math.PI) diff += Math.PI * 2;
-                    this.mesh.rotation.y += diff * this.turnSpeed * delta;
-                }
-                
-                // Physics
-                this.velocity.multiplyScalar(this.friction);
-                const speed = this.velocity.length();
-                if (speed > this.speed) this.velocity.multiplyScalar(this.speed / speed);
-                
-                this.mesh.position.x += this.velocity.x * delta;
-                this.mesh.position.z += this.velocity.z * delta;
-                this.mesh.position.y = Math.sin(Date.now() * 0.003) * 0.15;
-                
-                // Wake particles
-                if (speed > 2 && Math.random() > 0.8) {
-                    window.game.particles.spawnWake(this.mesh.position, this.mesh.rotation.y);
-                }
-                
-                // Auto-fire
-                this.lastFire += delta;
-                if (this.lastFire >= this.fireRate) {
-                    const target = window.game.enemies.findNearest(this.mesh.position, 45);
-                    if (target) {
-                        this.fire(target.position);
-                        this.lastFire = 0;
-                    }
-                }
-                
-                // Invulnerability frame
-                if (this.invulnerable > 0) this.invulnerable -= delta;
-            }
-            
-            fire(targetPos) {
-                const offsets = this.cannonCount === 1 ? [0] : this.cannonCount === 2 ? [-0.8, 0.8] : [-1, 0, 1];
-                offsets.forEach(offset => {
-                    const offVec = new THREE.Vector3(offset, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
-                    const pos = this.mesh.position.clone().add(offVec);
-                    pos.y += 0.8;
-                    this.projectiles.fire(pos, targetPos, 40, 20 * (1 + (window.game.metaUpgrades.cannonMaster || 0) * 0.1), true);
-                });
-                
-                // Audio
-                if (window.game.audio) window.game.audio.playCannon();
-            }
-            
-            takeDamage(amount) {
-                if (this.invulnerable > 0) return;
-                this.hp -= amount * (1 - (window.game.metaUpgrades.hullReinforcement || 0) * 0.1);
-                this.invulnerable = 0.5;
-                window.game.ui.shakeScreen();
-                window.game.ui.showDamageOverlay();
-                
-                // Damage number
-                window.game.ui.showDamageText(amount, this.mesh.position);
-                
-                if (this.hp <= 0) this.hp = 0;
-            }
-            
-            heal(amount) {
-                this.hp = Math.min(this.maxHp, this.hp + amount);
-            }
-        }
+                let modelName = 'boat-row-small.glb';
+                if(type === 'medium') modelName = 'ship-small.glb';
+                if(type === 'boss') modelName = 'ship-ghost.glb';
 
-        // Fleet Manager
-        class FleetManager {
-            constructor(scene, player, projectiles) {
-                this.scene = scene;
-                this.player = player;
-                this.projectiles = projectiles;
-                this.ships = [];
-                this.baseRadius = 6;
-                
-                // Add starter fleet from meta-upgrades
-                const startFleet = window.game?.metaUpgrades?.startingFleet || 0;
-                for (let i = 0; i < startFleet; i++) {
-                    this.addShip('rowboat', false);
-                }
-            }
-            
-            addShip(type = 'rowboat', showEffect = true) {
-                const configs = {
-                    rowboat: { key: 'boat-row-small', hp: 30, dmg: 8, rate: 2, radius: 5 },
-                    sloop: { key: 'ship-pirate-small', hp: 60, dmg: 12, rate: 1.5, radius: 7 },
-                    brigantine: { key: 'ship-pirate-medium', hp: 120, dmg: 18, rate: 1.2, radius: 9 },
-                    galleon: { key: 'ship-pirate-large', hp: 250, dmg: 30, rate: 1, radius: 12 }
-                };
-                
-                const cfg = configs[type];
-                const angle = (Math.PI * 2 * this.ships.length) / Math.max(this.ships.length + 1, 1);
-                const ring = Math.floor(this.ships.length / 6);
-                
-                const ship = {
-                    type, ...cfg,
-                    mesh: window.game.assets.get(cfg.key),
-                    lastFire: 0,
-                    angle,
-                    radius: cfg.radius + ring * 3,
-                    hp: cfg.hp
-                };
-                
-                this.scene.add(ship.mesh);
-                this.ships.push(ship);
-                
-                if (showEffect) {
-                    window.game.particles.spawnExplosion(ship.mesh.position, 10, 0xffff00);
-                }
-            }
-            
-            update(delta) {
-                const time = Date.now() * 0.001;
-                
-                this.ships.forEach((ship, i) => {
-                    ship.angle += 0.3 * delta;
-                    const targetX = this.player.mesh.position.x + Math.cos(ship.angle) * ship.radius;
-                    const targetZ = this.player.mesh.position.z + Math.sin(ship.angle) * ship.radius;
+                if (STATE.models[modelName]) {
+                    const model = STATE.models[modelName].clone();
+                    model.position.y = -0.3;
                     
-                    ship.mesh.position.x += (targetX - ship.mesh.position.x) * 4 * delta;
-                    ship.mesh.position.z += (targetZ - ship.mesh.position.z) * 4 * delta;
-                    ship.mesh.position.y = Math.sin(time + i) * 0.1;
-                    ship.mesh.lookAt(targetX + Math.cos(ship.angle), ship.mesh.position.y, targetZ + Math.sin(ship.angle));
-                    
-                    ship.lastFire += delta;
-                    if (ship.lastFire >= ship.rate) {
-                        const target = window.game.enemies.findNearest(ship.mesh.position, 30);
-                        if (target) {
-                            const pos = ship.mesh.position.clone(); pos.y += 0.5;
-                            this.projectiles.fire(pos, target.position, 30, ship.dmg, true);
-                            ship.lastFire = 0;
-                        }
-                    }
-                });
-            }
-            
-            reset() {
-                this.ships.forEach(s => this.scene.remove(s.mesh));
-                this.ships = [];
-                // Re-add starter ships
-                const startFleet = window.game?.metaUpgrades?.startingFleet || 0;
-                for (let i = 0; i < startFleet; i++) this.addShip('rowboat', false);
-            }
-        }
-
-        // Enemy System
-        class EnemySystem {
-            constructor(scene, player, projectiles, particles) {
-                this.scene = scene;
-                this.player = player;
-                this.projectiles = projectiles;
-                this.particles = particles;
-                this.enemies = [];
-                this.boss = null;
-                this.spawnTimer = 0;
-                this.difficulty = 1;
-            }
-            
-            spawn(type) {
-                const angle = Math.random() * Math.PI * 2;
-                const dist = 70;
-                const x = this.player.mesh.position.x + Math.cos(angle) * dist;
-                const z = this.player.mesh.position.z + Math.sin(angle) * dist;
-                
-                const configs = {
-                    rowboat: { key: 'boat-row-small', hp: 20, speed: 7, dmg: 8, xp: 5, scale: 1 },
-                    sloop: { key: 'ship-small', hp: 50, speed: 5, dmg: 12, xp: 15, fireRate: 2.5, scale: 1 },
-                    frigate: { key: 'ship-medium', hp: 130, speed: 3, dmg: 22, xp: 40, fireRate: 3.5, scale: 1.2 },
-                    galleon: { key: 'ship-large', hp: 320, speed: 2, dmg: 35, xp: 100, fireRate: 4, scale: 1.4 },
-                    ghost: { key: 'ship-ghost', hp: 1000, speed: 4, dmg: 50, xp: 500, fireRate: 2, scale: 2, boss: true }
-                };
-                
-                const cfg = configs[type];
-                const enemy = {
-                    type, ...cfg,
-                    mesh: window.game.assets.get(cfg.key),
-                    lastShot: 0,
-                    maxHp: cfg.hp
-                };
-                
-                if (type === 'ghost') {
-                    // Ghost shader
-                    enemy.mesh.traverse(c => {
-                        if (c.isMesh) {
-                            c.material = c.material.clone();
-                            c.material.emissive = new THREE.Color(0x4dff9b);
-                            c.material.emissiveIntensity = 0.6;
-                            c.material.transparent = true;
-                            c.material.opacity = 0.85;
-                        }
-                    });
-                    this.boss = enemy;
-                }
-                
-                enemy.mesh.position.set(x, 0, z);
-                enemy.mesh.scale.setScalar(cfg.scale);
-                this.scene.add(enemy.mesh);
-                this.enemies.push(enemy);
-                return enemy;
-            }
-            
-            update(delta, gameTime) {
-                const minutes = Math.floor(gameTime / 60);
-                this.difficulty = 1 + minutes * 0.2;
-                
-                // Spawning
-                this.spawnTimer += delta;
-                const spawnRate = Math.max(0.3, 1.5 - minutes * 0.1);
-                
-                if (this.spawnTimer > spawnRate) {
-                    this.spawnTimer = 0;
-                    const roll = Math.random();
-                    if (minutes < 2) this.spawn('rowboat');
-                    else if (minutes < 5) { this.spawn('rowboat'); if (roll > 0.6) this.spawn('sloop'); }
-                    else if (minutes < 8) { this.spawn('sloop'); if (roll > 0.5) this.spawn('frigate'); }
-                    else { this.spawn('frigate'); if (roll > 0.7) this.spawn('galleon'); }
-                }
-                
-                // Update enemies
-                for (let i = this.enemies.length - 1; i >= 0; i--) {
-                    const e = this.enemies[i];
-                    
-                    // AI Movement
-                    if (e.boss) {
-                        // Circle player
-                        const time = Date.now() * 0.001;
-                        const tx = this.player.mesh.position.x + Math.cos(time * 0.5) * 25;
-                        const tz = this.player.mesh.position.z + Math.sin(time * 0.5) * 25;
-                        e.mesh.position.x += (tx - e.mesh.position.x) * delta;
-                        e.mesh.position.z += (tz - e.mesh.position.z) * delta;
-                    } else {
-                        // Chase player
-                        const dir = Utils.direction(e.mesh.position, this.player.mesh.position);
-                        e.mesh.position.x += dir.x * e.speed * delta;
-                        e.mesh.position.z += dir.z * e.speed * delta;
-                        e.mesh.lookAt(this.player.mesh.position);
-                    }
-                    
-                    e.mesh.position.y = Math.sin(Date.now() * 0.002 + i) * 0.1;
-                    
-                    // Shooting
-                    if (e.fireRate) {
-                        e.lastShot += delta;
-                        if (e.lastShot >= e.fireRate) {
-                            const dist = Utils.distance(e.mesh.position, this.player.mesh.position);
-                            if (dist < 35) {
-                                this.projectiles.fire(e.mesh.position, this.player.mesh.position, 25, e.dmg, false);
-                                e.lastShot = 0;
+                    // Curse shader effect for Ghost Boss
+                    if (type === 'boss') {
+                        model.scale.set(2.2, 2.2, 2.2);
+                        model.traverse(c => {
+                            if (c.isMesh && c.material) {
+                                c.material = c.material.clone();
+                                c.material.color.setHex(0x4dff9b);
+                                c.material.emissive.setHex(0x0d4a3e);
+                                c.material.transparent = true;
+                                c.material.opacity = 0.85;
                             }
-                        }
+                        });
                     }
+                    this.mesh.add(model);
+                } else {
+                    const size = type === 'boss' ? 5 : 2;
+                    const box = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), new THREE.MeshStandardMaterial({color: 0xaa3333}));
+                    box.position.y = size/2;
+                    this.mesh.add(box);
+                }
+
+                this.mesh.position.copy(spawnPos);
+                this.isDead = false;
+                this.flashTimer = 0;
+            }
+
+            update(dt, playerPos) {
+                if (this.isDead) return;
+
+                // Move logic
+                const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position);
+                const dist = dir.length();
+                
+                if (dist > 1.0) {
+                    dir.normalize();
+                    this.mesh.position.addScaledVector(dir, this.speed * dt);
+                    // Point at player smoothly
+                    const targetRot = Math.atan2(dir.x, dir.z);
+                    this.mesh.rotation.y = targetRot; 
+                }
+
+                // Bobbing based on world pos mapping to ocean shader
+                this.mesh.position.y = Math.sin(this.mesh.position.x * 0.15 + STATE.time) * 0.5;
+
+                // Handle damage flash reset
+                if (this.flashTimer > 0) {
+                    this.flashTimer -= dt;
+                    if (this.flashTimer <= 0) {
+                        this.mesh.traverse(c => {
+                            if(c.isMesh && c.material) c.material.emissive.setHex(this.type === 'boss' ? 0x0d4a3e : 0x000000);
+                        });
+                    }
+                }
+
+                // Collision with player (Damage Loop)
+                if (dist < (this.type === 'boss' ? 7 : 3)) {
+                    STATE.upgrades.hp -= this.damage * dt;
+                    updateHUD();
                     
-                    // Collisions
-                    this.checkCollisions(e, i);
-                }
-                
-                // Update boss HUD
-                if (this.boss && this.boss.hp > 0) {
-                    const pct = (this.boss.hp / this.boss.maxHp) * 100;
-                    document.getElementById('boss-hp-bar').style.width = pct + '%';
-                } else if (this.boss && this.boss.hp <= 0) {
-                    document.getElementById('boss-hud').classList.add('hidden');
-                    this.boss = null;
+                    // Visually sink player slightly on hit
+                    STATE.player.mesh.position.y -= 0.5;
+                    
+                    if (STATE.upgrades.hp <= 0) {
+                        endGame();
+                    }
                 }
             }
-            
-            checkCollisions(enemy, index) {
-                // Player projectiles
-                const projs = this.projectiles.getActive();
-                for (const p of projs) {
-                    if (!p.isPlayer) continue;
-                    if (Utils.distance(p.mesh.position, enemy.mesh.position) < 2.5) {
-                        enemy.hp -= p.damage * (enemy.type === 'ghost' && !window.game.ghostBuster ? 0.5 : 1);
-                        p.active = false;
-                        p.mesh.visible = false;
-                        
-                        if (enemy.hp <= 0) {
-                            this.killEnemy(enemy, index);
-                            return;
+
+            takeDamage(amount) {
+                this.hp -= amount;
+                
+                // Visual Hit Feedback
+                this.flashTimer = 0.1;
+                this.mesh.position.y -= 1.0; // Knock down
+                this.mesh.traverse(c => {
+                    if(c.isMesh && c.material) c.material.emissive.setHex(0x555555); // Flash white
+                });
+                
+                if (this.hp <= 0 && !this.isDead) {
+                    this.isDead = true;
+                    // Explode into loot
+                    const numDrops = this.type === 'boss' ? 15 : (this.type === 'medium' ? 3 : 1);
+                    for(let i=0; i<numDrops; i++) {
+                        const offset = new THREE.Vector3((Math.random()-0.5)*5, 0, (Math.random()-0.5)*5);
+                        STATE.pickups.push(new Pickup(this.mesh.position.clone().add(offset), this.type === 'boss'));
+                    }
+                    STATE.score += this.scoreValue;
+                    scene.remove(this.mesh);
+                }
+            }
+        }
+
+        class Projectile {
+            constructor(startPos, targetPos) {
+                this.mesh = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({color: 0x222222}));
+                this.mesh.scale.set(0.6, 0.6, 0.6);
+                
+                if (STATE.models['cannon-ball.glb']) {
+                    this.mesh.geometry.dispose();
+                    this.mesh.material.dispose();
+                    this.mesh = STATE.models['cannon-ball.glb'].clone();
+                }
+                
+                this.mesh.position.copy(startPos);
+                this.mesh.position.y += 1.5; // Fire from deck height
+                scene.add(this.mesh);
+
+                this.target = targetPos.clone();
+                const dir = new THREE.Vector3().subVectors(this.target, startPos);
+                this.distTotal = dir.length();
+                dir.normalize();
+                
+                this.velocity = dir.multiplyScalar(45); // Cannonball speed
+                this.life = 0;
+                this.maxLife = this.distTotal / 45;
+                this.active = true;
+            }
+
+            update(dt) {
+                if (!this.active) return;
+                
+                this.life += dt;
+                const t = this.life / this.maxLife;
+                
+                this.mesh.position.addScaledVector(this.velocity, dt);
+                // Parabolic trajectory
+                this.mesh.position.y = 1.5 + Math.sin(t * Math.PI) * (this.distTotal * 0.2);
+
+                if (this.life >= this.maxLife) {
+                    this.active = false;
+                    scene.remove(this.mesh);
+                    
+                    // Area of Effect Damage on Impact
+                    STATE.enemies.forEach(enemy => {
+                        if (enemy.isDead) return;
+                        if (enemy.mesh.position.distanceTo(this.mesh.position) < 4.5) {
+                            enemy.takeDamage(STATE.upgrades.damage);
                         }
-                    }
+                    });
                 }
-                
-                // Ramming player
-                if (Utils.distance(enemy.mesh.position, this.player.mesh.position) < 3) {
-                    this.player.takeDamage(enemy.dmg);
-                    if (enemy.type === 'rowboat') {
-                        this.killEnemy(enemy, index);
-                    }
-                }
-            }
-            
-            killEnemy(enemy, index) {
-                this.particles.spawnExplosion(enemy.mesh.position, enemy.boss ? 30 : 15);
-                this.scene.remove(enemy.mesh);
-                this.enemies.splice(index, 1);
-                
-                // Rewards
-                window.game.addDoubloons(enemy.xp);
-                
-                if (enemy.boss) {
-                    window.game.addDoubloons(200);
-                    document.getElementById('boss-hud').classList.add('hidden');
-                    window.game.bossActive = false;
-                    // Heal player
-                    this.player.heal(50);
-                }
-                
-                // Drop chance
-                if (Math.random() > 0.95) this.player.heal(15);
-            }
-            
-            findNearest(pos, range) {
-                let nearest = null, minDist = range;
-                for (const e of this.enemies) {
-                    const d = Utils.distance(pos, e.mesh.position);
-                    if (d < minDist) { minDist = d; nearest = e; }
-                }
-                return nearest;
-            }
-            
-            reset() {
-                this.enemies.forEach(e => this.scene.remove(e.mesh));
-                this.enemies = [];
-                this.boss = null;
-                this.bossActive = false;
             }
         }
 
-        // Upgrade System
-        class UpgradeSystem {
-            constructor() {
-                this.upgrades = [
-                    { id: 'rowboats', name: 'Recruit Rowboats', type: 'fleet', tier: 'common', effect: 'rowboat', icon: '🚣', desc: 'Add 2 rowboat flankers' },
-                    { id: 'sloop', name: 'Press-Gang Sloop', type: 'fleet', tier: 'rare', effect: 'sloop', icon: '⛵', desc: 'Add 1 sloop to fleet' },
-                    { id: 'brigantine', name: 'Commandeer Brigantine', type: 'fleet', tier: 'epic', effect: 'brigantine', icon: '🚢', desc: 'Add heavy Brigantine' },
-                    { id: 'galleon', name: 'The Flagship', type: 'fleet', tier: 'legendary', effect: 'galleon', icon: '🏴‍☠️', desc: 'Add massive Galleon' },
-                    { id: 'cannon', name: 'Extra Cannon', type: 'weapon', tier: 'common', effect: 'cannon', icon: '💣', desc: '+1 cannon, faster fire' },
-                    { id: 'damage', name: 'Heavy Shot', type: 'weapon', tier: 'rare', effect: 'damage', icon: '🔥', desc: '+50% damage' },
-                    { id: 'multishot', name: 'Broadside', type: 'weapon', tier: 'epic', effect: 'multishot', icon: '💥', desc: 'Triple shot spread' },
-                    { id: 'ghostbuster', name: 'Ghost Breaker', type: 'weapon', tier: 'legendary', effect: 'ghostbuster', icon: '👻', desc: '2x vs Ghost Ships' },
-                    { id: 'hp', name: 'Reinforce Hull', type: 'hull', tier: 'common', effect: 'hp', icon: '🛡️', desc: '+30% max HP' },
-                    { id: 'speed', name: 'Stolen Sails', type: 'hull', tier: 'rare', effect: 'speed', icon: '💨', desc: '+30% speed' },
-                    { id: 'regen', name: 'Repair Crew', type: 'hull', tier: 'epic', effect: 'regen', icon: '🔧', desc: 'Slow HP regen' },
-                    { id: 'ghosthull', name: 'Ghost Hull', type: 'hull', tier: 'legendary', effect: 'ghosthull', icon: '👻', desc: 'Phase through enemies' }
-                ];
-                this.current = [];
-            }
-            
-            getCards(count, level) {
-                const pool = this.upgrades.filter(u => {
-                    if (u.tier === 'legendary' && level < 8) return false;
-                    if (u.tier === 'epic' && level < 5) return false;
-                    return true;
-                });
-                this.current = pool.sort(() => 0.5 - Math.random()).slice(0, count);
-                return this.current;
-            }
-            
-            apply(index, player, fleet) {
-                const u = this.current[index];
-                if (!u) return;
-                
-                switch(u.effect) {
-                    case 'rowboat': fleet.addShip('rowboat'); fleet.addShip('rowboat'); break;
-                    case 'sloop': fleet.addShip('sloop'); break;
-                    case 'brigantine': fleet.addShip('brigantine'); break;
-                    case 'galleon': fleet.addShip('galleon'); break;
-                    case 'cannon': player.cannonCount++; player.fireRate *= 0.85; break;
-                    case 'damage': /* Handled via damage calc */ break;
-                    case 'multishot': player.cannonCount = Math.max(player.cannonCount, 3); break;
-                    case 'ghostbuster': window.game.ghostBuster = true; break;
-                    case 'hp': player.maxHp *= 1.3; player.hp *= 1.3; break;
-                    case 'speed': player.speed *= 1.3; break;
-                    case 'regen': /* Would add regen */ break;
+        class Pickup {
+            constructor(pos, isChest = false) {
+                this.active = true;
+                this.isChest = isChest;
+                this.value = isChest ? 50 : 5; // Chests give massive XP
+
+                this.mesh = new THREE.Group();
+                scene.add(this.mesh);
+
+                let modelName = isChest ? 'chest.glb' : 'barrel.glb'; // Barrel acts as doubloon proxy
+                if (STATE.models[modelName]) {
+                    const model = STATE.models[modelName].clone();
+                    if(!isChest) model.scale.set(0.6, 0.6, 0.6);
+                    this.mesh.add(model);
+                } else {
+                    const sphere = new THREE.Mesh(sphereGeo, goldMat);
+                    sphere.scale.set(0.6, 0.6, 0.6);
+                    this.mesh.add(sphere);
                 }
-                window.game.audio.playUpgrade();
+
+                this.mesh.position.copy(pos);
+            }
+
+            update(dt, playerPos) {
+                if (!this.active) return;
+                
+                // Float animation
+                this.mesh.position.y = Math.sin(Date.now() * 0.004 + this.mesh.position.x) * 0.3 + 0.2;
+                this.mesh.rotation.y += dt * 1.5;
+
+                const dist = this.mesh.position.distanceTo(playerPos);
+                
+                // Magnetic collection
+                if (dist < STATE.upgrades.pickupRadius) {
+                    const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position).normalize();
+                    this.mesh.position.addScaledVector(dir, 35 * dt); // Suck in fast
+
+                    if (dist < 3) {
+                        this.active = false;
+                        scene.remove(this.mesh);
+                        gainExp(this.value);
+                    }
+                }
             }
         }
 
-        // UI Controller
-        class UI {
-            constructor(game) {
-                this.game = game;
-                this.shakeIntensity = 0;
-                this.setupListeners();
+        // ==========================================
+        // SYSTEM LOGIC & UI
+        // ==========================================
+        const UPGRADE_POOL = [
+            { id: 'cannon', name: 'Recruit Sloop', desc: '+1 Cannon & Fleet Ship', rarity: 'legendary', color: 'var(--gold)' },
+            { id: 'damage', name: 'Heavy Broadside', desc: '+5 Cannon Damage', rarity: 'rare', color: '#4da6ff' },
+            { id: 'speed', name: 'Stolen Sails', desc: '+15% Movement Speed', rarity: 'epic', color: '#a64dff' },
+            { id: 'maxhp', name: 'Reinforce Hull', desc: '+20 Max HP & Full Heal', rarity: 'rare', color: '#4da6ff' },
+            { id: 'hp', name: 'Patch Leaks', desc: 'Restore 50 HP', rarity: 'common', color: '#a0a0a0' },
+            { id: 'magnet', name: 'Treasure Lure', desc: '+30% Pickup Radius', rarity: 'epic', color: '#a64dff' }
+        ];
+
+        function setScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            if (screenName !== 'playing') {
+                const target = document.getElementById(screenName === 'menu' ? 'main-menu' : screenName + '-screen');
+                if(target) target.classList.add('active');
             }
+            STATE.screen = screenName;
+            document.getElementById('hud').style.display = screenName === 'playing' ? 'block' : 'none';
+        }
+
+        function startGame() {
+            // Reset Core State
+            STATE.time = 0;
+            STATE.score = 0;
+            STATE.exp = 0;
+            STATE.level = 1;
+            STATE.expToNext = 100;
+            STATE.upgrades = { cannons: 1, damage: 15, speed: 1, maxHp: 100, hp: 100, pickupRadius: 20 };
             
-            setupListeners() {
-                document.getElementById('btn-play').onclick = () => this.game.startGame();
-                document.getElementById('btn-upgrades').onclick = () => this.showMetaUpgrades();
-                document.getElementById('btn-leaderboard').onclick = () => alert('Global Leaderboard:\n1. Blackbeard - 28:45\n2. Calico Jack - 26:12\n3. Anne Bonny - 24:30\n\nYour Best: ' + Utils.formatTime(this.game.bestTime));
-                document.getElementById('btn-help').onclick = () => document.getElementById('help-modal').classList.remove('hidden');
-                document.getElementById('btn-close-help').onclick = () => document.getElementById('help-modal').classList.add('hidden');
-                document.getElementById('btn-restart').onclick = () => this.game.restart();
-                document.getElementById('btn-menu').onclick = () => this.game.returnToMenu();
-                document.getElementById('btn-close-upgrade').onclick = () => document.getElementById('upgrade-modal').classList.add('hidden');
-                
-                // Keyboard shortcuts
-                window.addEventListener('keydown', (e) => {
-                    if (e.code === 'Space' && this.game.isPlaying && !this.game.isPaused) {
-                        // Special ability
-                    }
-                    if (this.game.isPaused && document.getElementById('upgrade-screen').classList.contains('flex')) {
-                        if (e.code === 'Digit1') this.game.selectUpgrade(0);
-                        if (e.code === 'Digit2') this.game.selectUpgrade(1);
-                        if (e.code === 'Digit3') this.game.selectUpgrade(2);
-                    }
-                });
+            // Cleanup previous session
+            if (STATE.player) scene.remove(STATE.player.mesh);
+            STATE.enemies.forEach(e => scene.remove(e.mesh));
+            STATE.projectiles.forEach(p => scene.remove(p.mesh));
+            STATE.pickups.forEach(p => scene.remove(p.mesh));
+            
+            STATE.enemies = [];
+            STATE.projectiles = [];
+            STATE.pickups = [];
+
+            // Init Player
+            STATE.player = new Player();
+            
+            updateHUD();
+            setScreen('playing');
+        }
+
+        function endGame() {
+            setScreen('game-over');
+            document.getElementById('go-time').innerText = formatTime(STATE.time);
+            document.getElementById('go-score').innerText = STATE.score;
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return (m < 10 ? '0'+m : m) + ':' + (s < 10 ? '0'+s : s);
+        }
+
+        function updateHUD() {
+            const hpPct = Math.max(0, (STATE.upgrades.hp / STATE.upgrades.maxHp) * 100);
+            document.getElementById('hp-bar').style.width = hpPct + '%';
+            document.getElementById('timer-ui').innerText = formatTime(STATE.time);
+            document.getElementById('doubloon-count').innerText = STATE.score;
+            
+            const expPct = Math.min(100, (STATE.exp / STATE.expToNext) * 100);
+            document.getElementById('exp-bar').style.width = expPct + '%';
+        }
+
+        function gainExp(amount) {
+            STATE.exp += amount;
+            STATE.score += amount;
+            
+            if (STATE.exp >= STATE.expToNext) {
+                STATE.exp -= STATE.expToNext;
+                STATE.level++;
+                STATE.expToNext = Math.floor(STATE.expToNext * 1.3); // Escalating requirement
+                triggerLevelUp();
             }
+            updateHUD();
+        }
+
+        function triggerLevelUp() {
+            setScreen('upgrade');
             
-            update() {
-                // HUD Updates
-                document.getElementById('game-timer').textContent = Utils.formatTime(this.game.gameTime);
-                const hpPct = (this.game.player.hp / this.game.player.maxHp) * 100;
-                document.getElementById('hp-bar').style.width = Math.max(0, hpPct) + '%';
-                document.getElementById('hp-text').textContent = Math.ceil(hpPct) + '%';
-                document.getElementById('doubloon-count').textContent = this.game.doubloons;
-                document.getElementById('level-display').textContent = this.game.level;
-                document.getElementById('fleet-count').textContent = this.game.fleet.ships.length + 1;
+            // Randomly select 3 unique upgrades
+            const shuffled = [...UPGRADE_POOL].sort(() => 0.5 - Math.random());
+            const choices = shuffled.slice(0, 3);
+            
+            const container = document.getElementById('upgrade-cards');
+            container.innerHTML = '';
+            
+            choices.forEach(choice => {
+                const card = document.createElement('div');
+                card.className = `card card-${choice.rarity}`;
+                card.innerHTML = `
+                    <h3 style="color:${choice.color}">${choice.name}</h3>
+                    <p>${choice.desc}</p>
+                    <span class="rarity" style="color:${choice.color}">${choice.rarity}</span>
+                `;
+                card.onclick = () => applyUpgrade(choice.id);
+                container.appendChild(card);
+            });
+        }
+
+        function applyUpgrade(id) {
+            switch(id) {
+                case 'cannon': 
+                    STATE.upgrades.cannons++; 
+                    STATE.player.addFleetShip(); // Visually append to armada
+                    break;
+                case 'damage': STATE.upgrades.damage += 8; break;
+                case 'speed': STATE.upgrades.speed += 0.15; break;
+                case 'maxhp': 
+                    STATE.upgrades.maxHp += 20;
+                    STATE.upgrades.hp = STATE.upgrades.maxHp; 
+                    break;
+                case 'hp': 
+                    STATE.upgrades.hp = Math.min(STATE.upgrades.maxHp, STATE.upgrades.hp + 50); 
+                    break;
+                case 'magnet': STATE.upgrades.pickupRadius *= 1.3; break;
+            }
+            updateHUD();
+            setScreen('playing');
+        }
+
+        // ==========================================
+        // CORE GAME LOOP (SPAWN & COMBAT)
+        // ==========================================
+        const clock = new THREE.Clock();
+
+        function manageSpawning(dt) {
+            STATE.lastSpawnTime += dt;
+            
+            // Difficulty curve: spawn faster over time
+            const spawnInterval = Math.max(0.6, CONFIG.enemySpawnRate - (STATE.time / 100));
+            
+            if (STATE.lastSpawnTime > spawnInterval) {
+                STATE.lastSpawnTime = 0;
                 
-                const xpPct = (this.game.xp / this.game.xpToNext) * 100;
-                document.getElementById('xp-bar').style.width = xpPct + '%';
+                // Spawn in a ring outside camera view
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 60 + Math.random() * 20; 
+                const spawnPos = new THREE.Vector3(
+                    STATE.player.position.x + Math.cos(angle) * dist,
+                    0,
+                    STATE.player.position.z + Math.sin(angle) * dist
+                );
+
+                // Type calculation based on time survived
+                let type = 'small';
+                const r = Math.random();
+                if (STATE.time > 60 && r < 0.25) type = 'medium';
+                if (STATE.time > 180 && r < 0.5) type = 'medium';
                 
-                const minutes = Math.floor(this.game.gameTime / 60);
-                document.getElementById('wave-number').textContent = minutes + 1;
-                const nextBoss = minutes < 8 ? 8 : minutes < 16 ? 16 : 24;
-                const remaining = Math.max(0, nextBoss * 60 - this.game.gameTime);
-                document.getElementById('next-boss').textContent = Utils.formatTime(remaining);
-                
-                // Minimap
-                const minimap = document.getElementById('minimap');
-                minimap.querySelectorAll('.enemy-dot').forEach(d => d.remove());
-                const px = this.game.player.mesh.position.x;
-                const pz = this.game.player.mesh.position.z;
-                
-                this.game.enemies.enemies.forEach(e => {
-                    const dot = document.createElement('div');
-                    dot.className = 'enemy-dot absolute w-2 h-2 bg-red-500 rounded-full border border-white';
-                    const rx = (e.mesh.position.x - px) * 0.5 + 72;
-                    const ry = (e.mesh.position.z - pz) * 0.5 + 72;
-                    if (rx > 0 && rx < 144 && ry > 0 && ry < 144) {
-                        dot.style.left = rx + 'px';
-                        dot.style.top = ry + 'px';
-                        minimap.appendChild(dot);
-                    }
-                });
-                
-                // Screen shake
-                if (this.shakeIntensity > 0) {
-                    const sx = (Math.random() - 0.5) * this.shakeIntensity;
-                    const sy = (Math.random() - 0.5) * this.shakeIntensity;
-                    document.getElementById('game-container').style.transform = `translate(${sx}px, ${sy}px)`;
-                    this.shakeIntensity *= 0.9;
-                    if (this.shakeIntensity < 0.5) {
-                        this.shakeIntensity = 0;
-                        document.getElementById('game-container').style.transform = 'none';
-                    }
+                // Ghost Ship Boss every 2 minutes exactly
+                if (Math.floor(STATE.time) > 0 && Math.floor(STATE.time) % 120 === 0 && r < 0.08) {
+                    type = 'boss';
+                    // Show dramatic UI text
+                    const warning = document.getElementById('warning-text');
+                    warning.style.display = 'block';
+                    setTimeout(() => warning.style.display = 'none', 4000);
                 }
-            }
-            
-            showUpgradeCards(cards, callback) {
-                const container = document.getElementById('upgrade-cards');
-                container.innerHTML = '';
-                cards.forEach((card, i) => {
-                    const div = document.createElement('div');
-                    div.className = `upgrade-card ${card.tier} rounded-xl p-6 w-full md:w-64 flex flex-col items-center text-center interactive h-full`;
-                    div.innerHTML = `
-                        <div class="text-5xl mb-4 transform group-hover:scale-110 transition">${card.icon}</div>
-                        <div class="pirate-font text-xl text-white mb-2 font-bold">${card.name}</div>
-                        <div class="text-slate-300 text-sm mb-4 flex-grow">${card.desc}</div>
-                        <div class="px-3 py-1 rounded-full text-xs font-bold uppercase ${card.tier === 'common' ? 'bg-gray-600' : card.tier === 'rare' ? 'bg-blue-600' : card.tier === 'epic' ? 'bg-purple-600' : 'bg-yellow-600'} text-white mb-2">${card.tier}</div>
-                        <div class="text-slate-500 text-xs">Press [${i + 1}]</div>
-                    `;
-                    div.onclick = () => callback(i);
-                    container.appendChild(div);
-                });
-                document.getElementById('upgrade-screen').classList.remove('hidden');
-                document.getElementById('upgrade-screen').classList.add('flex');
-            }
-            
-            hideUpgradeCards() {
-                document.getElementById('upgrade-screen').classList.add('hidden');
-                document.getElementById('upgrade-screen').classList.remove('flex');
-            }
-            
-            showBossAlert() {
-                const alert = document.getElementById('boss-alert');
-                alert.style.opacity = '1';
-                alert.classList.remove('hidden');
-                document.getElementById('boss-hud').classList.remove('hidden');
-                setTimeout(() => { alert.style.opacity = '0'; }, 5000);
-            }
-            
-            showDeathScreen(time, score, doubloons, skulls, fleet) {
-                document.getElementById('death-time').textContent = Utils.formatTime(time);
-                document.getElementById('death-score').textContent = score.toLocaleString();
-                document.getElementById('death-doubloons').textContent = doubloons;
-                document.getElementById('death-skulls').textContent = '+' + skulls;
-                
-                const fleetDiv = document.getElementById('death-fleet');
-                fleetDiv.innerHTML = '';
-                const icons = { rowboat: '🚣', sloop: '⛵', brigantine: '🚢', galleon: '🏴‍☠️' };
-                fleet.forEach(s => {
-                    const span = document.createElement('span');
-                    span.textContent = icons[s.type] || '⛵';
-                    span.title = s.type;
-                    fleetDiv.appendChild(span);
-                });
-                
-                document.getElementById('death-screen').classList.remove('hidden');
-                document.getElementById('death-screen').classList.add('flex');
-            }
-            
-            showDamageOverlay() {
-                const overlay = document.getElementById('damage-overlay');
-                overlay.style.opacity = '0.5';
-                setTimeout(() => overlay.style.opacity = '0', 200);
-            }
-            
-            showDamageText(amount, pos) {
-                // Project 3D pos to 2D screen
-                const vector = pos.clone();
-                vector.project(this.game.camera);
-                const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
-                const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
-                
-                const el = document.createElement('div');
-                el.className = 'damage-text';
-                el.textContent = '-' + Math.floor(amount);
-                el.style.left = x + 'px';
-                el.style.top = y + 'px';
-                document.body.appendChild(el);
-                setTimeout(() => el.remove(), 1000);
-            }
-            
-            shakeScreen() { this.shakeIntensity = 15; }
-            
-            showMetaUpgrades() {
-                document.getElementById('upgrade-modal').classList.remove('hidden');
-                document.getElementById('upgrade-skull-count').textContent = this.game.skulls;
-                this.renderMetaTree();
-            }
-            
-            renderMetaTree() {
-                const container = document.getElementById('upgrade-tree');
-                container.innerHTML = '';
-                
-                const upgrades = [
-                    { id: 'hullReinforcement', name: 'Reinforced Hull', cost: 10, icon: '🛡️', desc: 'Start with +15% HP', level: this.game.metaUpgrades.hullReinforcement || 0 },
-                    { id: 'startingFleet', name: 'Starting Fleet', cost: 20, icon: '⚓', desc: 'Start with +1 Rowboat', level: this.game.metaUpgrades.startingFleet || 0 },
-                    { id: 'cannonMaster', name: 'Cannon Master', cost: 25, icon: '💣', desc: '+10% cannon damage', level: this.game.metaUpgrades.cannonMaster || 0 },
-                    { id: 'ghostWard', name: 'Ghost Ward', cost: 30, icon: '👻', desc: 'Boss spawns 30s later', level: this.game.metaUpgrades.ghostWard || 0 },
-                    { id: 'treasureMagnet', name: 'Treasure Magnet', cost: 15, icon: '🧲', desc: '+25% pickup range', level: this.game.metaUpgrades.treasureMagnet || 0 }
-                ];
-                
-                upgrades.forEach(u => {
-                    const div = document.createElement('div');
-                    const affordable = this.game.skulls >= u.cost * (u.level + 1);
-                    div.className = `p-4 rounded-lg border ${affordable ? 'bg-slate-800 border-amber-600 cursor-pointer hover:bg-slate-700' : 'bg-slate-900/50 border-slate-700 opacity-60'} transition interactive`;
-                    div.innerHTML = `
-                        <div class="flex items-center gap-3 mb-2">
-                            <span class="text-3xl">${u.icon}</span>
-                            <div>
-                                <div class="font-bold text-white">${u.name}</div>
-                                <div class="text-xs text-slate-400">Level ${u.level}</div>
-                            </div>
-                        </div>
-                        <div class="text-sm text-slate-300 mb-2">${u.desc}</div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-purple-400 font-bold">💀 ${u.cost * (u.level + 1)}</span>
-                            ${affordable ? '<span class="text-green-400 text-xs">Click to Buy</span>' : '<span class="text-red-400 text-xs">Too Expensive</span>'}
-                        </div>
-                    `;
-                    if (affordable) {
-                        div.onclick = () => {
-                            this.game.skulls -= u.cost * (u.level + 1);
-                            this.game.metaUpgrades[u.id] = (this.game.metaUpgrades[u.id] || 0) + 1;
-                            this.game.saveGame();
-                            this.showMetaUpgrades(); // Refresh
-                        };
-                    }
-                    container.appendChild(div);
-                });
+
+                STATE.enemies.push(new Enemy(type, spawnPos));
             }
         }
 
-        // Audio Manager
-        class Audio {
-            constructor() {
-                this.ready = false;
-                this.synth = null;
-                this.metal = null;
-            }
+        function manageAutoFire(dt) {
+            STATE.lastFireTime += dt;
             
-            async init() {
-                if (this.ready) return;
-                await Tone.start();
-                this.ready = true;
+            // Fire rate scales slightly with cannon count to feel rhythmic
+            const fireInterval = Math.max(0.3, CONFIG.baseFireRate - (STATE.upgrades.cannons * 0.1));
+            
+            if (STATE.lastFireTime > fireInterval) {
+                STATE.lastFireTime = 0;
                 
-                this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
-                this.synth.volume.value = -10;
+                // Get enemies within range (70 units)
+                const targets = STATE.enemies
+                    .filter(e => !e.isDead && e.mesh.position.distanceTo(STATE.player.position) < 70)
+                    .sort((a, b) => 
+                        a.mesh.position.distanceTo(STATE.player.position) - 
+                        b.mesh.position.distanceTo(STATE.player.position)
+                    );
+
+                // Fire up to N cannons at the N nearest enemies
+                const numShots = Math.min(STATE.upgrades.cannons, targets.length);
                 
-                this.metal = new Tone.MetalSynth({
-                    frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
-                    harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5
-                }).toDestination();
-                this.metal.volume.value = -15;
-            }
-            
-            playCannon() {
-                if (!this.ready) { this.init(); return; }
-                this.metal.triggerAttackRelease("32n");
-            }
-            
-            playUpgrade() {
-                if (!this.ready) { this.init(); return; }
-                this.synth.triggerAttackRelease(["C4", "E4", "G4"], "8n");
-            }
-            
-            playCoin() {
-                if (!this.ready) return;
-                this.synth.triggerAttackRelease("E6", "32n");
+                for(let i=0; i < numShots; i++) {
+                    const targetPos = targets[i].mesh.position.clone();
+                    // Slight inaccuracy scatter for visual flair
+                    targetPos.add(new THREE.Vector3((Math.random()-0.5)*3, 0, (Math.random()-0.5)*3));
+                    STATE.projectiles.push(new Projectile(STATE.player.position, targetPos));
+                }
             }
         }
 
-        // Main Game Controller
-        class Game {
-            constructor() {
-                this.scene = null;
-                this.camera = null;
-                this.renderer = null;
-                this.clock = new THREE.Clock();
-                
-                this.isPlaying = false;
-                this.isPaused = false;
-                this.gameTime = 0;
-                this.score = 0;
-                this.doubloons = 0;
-                this.skulls = 0;
-                this.level = 1;
-                this.xp = 0;
-                this.xpToNext = 100;
-                this.bestTime = 0;
-                this.bossActive = false;
-                this.ghostBuster = false;
-                
-                this.keys = {};
-                this.metaUpgrades = {};
-                
-                this.assets = null;
-                this.ocean = null;
-                this.particles = null;
-                this.projectiles = null;
-                this.player = null;
-                this.fleet = null;
-                this.enemies = null;
-                this.upgrades = null;
-                this.ui = null;
-                this.audio = null;
-                
-                this.init();
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1); // Cap delta time to prevent physics clipping
+
+            // Update Ocean Shader Time
+            if (oceanMat.userData.shader) {
+                oceanMat.userData.shader.uniforms.time.value += dt * 1.5;
             }
-            
-            async init() {
-                // Three.js Setup
-                this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x0a1628);
-                this.scene.fog = new THREE.Fog(0x0a1628, 60, 250);
+
+            if (STATE.screen === 'playing') {
+                STATE.time += dt;
                 
-                this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-                this.camera.position.set(0, 45, 45);
-                
-                this.renderer = new THREE.WebGLRenderer({ antialias: true });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.shadowMap.enabled = true;
-                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                document.getElementById('canvas-container').appendChild(this.renderer.domElement);
-                
-                // Lighting
-                const ambient = new THREE.AmbientLight(0x404040, 0.6);
-                this.scene.add(ambient);
-                
-                const dir = new THREE.DirectionalLight(0xfffaed, 1.2);
-                dir.position.set(50, 100, 50);
-                dir.castShadow = true;
-                dir.shadow.camera.left = -100;
-                dir.shadow.camera.right = 100;
-                dir.shadow.camera.top = 100;
-                dir.shadow.camera.bottom = -100;
-                dir.shadow.mapSize.width = 2048;
-                dir.shadow.mapSize.height = 2048;
-                this.scene.add(dir);
-                
-                // Systems
-                this.assets = new AssetLoader(this.onLoadProgress.bind(this));
-                await this.assets.loadAll();
-                
-                this.ocean = new Ocean(this.scene);
-                this.particles = new ParticleSystem(this.scene);
-                this.projectiles = new ProjectileSystem(this.scene, this.particles);
-                this.upgrades = new UpgradeSystem();
-                this.ui = new UI(this);
-                this.audio = new Audio();
-                
-                // Input
-                window.addEventListener('keydown', (e) => this.keys[e.code] = true);
-                window.addEventListener('keyup', (e) => this.keys[e.code] = false);
-                window.addEventListener('resize', () => this.onResize());
-                
-                // Load save
-                this.loadGame();
-                
-                // Show menu
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('main-menu').classList.remove('hidden');
-                document.getElementById('main-menu').classList.add('flex');
-                document.getElementById('menu-skulls').textContent = this.skulls + ' Skulls';
-                
-                this.animate();
+                if (Math.floor(STATE.time * 10) % 10 === 0) updateHUD();
+
+                // Logic Updates
+                STATE.player.update(dt);
+                manageSpawning(dt);
+                manageAutoFire(dt);
+
+                STATE.enemies.forEach(e => e.update(dt, STATE.player.position));
+                STATE.projectiles.forEach(p => p.update(dt));
+                STATE.pickups.forEach(p => p.update(dt, STATE.player.position));
+
+                // Infinite Ocean Trick: Move the plane to follow camera, shader handles world-space lock
+                ocean.position.x = camera.position.x;
+                ocean.position.z = camera.position.z;
+
+                // Garbage Collect Arrays
+                STATE.enemies = STATE.enemies.filter(e => !e.isDead);
+                STATE.projectiles = STATE.projectiles.filter(p => p.active);
+                STATE.pickups = STATE.pickups.filter(p => p.active);
+
+            } else if (STATE.screen === 'menu') {
+                // Cinematic panning camera around the ocean
+                camera.position.x = Math.sin(Date.now() * 0.0003) * 60;
+                camera.position.z = Math.cos(Date.now() * 0.0003) * 60;
+                camera.lookAt(0, 0, 0);
             }
-            
-            onLoadProgress(pct) {
-                document.getElementById('loading-bar').style.width = pct + '%';
-                if (pct >= 100) document.getElementById('loading-text').textContent = 'Preparing Fleet...';
-            }
-            
-            startGame() {
-                document.getElementById('main-menu').classList.add('hidden');
-                document.getElementById('main-menu').classList.remove('flex');
-                document.getElementById('hud').classList.remove('hidden');
-                
-                this.resetGame();
-                this.isPlaying = true;
-                this.audio.init();
-            }
-            
-            resetGame() {
-                this.gameTime = 0;
-                this.score = 0;
-                this.doubloons = 0;
-                this.level = 1;
-                this.xp = 0;
-                this.xpToNext = 100;
-                this.bossActive = false;
-                this.ghostBuster = false;
-                this.keys = {};
-                
-                if (this.player) {
-                    this.scene.remove(this.player.mesh);
-                    this.fleet.reset();
-                    this.enemies.reset();
-                    this.projectiles.reset();
-                }
-                
-                this.player = new Player(this.scene, this.projectiles);
-                this.fleet = new FleetManager(this.scene, this.player, this.projectiles);
-                this.enemies = new EnemySystem(this.scene, this.player, this.projectiles, this.particles);
-                
-                this.player.reset();
-            }
-            
-            update(delta) {
-                if (!this.isPlaying || this.isPaused) return;
-                
-                this.gameTime += delta;
-                const minutes = Math.floor(this.gameTime / 60);
-                
-                // Boss spawns at 8, 16, 24
-                if ((minutes === 8 || minutes === 16 || minutes === 24) && !this.bossActive && !this.enemies.boss) {
-                    if (minutes === 8 || (this.metaUpgrades.ghostWard && minutes >= 8 + this.metaUpgrades.ghostWard * 0.5)) {
-                        this.enemies.spawn('ghost');
-                        this.bossActive = true;
-                        this.ui.showBossAlert();
-                    }
-                }
-                
-                // Updates
-                this.player.update(delta, this.keys);
-                this.fleet.update(delta);
-                this.enemies.update(delta, this.gameTime);
-                this.projectiles.update(delta);
-                this.particles.update(delta);
-                this.ocean.update(delta, this.gameTime);
-                
-                // Camera follow
-                const target = this.player.mesh.position;
-                this.camera.position.x += (target.x - this.camera.position.x) * 2 * delta;
-                this.camera.position.z += ((target.z + 45) - this.camera.position.z) * 2 * delta;
-                this.camera.lookAt(target);
-                
-                // Level up check
-                if (this.xp >= this.xpToNext) {
-                    this.levelUp();
-                }
-                
-                // Death check
-                if (this.player.hp <= 0) {
-                    this.gameOver();
-                }
-                
-                this.ui.update();
-            }
-            
-            levelUp() {
-                this.level++;
-                this.xp -= this.xpToNext;
-                this.xpToNext = Math.floor(this.xpToNext * 1.25);
-                this.isPaused = true;
-                
-                const cards = this.upgrades.getCards(3, this.level);
-                this.ui.showUpgradeCards(cards, (i) => this.selectUpgrade(i));
-            }
-            
-            selectUpgrade(index) {
-                if (!this.isPaused) return;
-                this.upgrades.apply(index, this.player, this.fleet);
-                this.ui.hideUpgradeCards();
-                this.isPaused = false;
-            }
-            
-            addDoubloons(amount) {
-                this.doubloons += amount;
-                this.xp += amount;
-                this.score += amount * 10;
-                this.audio.playCoin();
-            }
-            
-            gameOver() {
-                this.isPlaying = false;
-                if (this.gameTime > this.bestTime) this.bestTime = this.gameTime;
-                
-                const earnedSkulls = Math.floor(this.doubloons / 100) + 
-                    (this.gameTime > 600 ? 10 : 0) + 
-                    (this.gameTime > 1200 ? 15 : 0);
-                
-                this.skulls += earnedSkulls;
-                this.saveGame();
-                
-                this.ui.showDeathScreen(this.gameTime, this.score, this.doubloons, earnedSkulls, this.fleet.ships);
-            }
-            
-            restart() {
-                document.getElementById('death-screen').classList.add('hidden');
-                document.getElementById('death-screen').classList.remove('flex');
-                this.startGame();
-            }
-            
-            returnToMenu() {
-                document.getElementById('death-screen').classList.add('hidden');
-                document.getElementById('death-screen').classList.remove('flex');
-                document.getElementById('hud').classList.add('hidden');
-                document.getElementById('main-menu').classList.remove('hidden');
-                document.getElementById('main-menu').classList.add('flex');
-                document.getElementById('menu-skulls').textContent = this.skulls + ' Skulls';
-                this.isPlaying = false;
-            }
-            
-            saveGame() {
-                const data = {
-                    skulls: this.skulls,
-                    bestTime: this.bestTime,
-                    metaUpgrades: this.metaUpgrades,
-                    timestamp: Date.now()
-                };
-                localStorage.setItem('maelstrom_save', JSON.stringify(data));
-            }
-            
-            loadGame() {
-                try {
-                    const data = JSON.parse(localStorage.getItem('maelstrom_save'));
-                    if (data) {
-                        this.skulls = data.skulls || 0;
-                        this.bestTime = data.bestTime || 0;
-                        this.metaUpgrades = data.metaUpgrades || {};
-                    }
-                } catch (e) {
-                    console.log('No save found');
-                }
-            }
-            
-            onResize() {
-                this.camera.aspect = window.innerWidth / window.innerHeight;
-                this.camera.updateProjectionMatrix();
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-            }
-            
-            animate() {
-                requestAnimationFrame(() => this.animate());
-                const delta = Math.min(this.clock.getDelta(), 0.1);
-                this.update(delta);
-                this.renderer.render(this.scene, this.camera);
-            }
+
+            renderer.render(scene, camera);
         }
 
-        // Start game when loaded
-        window.game = new Game();
+        animate();
+
+        // ==========================================
+        // INPUT LISTENERS (Desktop & Mobile)
+        // ==========================================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (STATE.keys.hasOwnProperty(e.key.toLowerCase())) STATE.keys[e.key.toLowerCase()] = true;
+            if (STATE.keys.hasOwnProperty(e.key)) STATE.keys[e.key] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (STATE.keys.hasOwnProperty(e.key.toLowerCase())) STATE.keys[e.key.toLowerCase()] = false;
+            if (STATE.keys.hasOwnProperty(e.key)) STATE.keys[e.key] = false;
+        });
+
+        // Virtual Touch Joystick
+        let touchStartX = 0;
+        let touchStartY = 0;
+        window.addEventListener('touchstart', e => {
+            if(STATE.screen !== 'playing') return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, {passive: false});
+
+        window.addEventListener('touchmove', e => {
+            if(STATE.screen !== 'playing') return;
+            e.preventDefault(); // Prevent pull-to-refresh
+            const dx = e.touches[0].clientX - touchStartX;
+            const dy = e.touches[0].clientY - touchStartY;
+            
+            const deadzone = 20;
+            STATE.keys.w = dy < -deadzone;
+            STATE.keys.s = dy > deadzone;
+            STATE.keys.a = dx < -deadzone;
+            STATE.keys.d = dx > deadzone;
+        }, {passive: false});
+
+        window.addEventListener('touchend', () => {
+            STATE.keys.w = STATE.keys.s = STATE.keys.a = STATE.keys.d = false;
+        });
+
+        // UI Buttons
+        document.getElementById('btn-play').addEventListener('click', startGame);
+        document.getElementById('btn-restart').addEventListener('click', startGame);
+
     </script>
 </body>
 </html>
