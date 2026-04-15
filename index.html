@@ -1,753 +1,1022 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MAELSTROM | Survive the Deep</title>
+    <title>MAELSTROM - Survive the Sea</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #051923; font-family: 'Roboto', sans-serif; user-select: none; touch-action: none; }
-        canvas { display: block; }
-        .pirate-font { font-family: 'Pirata One', system-ui; }
-        .ui-overlay { pointer-events: none; }
-        .ui-interactable { pointer-events: auto; }
-        .card-gradient { background: linear-gradient(135deg, rgba(26, 111, 168, 0.95) 0%, rgba(5, 25, 35, 0.98) 100%); }
-        .xp-bar-container { height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Pirata+One&display=swap');
         
-        #joystick-zone { position: fixed; bottom: 0; left: 0; width: 50%; height: 50%; z-index: 100; }
-        #joystick-container { position: absolute; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; display: none; pointer-events: none; }
-        #joystick-knob { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.4); border-radius: 50%; top: 35px; left: 35px; }
+        body { margin: 0; overflow: hidden; background-color: #000; touch-action: none; font-family: 'Pirata One', cursive; user-select: none; }
+        #game-canvas { display: block; width: 100vw; height: 100vh; }
+        
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+        .interactive { pointer-events: auto; }
+        
+        /* Custom UI Elements */
+        .health-bar-container { background: rgba(0,0,0,0.5); border: 2px solid #d4af37; border-radius: 4px; width: 200px; height: 20px; }
+        .health-bar-fill { background: #e11d48; height: 100%; width: 100%; transition: width 0.2s; }
+        .xp-bar-container { background: rgba(0,0,0,0.5); border: 2px solid #3b82f6; border-radius: 4px; width: 100%; height: 12px; margin-top: 4px; }
+        .xp-bar-fill { background: #60a5fa; height: 100%; width: 0%; transition: width 0.2s; }
+        
+        .upgrade-card { background: linear-gradient(145deg, #1e293b, #0f172a); border: 2px solid #d4af37; transition: transform 0.2s, border-color 0.2s; cursor: pointer; }
+        .upgrade-card:hover { transform: translateY(-5px) scale(1.05); border-color: #fef08a; }
+        
+        /* Stunning Pirate Virtual Joystick */
+        #joystick-zone { 
+            position: absolute; 
+            width: 140px; 
+            height: 140px; 
+            background: radial-gradient(circle, rgba(20,20,30,0.8) 0%, rgba(10,10,15,0.9) 100%); 
+            border: 4px solid #d4af37; 
+            border-radius: 50%; 
+            display: none; 
+            pointer-events: none; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(212,175,55,0.5); 
+            z-index: 100;
+            background-image: 
+                linear-gradient(to bottom, transparent 48%, rgba(212,175,55,0.3) 48%, rgba(212,175,55,0.3) 52%, transparent 52%),
+                linear-gradient(to right, transparent 48%, rgba(212,175,55,0.3) 48%, rgba(212,175,55,0.3) 52%, transparent 52%);
+        }
+        #joystick-knob { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            width: 60px; 
+            height: 60px; 
+            background: radial-gradient(circle, #fef08a 0%, #d4af37 60%, #b45309 100%); 
+            border: 2px solid #78350f; 
+            border-radius: 50%; 
+            transform: translate(-50%, -50%);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.6), inset 0 5px 5px rgba(255,255,255,0.6);
+            transition: transform 0s;
+        }
+        #joystick-knob.released {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        /* Floating Text */
+        .damage-text { position: absolute; color: white; font-size: 1.2rem; font-weight: bold; text-shadow: 2px 2px 0 #000; pointer-events: none; animation: floatUp 0.8s forwards; opacity: 1; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0; } }
 
-        @keyframes pulse-gold { 0%, 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); } 50% { box-shadow: 0 0 20px 10px rgba(234, 179, 8, 0); } }
-        .legendary-card { animation: pulse-gold 2s infinite; border-color: #eab308 !important; }
-        
-        /* Floating animations for UI */
-        .float-anim { animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <!-- LOADING SCREEN -->
-    <div id="loading-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#051923] text-white">
-        <div class="mb-8 float-anim">
-            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.26 1.13 4.4 3 5.74"/><path d="M12 10V2"/><path d="M8 2h8"/></svg>
-        </div>
-        <h1 class="pirate-font text-6xl mb-2 tracking-widest text-blue-400">MAELSTROM</h1>
-        <p id="loading-text" class="text-xs opacity-50 mb-6 uppercase tracking-widest">Scouting the Horizon...</p>
-        <div class="w-64 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-            <div id="loading-bar" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
-        </div>
-    </div>
+    <!-- WebGL Canvas -->
+    <canvas id="game-canvas"></canvas>
 
-    <!-- MAIN MENU -->
-    <div id="main-menu" class="fixed inset-0 z-40 flex flex-col items-center justify-center text-white hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-[#051923]"></div>
-        <div class="relative z-10 flex flex-col items-center">
-            <h1 class="pirate-font text-9xl mb-2 text-yellow-500 drop-shadow-2xl">MAELSTROM</h1>
-            <p class="text-blue-200 tracking-[0.4em] mb-16 uppercase text-sm">Survive the Sea. Outlast the Storm.</p>
-            
-            <div class="flex flex-col gap-4 w-72 ui-interactable">
-                <button id="btn-start" class="pirate-font text-4xl py-4 px-8 bg-yellow-600 hover:bg-yellow-500 text-black rounded transition-all active:scale-95 shadow-[0_0_30px_rgba(202,138,4,0.3)]">SET SAIL</button>
-                <div class="flex gap-2">
-                    <button class="flex-1 text-[10px] py-3 px-2 border border-white/10 hover:bg-white/5 rounded tracking-widest uppercase opacity-60">Fleet Upgrades</button>
-                    <button class="flex-1 text-[10px] py-3 px-2 border border-white/10 hover:bg-white/5 rounded tracking-widest uppercase opacity-60">Leaderboards</button>
-                </div>
-            </div>
-            
-            <div class="mt-20 flex items-center gap-8 opacity-30 text-[10px] tracking-widest uppercase">
-                <span>WebGL 2.0</span>
-                <span>v1.0.0 Production</span>
-                <span>Kenney Assets</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- GAME HUD -->
-    <div id="hud" class="fixed inset-0 z-30 ui-overlay hidden p-6 flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-            <div class="flex flex-col gap-3">
-                <!-- Health Section -->
-                <div class="flex items-center gap-4">
-                    <div class="relative">
-                        <div class="w-12 h-12 rounded-full bg-red-950 border-2 border-red-500 flex items-center justify-center shadow-lg">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.18L12 21.35z"/></svg>
-                        </div>
-                    </div>
-                    <div class="flex flex-col">
-                        <div class="w-56 h-5 bg-black/60 backdrop-blur-md border border-white/10 rounded-full p-1 overflow-hidden shadow-inner">
-                            <div id="hp-fill" class="h-full bg-gradient-to-r from-red-600 to-orange-500 rounded-full transition-all duration-300" style="width: 100%"></div>
-                        </div>
-                        <div class="flex justify-between px-1 text-[10px] text-red-300 font-bold tracking-tighter uppercase mt-1">
-                            <span>Hull Integrity</span>
-                            <span id="hp-text">100 / 100</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- XP Section -->
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-full bg-blue-950 border-2 border-blue-500 flex items-center justify-center shadow-lg">
-                        <span id="level-text" class="pirate-font text-xl text-blue-200">1</span>
-                    </div>
-                    <div class="flex flex-col">
-                        <div class="w-56 h-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-full overflow-hidden shadow-inner">
-                            <div id="xp-fill" class="h-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-300" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="flex flex-col items-center">
-                <div id="timer" class="pirate-font text-5xl text-white drop-shadow-lg tracking-widest">00:00</div>
-                <div class="flex gap-4 mt-2">
-                    <div class="px-3 py-1 bg-black/40 backdrop-blur-md border border-white/10 rounded flex items-center gap-2">
-                        <span class="text-sm">💰</span>
-                        <span id="coin-count" class="text-yellow-400 font-bold text-sm">0</span>
-                    </div>
-                    <div class="px-3 py-1 bg-black/40 backdrop-blur-md border border-white/10 rounded flex items-center gap-2">
-                        <span class="text-sm">💀</span>
-                        <span id="kill-count" class="text-red-400 font-bold text-sm">0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex justify-between items-end">
-            <div id="joystick-zone">
-                <div id="joystick-container">
-                    <div id="joystick-knob"></div>
-                </div>
-            </div>
-            <div class="flex flex-col items-end gap-3">
-                <div id="active-upgrades" class="flex gap-1"></div>
-                <div class="bg-black/40 backdrop-blur-md p-3 rounded-xl border border-white/10 flex flex-col items-center">
-                    <div class="text-[9px] text-white/40 tracking-[0.2em] uppercase mb-1">Fleet Formation</div>
-                    <div class="flex gap-1" id="fleet-visualizer">
-                        <div class="w-2 h-6 bg-yellow-500 rounded-sm"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- LEVEL UP / UPGRADE MENU -->
-    <div id="upgrade-menu" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md hidden">
-        <div class="flex flex-col items-center w-full max-w-6xl px-4">
-            <div class="mb-2 text-blue-400 tracking-[0.5em] uppercase text-xs">Level Gained</div>
-            <h2 class="pirate-font text-7xl text-yellow-500 mb-16 drop-shadow-[0_0_20px_rgba(234,179,8,0.3)]">CHOOSE YOUR BOUNTY</h2>
-            <div id="cards-container" class="flex flex-wrap justify-center gap-8 ui-interactable">
-                <!-- Cards injected via JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- GAME OVER SCREEN -->
-    <div id="death-screen" class="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-[#051923]/95 hidden text-white">
-        <div class="relative mb-8">
-            <h2 class="pirate-font text-9xl text-white/10 absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap">SUNK FOREVER</h2>
-            <h2 class="pirate-font text-9xl text-red-600 relative z-10">SUNK</h2>
-        </div>
-        <p class="text-red-300 tracking-[0.6em] mb-16 uppercase text-sm">The Maelstrom has claimed your soul</p>
+    <!-- Main UI Overlay -->
+    <div id="ui-main" class="ui-layer p-4">
         
-        <div class="grid grid-cols-3 gap-8 mb-16 w-full max-w-2xl px-8">
-            <div class="bg-black/40 border border-white/5 p-6 rounded-2xl flex flex-col items-center">
-                <div class="text-gray-500 text-[10px] uppercase tracking-widest mb-2">Duration</div>
-                <div id="final-time" class="text-3xl font-bold text-white">00:00</div>
+        <!-- Top HUD -->
+        <div id="hud" class="w-full flex justify-between items-start hidden">
+            <!-- Left: HP & XP -->
+            <div>
+                <div class="text-2xl text-yellow-400 drop-shadow-md">HP</div>
+                <div class="health-bar-container"><div id="hp-fill" class="health-bar-fill"></div></div>
+                <div class="text-lg text-blue-300 drop-shadow-md mt-2">LVL <span id="level-display">1</span></div>
+                <div class="xp-bar-container"><div id="xp-fill" class="xp-bar-fill"></div></div>
             </div>
-            <div class="bg-black/40 border border-white/5 p-6 rounded-2xl flex flex-col items-center">
-                <div class="text-gray-500 text-[10px] uppercase tracking-widest mb-2">Treasure</div>
-                <div id="final-gold" class="text-3xl font-bold text-yellow-500">0</div>
+            
+            <!-- Center: Timer -->
+            <div class="text-center">
+                <div id="timer-display" class="text-5xl text-white drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">00:00</div>
             </div>
-            <div class="bg-black/40 border border-white/5 p-6 rounded-2xl flex flex-col items-center">
-                <div class="text-gray-500 text-[10px] uppercase tracking-widest mb-2">Kills</div>
-                <div id="final-kills" class="text-3xl font-bold text-red-500">0</div>
+            
+            <!-- Right: Doubloons -->
+            <div class="text-right">
+                <div class="text-2xl text-yellow-400 drop-shadow-md">🪙 <span id="coin-display">0</span></div>
+                <div class="text-lg text-white mt-2">WAVE <span id="wave-display">1</span></div>
             </div>
         </div>
-        
-        <button id="btn-restart" class="pirate-font text-4xl py-4 px-16 bg-white text-black rounded hover:bg-yellow-500 transition-all active:scale-95 shadow-2xl ui-interactable">RESTART VOYAGE</button>
+
+        <!-- Virtual Joystick -->
+        <div id="joystick-zone"><div id="joystick-knob"></div></div>
     </div>
 
-    <script type="module">
-        /**
-         * MAELSTROM - PRODUCTION CORE
-         * Author: Gemini / HTML5 Game Architect
-         */
+    <!-- Start Screen -->
+    <div id="start-screen" class="ui-layer interactive bg-black/80 flex items-center justify-center backdrop-blur-sm z-50">
+        <div class="text-center max-w-lg p-8 bg-slate-900/90 border-4 border-yellow-600 rounded-xl shadow-2xl">
+            <h1 class="text-6xl text-yellow-400 mb-2 drop-shadow-lg">MAELSTROM</h1>
+            <p class="text-xl text-gray-300 mb-8 italic">Survive the Sea. Outlast the Storm.</p>
+            
+            <div id="loading-status" class="text-yellow-200 mb-6 text-xl animate-pulse">Loading Fleet Assets...</div>
+            
+            <button id="start-btn" class="hidden w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black text-3xl font-bold rounded hover:from-yellow-500 hover:to-yellow-400 transition-all shadow-[0_0_15px_rgba(202,138,4,0.5)]">
+                SET SAIL
+            </button>
 
-        // --- Configuration ---
-        const ASSET_PATH = 'assets/Models/GLB%20format/';
-        const MODELS = {
-            flagship: 'ship-pirate-small.glb',
-            sloop: 'ship-small.glb',
-            frigate: 'ship-medium.glb',
-            galleon: 'ship-large.glb',
-            ghost: 'ship-ghost.glb',
-            rowboat: 'boat-row-small.glb',
-            cannonball: 'cannon-ball.glb',
-            chest: 'chest.glb',
-            rockA: 'rocks-a.glb',
-            rockB: 'rocks-c.glb',
-            palm: 'palm-straight.glb'
-        };
+            <div class="mt-8 text-sm text-gray-400 font-sans tracking-wide">
+                <p>WASD / Arrows or Touch to Move</p>
+                <p>Cannons auto-fire. Collect Doubloons to grow your armada.</p>
+            </div>
+        </div>
+    </div>
 
-        const UPGRADES = [
-            { id: 'fleet_sloop', name: 'Escort Sloop', desc: 'Add an automated sloop to your fleet orbit.', icon: '⛵', rarity: 'rare' },
-            { id: 'damage', name: 'Bar-Shot', desc: 'Cannons deal 30% more damage.', icon: '💣', rarity: 'common' },
-            { id: 'firerate', name: 'Brisk Drills', desc: 'Reload speed increased by 25%.', icon: '⚡', rarity: 'common' },
-            { id: 'speed', name: 'Full Sails', desc: 'Ship movement speed +20%.', icon: '🚩', rarity: 'common' },
-            { id: 'hp', name: 'Oak Hull', desc: 'Repair 40HP and increase maximum capacity.', icon: '🛠️', rarity: 'common' },
-            { id: 'magnet', name: 'Looter Charm', desc: 'Increase treasure pickup range by 50%.', icon: '🧲', rarity: 'rare' },
-            { id: 'legendary_ghost', name: 'Spectral Hull', desc: 'Ghostly aura deals damage to nearby enemies.', icon: '👻', rarity: 'legendary' }
-        ];
+    <!-- Level Up Screen -->
+    <div id="levelup-screen" class="ui-layer interactive bg-black/70 flex flex-col items-center justify-center backdrop-blur-md hidden z-40">
+        <h2 class="text-5xl text-blue-400 mb-8 drop-shadow-lg animate-bounce">LEVEL UP!</h2>
+        <div id="upgrade-container" class="flex flex-wrap justify-center gap-6 max-w-4xl">
+            <!-- Cards injected via JS -->
+        </div>
+    </div>
 
-        // --- Game Engine Variables ---
-        let scene, camera, renderer, clock, water;
-        let isPaused = false;
-        let gameActive = false;
-        let assets = {};
-        let pool = { projectiles: [] };
+    <!-- Game Over Screen -->
+    <div id="gameover-screen" class="ui-layer interactive bg-red-950/90 flex flex-col items-center justify-center backdrop-blur-md hidden z-50">
+        <h1 class="text-7xl text-red-500 mb-4 drop-shadow-[0_4px_4px_rgba(0,0,0,1)]">THE DEEP CLAIMS YOU</h1>
+        <div class="text-3xl text-white mb-2">Survived: <span id="final-time" class="text-yellow-400"></span></div>
+        <div class="text-2xl text-gray-300 mb-8">Doubloons Plundered: <span id="final-coins" class="text-yellow-400"></span></div>
         
-        const world = {
-            player: null,
-            enemies: [],
-            projectiles: [],
-            items: [],
-            obstacles: [],
-            gameTime: 0,
-            startTime: 0,
-            lastSpawn: 0,
-            difficulty: 1
-        };
+        <button id="restart-btn" class="px-10 py-4 bg-red-700 text-white text-2xl font-bold rounded hover:bg-red-600 transition-all shadow-lg border-2 border-red-400">
+            TRY AGAIN
+        </button>
+    </div>
 
-        const playerStats = {
-            hp: 100, maxHp: 100,
-            level: 1, xp: 0, maxXp: 100,
-            coins: 0, kills: 0,
-            speed: 15, rotSpeed: 3.5,
-            damage: 25, fireRate: 1.2, lastShot: 0,
-            pickupRange: 15,
-            fleet: []
-        };
+    <!-- Damage Text Container -->
+    <div id="floating-text-container" class="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-30"></div>
 
-        const input = { keys: {}, joystick: { active: false, start: {x:0,y:0}, current: {x:0,y:0}, angle: 0, dist: 0 } };
+<script>
+/**
+ * MAELSTROM - Single File Implementation
+ * Engineered for robustness, performance, and immediate playability.
+ */
 
-        // --- Initialization ---
-        async function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x051923);
-            scene.fog = new THREE.Fog(0x051923, 60, 220);
+// ==========================================
+// 1. CORE GAME CONFIGURATION & STATE
+// ==========================================
+const CONFIG = {
+    playerBaseSpeed: 12,
+    playerBaseHP: 100,
+    fireRateBase: 1.0, // seconds between shots
+    projectileSpeed: 30,
+    pickupRadius: 5,
+    xpBaseNeeded: 50,
+    xpMultiplier: 1.2,
+    arenaSize: 200, // Virtual bounds logic
+    poolSizes: {
+        enemies: 150,
+        projectiles: 200,
+        drops: 200
+    }
+};
 
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(50, 60, 50);
+const STATE = {
+    mode: 'loading', // loading, menu, playing, levelup, gameover
+    time: 0,
+    lastTime: 0,
+    score: 0,
+    level: 1,
+    xp: 0,
+    xpNeeded: CONFIG.xpBaseNeeded,
+    wave: 1,
+    bossActive: false,
+    upgrades: {
+        damageMult: 1.0,
+        speedMult: 1.0,
+        fireRateMult: 1.0,
+        projectileCount: 1,
+        pierce: 0
+    },
+    audioInitialized: false
+};
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.body.appendChild(renderer.domElement);
-
-            // Lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambient);
-
-            const sun = new THREE.DirectionalLight(0xfff5e1, 1.5);
-            sun.position.set(100, 100, 50);
-            sun.castShadow = true;
-            sun.shadow.camera.left = -150;
-            sun.shadow.camera.right = 150;
-            sun.shadow.camera.top = 150;
-            sun.shadow.camera.bottom = -150;
-            sun.shadow.mapSize.set(2048, 2048);
-            scene.add(sun);
-
-            createWater();
-            setupInput();
-            await loadAssets();
-            
-            window.addEventListener('resize', onResize);
-            
-            document.getElementById('btn-start').onclick = startGame;
-            document.getElementById('btn-restart').onclick = () => location.reload();
-            
-            requestAnimationFrame(animate);
+// ==========================================
+// 2. PROCEDURAL AUDIO SYSTEM
+// ==========================================
+let audioCtx;
+const AudioSys = {
+    init: function() {
+        if (STATE.audioInitialized) return;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        STATE.audioInitialized = true;
+    },
+    play: function(type) {
+        if (!audioCtx || audioCtx.state === 'suspended') return;
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        
+        switch(type) {
+            case 'shoot':
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.3);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+                break;
+            case 'hit':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.linearRampToValueAtTime(20, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+                break;
+            case 'coin':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(900, now);
+                osc.frequency.setValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+                break;
+            case 'levelup':
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.1);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now);
+                osc.stop(now + 0.6);
+                break;
         }
+    }
+};
 
-        function createWater() {
-            const geo = new THREE.PlaneGeometry(3000, 3000, 128, 128);
-            const mat = new THREE.MeshStandardMaterial({
-                color: 0x114a6e,
-                roughness: 0.1,
-                metalness: 0.2,
-                transparent: true,
-                opacity: 0.9
-            });
-            water = new THREE.Mesh(geo, mat);
-            water.rotation.x = -Math.PI / 2;
-            water.receiveShadow = true;
-            scene.add(water);
-        }
+// ==========================================
+// 3. ASSET LOADER & PROCEDURAL FALLBACKS
+// ==========================================
+const ASSETS = {};
 
-        async function loadAssets() {
-            const loader = new THREE.GLTFLoader();
-            const keys = Object.keys(MODELS);
-            let loaded = 0;
+// Use the absolute GitHub Pages URL to prevent 'Invalid URL' errors in iframe/blob execution contexts
+const REPO_PATH = "https://abhishek2025-glitch.github.io/boat/assets/Models/GLB%20format/";
 
-            const loadPromises = keys.map(key => {
-                return new Promise(resolve => {
-                    loader.load(ASSET_PATH + MODELS[key], gltf => {
-                        gltf.scene.traverse(c => {
-                            if (c.isMesh) {
-                                c.castShadow = true;
-                                c.receiveShadow = true;
-                                if (c.material) c.material.envMapIntensity = 0.5;
-                            }
-                        });
-                        assets[key] = gltf.scene;
-                        loaded++;
-                        const prog = (loaded / keys.length) * 100;
-                        document.getElementById('loading-bar').style.width = prog + '%';
-                        resolve();
-                    }, undefined, err => {
-                        console.error(`Error loading ${key}:`, err);
-                        resolve(); // Continue anyway
-                    });
-                });
-            });
+const MODEL_DEF = {
+    player: 'ship-pirate-small.glb',
+    enemy_row: 'boat-row-small.glb',
+    enemy_sloop: 'ship-small.glb',
+    boss: 'ship-ghost.glb',
+    cannonball: 'cannon-ball.glb',
+    chest: 'chest.glb'
+};
 
-            await Promise.all(loadPromises);
-            document.getElementById('loading-screen').classList.add('hidden');
-            document.getElementById('main-menu').classList.remove('hidden');
-            
-            // Add some background rocks
-            for(let i=0; i<30; i++) {
-                const rock = assets[Math.random() > 0.5 ? 'rockA' : 'rockB'].clone();
-                rock.position.set(Math.random()*800-400, -1, Math.random()*800-400);
-                rock.rotation.y = Math.random() * Math.PI;
-                rock.scale.setScalar(5 + Math.random()*10);
-                scene.add(rock);
-            }
-        }
+// Generates blocky 3D models if fetching GLBs fail (CORS/Path issues)
+function generateFallbackGeometry(type) {
+    const group = new THREE.Group();
+    let mesh;
+    if (type === 'player') {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 1.5, 4), new THREE.MeshStandardMaterial({color: 0x8b4513}));
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 3), new THREE.MeshStandardMaterial({color: 0x5c4033}));
+        mast.position.y = 2;
+        group.add(mast);
+    } else if (type === 'enemy_row') {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 0.5, 2), new THREE.MeshStandardMaterial({color: 0xaa0000}));
+    } else if (type === 'enemy_sloop') {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1, 3), new THREE.MeshStandardMaterial({color: 0x880000}));
+    } else if (type === 'boss') {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 8), new THREE.MeshStandardMaterial({color: 0x00ff88, transparent: true, opacity: 0.8}));
+    } else if (type === 'cannonball') {
+        mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshStandardMaterial({color: 0x222222}));
+    } else if (type === 'chest') {
+        mesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 0.8), new THREE.MeshStandardMaterial({color: 0xffd700}));
+    }
+    
+    if (mesh) {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+    }
+    return group;
+}
 
-        function setupInput() {
-            window.addEventListener('keydown', e => input.keys[e.code] = true);
-            window.addEventListener('keyup', e => input.keys[e.code] = false);
-
-            const zone = document.getElementById('joystick-zone');
-            const cont = document.getElementById('joystick-container');
-            const knob = document.getElementById('joystick-knob');
-
-            zone.addEventListener('touchstart', e => {
-                const t = e.touches[0];
-                input.joystick.active = true;
-                input.joystick.start = { x: t.clientX, y: t.clientY };
-                cont.style.display = 'block';
-                cont.style.left = (t.clientX - 60) + 'px';
-                cont.style.top = (t.clientY - 60) + 'px';
-            });
-
-            zone.addEventListener('touchmove', e => {
-                if(!input.joystick.active) return;
-                const t = e.touches[0];
-                const dx = t.clientX - input.joystick.start.x;
-                const dy = t.clientY - input.joystick.start.y;
-                const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 50);
-                const angle = Math.atan2(dy, dx);
-                
-                input.joystick.current = { x: Math.cos(angle)*dist, y: Math.sin(angle)*dist };
-                input.joystick.angle = angle;
-                input.joystick.dist = dist / 50;
-                
-                knob.style.transform = `translate(${input.joystick.current.x}px, ${input.joystick.current.y}px)`;
-            });
-
-            zone.addEventListener('touchend', () => {
-                input.joystick.active = false;
-                cont.style.display = 'none';
-            });
-        }
-
-        // --- Core Loops ---
-        function startGame() {
-            document.getElementById('main-menu').classList.add('hidden');
-            document.getElementById('hud').classList.remove('hidden');
-            
-            world.player = assets.flagship.clone();
-            scene.add(world.player);
-            
-            world.startTime = Date.now();
-            clock = new THREE.Clock();
-            gameActive = true;
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            if(isPaused || !gameActive) return;
-
-            const delta = clock.getDelta();
-            world.gameTime = (Date.now() - world.startTime) / 1000;
-
-            updatePlayer(delta);
-            updateFleet(delta);
-            updateEnemies(delta);
-            updateProjectiles(delta);
-            updateItems(delta);
-            updateWater(delta);
-            
-            checkCollisions();
-            spawnManager();
-            updateHUD();
-
-            renderer.render(scene, camera);
-        }
-
-        function updatePlayer(delta) {
-            let move = 0;
-            let rot = 0;
-
-            if(input.keys['KeyW'] || input.keys['ArrowUp']) move = 1;
-            if(input.keys['KeyS'] || input.keys['ArrowDown']) move = -1;
-            if(input.keys['KeyA'] || input.keys['ArrowLeft']) rot = 1;
-            if(input.keys['KeyD'] || input.keys['ArrowRight']) rot = -1;
-
-            if(input.joystick.active) {
-                const targetRot = -input.joystick.angle - Math.PI/2;
-                let diff = targetRot - world.player.rotation.y;
-                while(diff < -Math.PI) diff += Math.PI*2;
-                while(diff > Math.PI) diff -= Math.PI*2;
-                world.player.rotation.y += diff * 0.1;
-                move = input.joystick.dist;
-            } else {
-                world.player.rotation.y += rot * playerStats.rotSpeed * delta;
-            }
-
-            const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(world.player.quaternion);
-            world.player.position.add(forward.multiplyScalar(move * playerStats.speed * delta));
-
-            // Ship Bobbing
-            world.player.position.y = Math.sin(world.gameTime * 1.5) * 0.2;
-            world.player.rotation.z = Math.sin(world.gameTime * 0.8) * 0.05 + (rot * -0.05);
-
-            // Auto-fire
-            if(world.gameTime - playerStats.lastShot > 1/playerStats.fireRate) {
-                const target = getNearestEnemy(world.player.position, 60);
-                if(target) {
-                    fireProjectile(world.player, target);
-                    playerStats.lastShot = world.gameTime;
-                }
-            }
-
-            // Camera follow
-            const camTarget = world.player.position.clone().add(new THREE.Vector3(50, 60, 50));
-            camera.position.lerp(camTarget, 0.08);
-            camera.lookAt(world.player.position);
-        }
-
-        function updateFleet(delta) {
-            playerStats.fleet.forEach((ship, i) => {
-                const orbitAngle = world.gameTime * 0.5 + (i * (Math.PI * 2 / playerStats.fleet.length));
-                const radius = 12 + Math.floor(i/3) * 5;
-                const tx = world.player.position.x + Math.cos(orbitAngle) * radius;
-                const tz = world.player.position.z + Math.sin(orbitAngle) * radius;
-                
-                ship.position.lerp(new THREE.Vector3(tx, Math.sin(world.gameTime * 1.5 + i) * 0.2, tz), 0.1);
-                ship.lookAt(tx + Math.cos(orbitAngle + 0.1), 0, tz + Math.sin(orbitAngle + 0.1));
-
-                // Fleet Auto-fire
-                if(!ship.lastShot) ship.lastShot = 0;
-                if(world.gameTime - ship.lastShot > 1.5) {
-                    const target = getNearestEnemy(ship.position, 40);
-                    if(target) {
-                        fireProjectile(ship, target);
-                        ship.lastShot = world.gameTime;
-                    }
-                }
-            });
-        }
-
-        function updateEnemies(delta) {
-            for(let i = world.enemies.length-1; i >= 0; i--) {
-                const e = world.enemies[i];
-                const dir = world.player.position.clone().sub(e.mesh.position).normalize();
-                
-                e.mesh.lookAt(world.player.position);
-                e.mesh.position.add(dir.multiplyScalar(e.speed * delta));
-                e.mesh.position.y = Math.sin(world.gameTime * 1.5 + i) * 0.2;
-
-                // Despawn if too far
-                if(e.mesh.position.distanceTo(world.player.position) > 250) {
-                    scene.remove(e.mesh);
-                    world.enemies.splice(i, 1);
-                }
-            }
-        }
-
-        function updateProjectiles(delta) {
-            for(let i = world.projectiles.length-1; i >= 0; i--) {
-                const p = world.projectiles[i];
-                p.mesh.position.add(p.velocity.clone().multiplyScalar(delta));
-                p.life -= delta;
-                if(p.life <= 0) {
-                    scene.remove(p.mesh);
-                    world.projectiles.splice(i, 1);
-                }
-            }
-        }
-
-        function updateItems(delta) {
-            for(let i = world.items.length-1; i >= 0; i--) {
-                const item = world.items[i];
-                const d = item.mesh.position.distanceTo(world.player.position);
-                
-                if(d < playerStats.pickupRange) {
-                    const dir = world.player.position.clone().sub(item.mesh.position).normalize();
-                    item.mesh.position.add(dir.multiplyScalar(25 * delta));
-                }
-
-                if(d < 3) {
-                    collectItem(item);
-                    world.items.splice(i, 1);
-                }
-            }
-        }
-
-        function updateWater(delta) {
-            water.position.x = world.player.position.x;
-            water.position.z = world.player.position.z;
-        }
-
-        // --- Mechanics ---
-        function fireProjectile(source, target) {
-            const ball = assets.cannonball.clone();
-            ball.position.copy(source.position).add(new THREE.Vector3(0, 2, 0));
-            scene.add(ball);
-
-            const dir = target.mesh.position.clone().sub(ball.position).normalize();
-            world.projectiles.push({
-                mesh: ball,
-                velocity: dir.multiplyScalar(70),
-                life: 2.5
-            });
-        }
-
-        function collectItem(item) {
-            scene.remove(item.mesh);
-            playerStats.coins += 10;
-            playerStats.xp += 20;
-            if(playerStats.xp >= playerStats.maxXp) levelUp();
-        }
-
-        function levelUp() {
-            playerStats.level++;
-            playerStats.xp = 0;
-            playerStats.maxXp = Math.floor(playerStats.maxXp * 1.3);
-            showUpgradeMenu();
-        }
-
-        function takeDamage(v) {
-            playerStats.hp -= v;
-            if(playerStats.hp <= 0) gameOver();
-        }
-
-        function gameOver() {
-            gameActive = false;
-            document.getElementById('hud').classList.add('hidden');
-            document.getElementById('death-screen').classList.remove('hidden');
-            document.getElementById('final-time').innerText = formatTime(world.gameTime);
-            document.getElementById('final-gold').innerText = playerStats.coins;
-            document.getElementById('final-kills').innerText = playerStats.kills;
-        }
-
-        function spawnManager() {
-            if(world.gameTime - world.lastSpawn > 2 / (1 + world.gameTime/120)) {
-                const angle = Math.random() * Math.PI * 2;
-                const dist = 100 + Math.random() * 20;
-                const pos = new THREE.Vector3(
-                    world.player.position.x + Math.cos(angle)*dist,
-                    0,
-                    world.player.position.z + Math.sin(angle)*dist
-                );
-
-                const types = ['rowboat'];
-                if(world.gameTime > 30) types.push('sloop');
-                if(world.gameTime > 90) types.push('frigate');
-                if(world.gameTime > 180) types.push('galleon');
-                
-                const type = types[Math.floor(Math.random()*types.length)];
-                const mesh = assets[type].clone();
-                mesh.position.copy(pos);
-                scene.add(mesh);
-
-                const hpMap = { rowboat: 30, sloop: 80, frigate: 200, galleon: 600 };
-                const speedMap = { rowboat: 18, sloop: 14, frigate: 10, galleon: 7 };
-
-                world.enemies.push({ mesh, type, hp: hpMap[type], speed: speedMap[type] });
-                world.lastSpawn = world.gameTime;
-            }
-        }
-
-        function checkCollisions() {
-            // Projectiles vs Enemies
-            for(let i = world.projectiles.length-1; i >= 0; i--) {
-                const p = world.projectiles[i];
-                for(let j = world.enemies.length-1; j >= 0; j--) {
-                    const e = world.enemies[j];
-                    if(p.mesh.position.distanceTo(e.mesh.position) < 6) {
-                        e.hp -= playerStats.damage;
-                        scene.remove(p.mesh);
-                        world.projectiles.splice(i, 1);
-                        
-                        if(e.hp <= 0) {
-                            spawnChest(e.mesh.position);
-                            scene.remove(e.mesh);
-                            world.enemies.splice(j, 1);
-                            playerStats.kills++;
+async function loadAssets() {
+    const loader = new THREE.GLTFLoader();
+    const promises = Object.entries(MODEL_DEF).map(([key, filename]) => {
+        return new Promise((resolve) => {
+            loader.load(
+                REPO_PATH + filename,
+                (gltf) => {
+                    // Normalize scale and rotation
+                    const model = gltf.scene;
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
                         }
-                        break;
-                    }
+                    });
+                    ASSETS[key] = model;
+                    resolve();
+                },
+                undefined,
+                (error) => {
+                    console.warn(`Failed to load ${filename}, using robust fallback geometry.`);
+                    ASSETS[key] = generateFallbackGeometry(key);
+                    resolve(); // Resolve anyway so game proceeds
                 }
-            }
+            );
+        });
+    });
 
-            // Enemies vs Player
-            world.enemies.forEach(e => {
-                if(e.mesh.position.distanceTo(world.player.position) < 8) {
-                    takeDamage(0.15); // Contact damage
-                }
-            });
-        }
+    // Timeout safety net
+    const timeout = new Promise(resolve => setTimeout(() => {
+        console.warn("Asset load timeout. Injecting fallbacks.");
+        Object.keys(MODEL_DEF).forEach(key => {
+            if (!ASSETS[key]) ASSETS[key] = generateFallbackGeometry(key);
+        });
+        resolve();
+    }, 5000));
 
-        function spawnChest(pos) {
-            const chest = assets.chest.clone();
-            chest.position.copy(pos);
-            chest.scale.setScalar(0.6);
-            scene.add(chest);
-            world.items.push({ mesh: chest, type: 'treasure' });
-        }
+    await Promise.race([Promise.all(promises), timeout]);
+    
+    document.getElementById('loading-status').classList.add('hidden');
+    document.getElementById('start-btn').classList.remove('hidden');
+}
 
-        function getNearestEnemy(pos, range) {
-            let nearest = null;
-            let minDist = range;
-            world.enemies.forEach(e => {
-                const d = e.mesh.position.distanceTo(pos);
-                if(d < minDist) {
-                    minDist = d;
-                    nearest = e;
-                }
-            });
-            return nearest;
-        }
 
-        // --- UI & Utils ---
-        function updateHUD() {
-            document.getElementById('hp-fill').style.width = (playerStats.hp / playerStats.maxHp * 100) + '%';
-            document.getElementById('hp-text').innerText = `${Math.ceil(playerStats.hp)} / ${playerStats.maxHp}`;
-            document.getElementById('xp-fill').style.width = (playerStats.xp / playerStats.maxXp * 100) + '%';
-            document.getElementById('level-text').innerText = playerStats.level;
-            document.getElementById('timer').innerText = formatTime(world.gameTime);
-            document.getElementById('coin-count').innerText = playerStats.coins;
-            document.getElementById('kill-count').innerText = playerStats.kills;
+// ==========================================
+// 4. THREE.JS SCENE SETUP
+// ==========================================
+const canvas = document.getElementById('game-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-            // Fleet visualizer
-            const vis = document.getElementById('fleet-visualizer');
-            if(vis.children.length !== playerStats.fleet.length + 1) {
-                vis.innerHTML = '<div class="w-2 h-6 bg-yellow-500 rounded-sm"></div>';
-                for(let i=0; i<playerStats.fleet.length; i++) {
-                    const d = document.createElement('div');
-                    d.className = "w-2 h-4 bg-blue-500 rounded-sm opacity-60";
-                    vis.appendChild(d);
-                }
-            }
-        }
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB); // Sky color
+scene.fog = new THREE.Fog(0x87CEEB, 30, 100);
 
-        function formatTime(s) {
-            const mins = Math.floor(s/60);
-            const secs = Math.floor(s%60);
-            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
+// Camera Setup (Isometric feel)
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 200);
+const cameraOffset = new THREE.Vector3(0, 30, 25);
+camera.position.copy(cameraOffset);
+camera.lookAt(0, 0, 0);
 
-        function showUpgradeMenu() {
-            isPaused = true;
-            const menu = document.getElementById('upgrade-menu');
-            const container = document.getElementById('cards-container');
-            container.innerHTML = '';
-            menu.classList.remove('hidden');
+// Lighting
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
 
-            const pool = [...UPGRADES].sort(() => 0.5 - Math.random()).slice(0, 3);
-            pool.forEach(up => {
-                const card = document.createElement('div');
-                const isLegendary = up.rarity === 'legendary';
-                card.className = `card-gradient w-72 p-8 rounded-2xl border-2 border-white/10 hover:border-blue-400 cursor-pointer transition-all transform hover:-translate-y-4 flex flex-col items-center text-center group ${isLegendary ? 'legendary-card' : ''}`;
-                
-                card.innerHTML = `
-                    <div class="text-6xl mb-6 group-hover:scale-110 transition-transform">${up.icon}</div>
-                    <div class="text-[10px] text-blue-400 font-bold tracking-[0.3em] uppercase mb-1">${up.rarity}</div>
-                    <div class="pirate-font text-3xl text-yellow-500 mb-4">${up.name}</div>
-                    <p class="text-sm text-gray-400 leading-relaxed">${up.desc}</p>
-                `;
-                
-                card.onclick = () => {
-                    applyUpgrade(up.id);
-                    menu.classList.add('hidden');
-                    isPaused = false;
-                };
-                container.appendChild(card);
-            });
-        }
+const dirLight = new THREE.DirectionalLight(0xffeedd, 0.8);
+dirLight.position.set(20, 50, 20);
+dirLight.castShadow = true;
+dirLight.shadow.camera.left = -40;
+dirLight.shadow.camera.right = 40;
+dirLight.shadow.camera.top = 40;
+dirLight.shadow.camera.bottom = -40;
+scene.add(dirLight);
 
-        function applyUpgrade(id) {
-            const visualizer = document.getElementById('active-upgrades');
-            const tag = document.createElement('div');
-            tag.className = "w-6 h-6 rounded bg-black/40 border border-white/10 flex items-center justify-center text-xs";
+// The Ocean (Procedural Vertex Animated Plane)
+const oceanGeo = new THREE.PlaneGeometry(300, 300, 64, 64);
+oceanGeo.rotateX(-Math.PI / 2);
+const oceanMat = new THREE.MeshStandardMaterial({
+    color: 0x1a6fa8,
+    roughness: 0.1,
+    metalness: 0.8,
+    flatShading: true
+});
+const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+ocean.receiveShadow = true;
+scene.add(ocean);
+
+// Save initial vertices for wave animation
+const oceanInitZ = [];
+const posAttribute = oceanGeo.attributes.position;
+for(let i=0; i < posAttribute.count; i++) {
+    oceanInitZ.push(posAttribute.getY(i)); 
+}
+
+
+// ==========================================
+// 5. INPUT MANAGEMENT
+// ==========================================
+const Input = {
+    keys: { w:false, a:false, s:false, d:false, ArrowUp:false, ArrowLeft:false, ArrowDown:false, ArrowRight:false },
+    joyVec: new THREE.Vector2(0,0),
+    isTouching: false,
+    
+    init: function() {
+        window.addEventListener('keydown', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key] = true; });
+        window.addEventListener('keyup', e => { if(this.keys.hasOwnProperty(e.key)) this.keys[e.key] = false; });
+        
+        // Touch JoyStick
+        const joyZone = document.getElementById('joystick-zone');
+        const joyKnob = document.getElementById('joystick-knob');
+        let origin = {x:0, y:0};
+
+        document.addEventListener('touchstart', e => {
+            if(STATE.mode !== 'playing') return;
+            // Ignore touches on UI buttons or upgrade cards
+            if(e.target.tagName === 'BUTTON' || e.target.closest('.upgrade-card')) return; 
+
+            this.isTouching = true;
+            const touch = e.touches[0];
+            origin = {x: touch.clientX, y: touch.clientY};
             
-            switch(id) {
-                case 'fleet_sloop':
-                    const s = assets.sloop.clone();
-                    scene.add(s);
-                    playerStats.fleet.push(s);
-                    tag.innerText = '⛵';
-                    break;
-                case 'damage':
-                    playerStats.damage *= 1.3;
-                    tag.innerText = '💣';
-                    break;
-                case 'firerate':
-                    playerStats.fireRate *= 1.25;
-                    tag.innerText = '⚡';
-                    break;
-                case 'speed':
-                    playerStats.speed *= 1.2;
-                    tag.innerText = '🚩';
-                    break;
-                case 'hp':
-                    playerStats.maxHp += 30;
-                    playerStats.hp = Math.min(playerStats.maxHp, playerStats.hp + 40);
-                    tag.innerText = '🛠️';
-                    break;
-                case 'magnet':
-                    playerStats.pickupRange *= 1.5;
-                    tag.innerText = '🧲';
-                    break;
-                case 'legendary_ghost':
-                    playerStats.damage *= 1.5;
-                    playerStats.speed *= 1.1;
-                    tag.innerText = '👻';
-                    break;
+            joyZone.style.display = 'block';
+            // Center the 140px zone exactly on the touch coordinate
+            joyZone.style.left = (origin.x - 70) + 'px';
+            joyZone.style.top = (origin.y - 70) + 'px';
+            
+            joyKnob.classList.remove('released');
+            joyKnob.style.transform = `translate(-50%, -50%)`;
+            this.joyVec.set(0,0);
+        }, {passive: false});
+
+        document.addEventListener('touchmove', e => {
+            if(!this.isTouching) return;
+            e.preventDefault(); // Prevent pull-to-refresh and scrolling
+            const touch = e.touches[0];
+            let dx = touch.clientX - origin.x;
+            let dy = touch.clientY - origin.y;
+            
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            const maxDist = 50; // Max distance knob can travel from center
+            
+            if(distance > maxDist) {
+                dx = (dx/distance) * maxDist;
+                dy = (dy/distance) * maxDist;
             }
-            visualizer.appendChild(tag);
+            
+            joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            
+            // Normalize for movement logic (0 to 1)
+            this.joyVec.set(dx / maxDist, dy / maxDist);
+        }, {passive: false});
+
+        const endTouch = () => {
+            if(!this.isTouching) return;
+            this.isTouching = false;
+            this.joyVec.set(0,0);
+            
+            // Trigger the spring-back animation
+            joyKnob.classList.add('released');
+            joyKnob.style.transform = `translate(-50%, -50%)`;
+            
+            // Hide the joystick base after the knob snaps back
+            setTimeout(() => {
+                if(!this.isTouching) joyZone.style.display = 'none';
+            }, 200);
+        };
+        document.addEventListener('touchend', endTouch);
+        document.addEventListener('touchcancel', endTouch);
+    },
+    
+    getDirection: function() {
+        let vec = new THREE.Vector3(0,0,0);
+        if (this.keys.w || this.keys.ArrowUp) vec.z -= 1;
+        if (this.keys.s || this.keys.ArrowDown) vec.z += 1;
+        if (this.keys.a || this.keys.ArrowLeft) vec.x -= 1;
+        if (this.keys.d || this.keys.ArrowRight) vec.x += 1;
+        
+        if (vec.lengthSq() > 0) {
+            return vec.normalize();
+        }
+        
+        if (this.joyVec.lengthSq() > 0) {
+            return new THREE.Vector3(this.joyVec.x, 0, this.joyVec.y);
+        }
+        
+        return vec;
+    }
+};
+
+
+// ==========================================
+// 6. OBJECT POOLING & ENTITIES
+// ==========================================
+
+// Player Entity
+const Player = {
+    mesh: null,
+    hp: CONFIG.playerBaseHP,
+    maxHp: CONFIG.playerBaseHP,
+    pos: new THREE.Vector3(0, 0, 0),
+    vel: new THREE.Vector3(0, 0, 0),
+    targetRot: 0,
+    lastFireTime: 0,
+    
+    init: function() {
+        if(this.mesh) scene.remove(this.mesh);
+        this.mesh = ASSETS.player.clone();
+        this.mesh.scale.set(1.5, 1.5, 1.5);
+        scene.add(this.mesh);
+        
+        this.pos.set(0,0,0);
+        this.vel.set(0,0,0);
+        this.hp = this.maxHp;
+        this.lastFireTime = 0;
+        this.updateTransform();
+    },
+    
+    updateTransform: function() {
+        this.mesh.position.copy(this.pos);
+        // Smooth rotation
+        if(this.vel.lengthSq() > 0.01) {
+            this.targetRot = Math.atan2(this.vel.x, this.vel.z);
+        }
+        
+        // Simple lerp angle
+        let diff = this.targetRot - this.mesh.rotation.y;
+        while(diff < -Math.PI) diff += Math.PI*2;
+        while(diff > Math.PI) diff -= Math.PI*2;
+        this.mesh.rotation.y += diff * 0.1;
+        
+        // Tilt based on movement
+        this.mesh.rotation.z = -this.vel.x * 0.1;
+        this.mesh.rotation.x = this.vel.z * 0.1;
+    },
+    
+    takeDamage: function(amt) {
+        this.hp -= amt;
+        updateHUD();
+        // Visual flash
+        this.mesh.position.y -= 0.5; // slight dip
+        if(this.hp <= 0) gameOver();
+    }
+};
+
+// Generic Pool Class
+class ObjectPool {
+    constructor(assetKey, count, scale = 1.0) {
+        this.pool = [];
+        this.active = [];
+        const template = ASSETS[assetKey];
+        
+        for(let i=0; i<count; i++) {
+            const mesh = template.clone();
+            mesh.scale.set(scale, scale, scale);
+            mesh.visible = false;
+            scene.add(mesh);
+            this.pool.push({
+                mesh: mesh,
+                active: false,
+                pos: new THREE.Vector3(),
+                vel: new THREE.Vector3(),
+                hp: 10,
+                type: assetKey,
+                spawnTime: 0
+            });
+        }
+    }
+    
+    spawn(x, z, config = {}) {
+        const item = this.pool.find(i => !i.active);
+        if(!item) return null; // Pool exhausted
+        
+        item.active = true;
+        item.mesh.visible = true;
+        item.pos.set(x, 0, z);
+        item.mesh.position.copy(item.pos);
+        item.hp = config.hp || 10;
+        item.spawnTime = STATE.time;
+        Object.assign(item, config); // Apply specific config
+        this.active.push(item);
+        return item;
+    }
+    
+    kill(item) {
+        item.active = false;
+        item.mesh.visible = false;
+        this.active = this.active.filter(i => i !== item);
+    }
+    
+    clearAll() {
+        this.active.forEach(item => {
+            item.active = false;
+            item.mesh.visible = false;
+        });
+        this.active = [];
+    }
+}
+
+let enemyPool, projPool, dropPool;
+
+
+// ==========================================
+// 7. GAMEPLAY LOGIC & SYSTEMS
+// ==========================================
+
+function spawnEnemyWave() {
+    // Increase difficulty over time
+    const spawnCount = Math.floor(2 + (STATE.time / 30));
+    const dist = 35; // Spawn just outside camera view
+    
+    for(let i=0; i<spawnCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const ex = Player.pos.x + Math.cos(angle) * dist;
+        const ez = Player.pos.z + Math.sin(angle) * dist;
+        
+        let type = 'enemy_row';
+        let hp = 30 * STATE.wave;
+        let speed = 4;
+        let value = 10;
+        let scale = 1.2;
+
+        if (STATE.time > 60 && Math.random() < 0.3) {
+            type = 'enemy_sloop';
+            hp = 80 * STATE.wave;
+            speed = 3;
+            value = 25;
+            scale = 1.8;
         }
 
-        function onResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        // Check boss wave
+        if (STATE.time > 0 && Math.floor(STATE.time) % 180 === 0 && !STATE.bossActive) {
+            type = 'boss';
+            hp = 1000 * STATE.wave;
+            speed = 2;
+            value = 200;
+            scale = 3.0;
+            STATE.bossActive = true;
+            uiShowMessage("GHOST SHIP APPEARED!", "#10b981");
         }
 
-        window.onload = init;
+        const enemy = enemyPool.spawn(ex, ez, { maxHp: hp, hp: hp, speed: speed, value: value, enemyType: type });
+        if(enemy) {
+            // Hot swap mesh scale/type logic requires pool per type or uniform scaling.
+            // For single-file simplicity, we apply scale dynamically.
+            enemy.mesh.scale.set(scale, scale, scale);
+        }
+    }
+}
 
-    </script>
+function fireWeapons() {
+    if (STATE.time - Player.lastFireTime < (CONFIG.fireRateBase / STATE.upgrades.fireRateMult)) return;
+    
+    // Find closest enemies
+    if (enemyPool.active.length === 0) return;
+    
+    const targets = [...enemyPool.active].sort((a,b) => 
+        a.pos.distanceToSquared(Player.pos) - b.pos.distanceToSquared(Player.pos)
+    );
+
+    const rangeSq = 40 * 40;
+    if (targets[0].pos.distanceToSquared(Player.pos) > rangeSq) return; // Out of range
+
+    AudioSys.play('shoot');
+    Player.lastFireTime = STATE.time;
+
+    const numShots = STATE.upgrades.projectileCount;
+    for(let i=0; i<numShots; i++) {
+        const target = targets[i % targets.length]; // Spread if multiple shots
+        
+        // Predict target position slightly
+        const dist = target.pos.distanceTo(Player.pos);
+        const flightTime = dist / CONFIG.projectileSpeed;
+        const predictPos = target.pos.clone().add(target.vel.clone().multiplyScalar(flightTime));
+        
+        const dir = predictPos.sub(Player.pos).normalize();
+        // Add slight spread if multiple
+        if(numShots > 1) {
+            const spread = (Math.random() - 0.5) * 0.2;
+            dir.applyAxisAngle(new THREE.Vector3(0,1,0), spread);
+        }
+
+        projPool.spawn(Player.pos.x, Player.pos.z, {
+            vel: dir.multiplyScalar(CONFIG.projectileSpeed),
+            damage: 25 * STATE.upgrades.damageMult,
+            pierce: STATE.upgrades.pierce
+        });
+    }
+}
+
+function showDamageText(x, y, amount, color="white") {
+    const el = document.createElement('div');
+    el.className = 'damage-text';
+    el.innerText = Math.round(amount);
+    el.style.color = color;
+    
+    // Project 3D pos to 2D screen
+    const pos = new THREE.Vector3(x, 0, y);
+    pos.project(camera);
+    
+    const xPos = (pos.x * .5 + .5) * window.innerWidth;
+    const yPos = (pos.y * -.5 + .5) * window.innerHeight;
+    
+    el.style.left = `${xPos}px`;
+    el.style.top = `${yPos}px`;
+    
+    document.getElementById('floating-text-container').appendChild(el);
+    setTimeout(() => el.remove(), 800);
+}
+
+
+function checkCollisions() {
+    // Projectiles vs Enemies
+    for(let i = projPool.active.length - 1; i >= 0; i--) {
+        const p = projPool.active[i];
+        let hit = false;
+        
+        for(let j = enemyPool.active.length - 1; j >= 0; j--) {
+            const e = enemyPool.active[j];
+            const distSq = p.pos.distanceToSquared(e.pos);
+            
+            // simple radius check
+            if (distSq < 4) { 
+                e.hp -= p.damage;
+                showDamageText(e.pos.x, e.pos.z, p.damage);
+                AudioSys.play('hit');
+                
+                // knockback
+                e.pos.add(p.vel.clone().normalize().multiplyScalar(0.5));
+                
+                if (e.hp <= 0) {
+                    // Die
+                    if(e.enemyType === 'boss') STATE.bossActive = false;
+                    dropPool.spawn(e.pos.x, e.pos.z, { value: e.value });
+                    enemyPool.kill(e);
+                }
+                
+                if (p.pierce > 0) {
+                    p.pierce--;
+                } else {
+                    projPool.kill(p);
+                    hit = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Player vs Enemies (Contact damage)
+    for(let e of enemyPool.active) {
+        if(e.pos.distanceToSquared(Player.pos) < 5) {
+            Player.takeDamage(10 * STATE.wave * (1/60)); // DPS
+        }
+    }
+    
+    // Player vs Drops (Magnetic pickup)
+    const magnetRadiusSq = (CONFIG.pickupRadius * 2) * (CONFIG.pickupRadius * 2);
+    for(let i = dropPool.active.length - 1; i >= 0; i--) {
+        const d = dropPool.active[i];
+        const distSq = d.pos.distanceToSquared(Player.pos);
+        
+        if (distSq < magnetRadiusSq) {
+            // Move toward player
+            const dir = Player.pos.clone().sub(d.pos).normalize();
+            d.pos.add(dir.multiplyScalar(0.5));
+            
+            if (distSq < 2) {
+                // Collect
+                STATE.xp += d.value;
+                STATE.score += d.value;
+                AudioSys.play('coin');
+                showDamageText(Player.pos.x, Player.pos.z, `+${d.value}`, "#ffd700");
+                dropPool.kill(d);
+                checkLevelUp();
+                updateHUD();
+            }
+        }
+    }
+}
+
+
+// ==========================================
+// 8. UI & PROGRESSION
+// ==========================================
+
+const UPGRADE_TYPES = [
+    { id: 'dmg', name: "Heavy Cannons", desc: "+25% Damage", apply: () => STATE.upgrades.damageMult += 0.25 },
+    { id: 'rate', name: "Swift Gunner", desc: "+20% Fire Rate", apply: () => STATE.upgrades.fireRateMult += 0.20 },
+    { id: 'multi', name: "Extra Cannon", desc: "+1 Cannonball", apply: () => STATE.upgrades.projectileCount += 1 },
+    { id: 'speed', name: "Stolen Sails", desc: "+15% Speed", apply: () => { STATE.upgrades.speedMult += 0.15; Player.speed *= 1.15; } },
+    { id: 'heal', name: "Rum Ration", desc: "Heal 50% HP", apply: () => { Player.hp = Math.min(Player.maxHp, Player.hp + Player.maxHp*0.5); } },
+    { id: 'pierce', name: "Ghost Breaker", desc: "Cannons pierce 1 target", apply: () => STATE.upgrades.pierce += 1 }
+];
+
+function checkLevelUp() {
+    if (STATE.xp >= STATE.xpNeeded) {
+        STATE.xp -= STATE.xpNeeded;
+        STATE.level++;
+        STATE.xpNeeded = Math.floor(STATE.xpNeeded * CONFIG.xpMultiplier);
+        
+        STATE.mode = 'levelup';
+        AudioSys.play('levelup');
+        
+        // Pick 3 random upgrades
+        const shuffled = [...UPGRADE_TYPES].sort(() => 0.5 - Math.random());
+        const choices = shuffled.slice(0, 3);
+        
+        const container = document.getElementById('upgrade-container');
+        container.innerHTML = '';
+        
+        choices.forEach(choice => {
+            const el = document.createElement('div');
+            el.className = 'upgrade-card p-6 w-64 text-center rounded-lg shadow-xl';
+            el.innerHTML = `
+                <div class="text-2xl text-yellow-400 mb-2 font-bold">${choice.name}</div>
+                <div class="text-white">${choice.desc}</div>
+            `;
+            el.onclick = () => {
+                choice.apply();
+                document.getElementById('levelup-screen').classList.add('hidden');
+                STATE.mode = 'playing';
+                updateHUD();
+            };
+            container.appendChild(el);
+        });
+        
+        document.getElementById('levelup-screen').classList.remove('hidden');
+    }
+}
+
+function updateHUD() {
+    document.getElementById('hp-fill').style.width = `${Math.max(0, (Player.hp / Player.maxHp) * 100)}%`;
+    document.getElementById('xp-fill').style.width = `${Math.min(100, (STATE.xp / STATE.xpNeeded) * 100)}%`;
+    document.getElementById('level-display').innerText = STATE.level;
+    document.getElementById('coin-display').innerText = STATE.score;
+    document.getElementById('wave-display').innerText = STATE.wave;
+    
+    // Format Time
+    const mins = Math.floor(STATE.time / 60).toString().padStart(2, '0');
+    const secs = Math.floor(STATE.time % 60).toString().padStart(2, '0');
+    document.getElementById('timer-display').innerText = `${mins}:${secs}`;
+}
+
+function uiShowMessage(msg, color="white") {
+    const el = document.createElement('div');
+    el.innerText = msg;
+    el.style.position = 'absolute';
+    el.style.top = '20%';
+    el.style.left = '50%';
+    el.style.transform = 'translateX(-50%)';
+    el.style.fontSize = '3rem';
+    el.style.color = color;
+    el.style.textShadow = '4px 4px 0 #000';
+    el.style.pointerEvents = 'none';
+    el.style.zIndex = '100';
+    el.style.animation = 'floatUp 2s forwards';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+}
+
+
+function gameOver() {
+    STATE.mode = 'gameover';
+    document.getElementById('gameover-screen').classList.remove('hidden');
+    
+    const mins = Math.floor(STATE.time / 60).toString().padStart(2, '0');
+    const secs = Math.floor(STATE.time % 60).toString().padStart(2, '0');
+    document.getElementById('final-time').innerText = `${mins}:${secs}`;
+    document.getElementById('final-coins').innerText = STATE.score;
+}
+
+function resetGame() {
+    enemyPool.clearAll();
+    projPool.clearAll();
+    dropPool.clearAll();
+    
+    STATE.time = 0;
+    STATE.score = 0;
+    STATE.level = 1;
+    STATE.xp = 0;
+    STATE.xpNeeded = CONFIG.xpBaseNeeded;
+    STATE.wave = 1;
+    STATE.bossActive = false;
+    STATE.upgrades = { damageMult: 1.0, speedMult: 1.0, fireRateMult: 1.0, projectileCount: 1, pierce: 0 };
+    
+    Player.init();
+    
+    document.getElementById('gameover-screen').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    STATE.mode = 'playing';
+    STATE.lastTime = performance.now();
+    updateHUD();
+}
+
+
+// ==========================================
+// 9. MAIN GAME LOOP
+// ==========================================
+
+function animate(currentTime) {
+    requestAnimationFrame(animate);
+    
+    const dt = Math.min((currentTime - STATE.lastTime) / 1000, 0.1); // cap dt
+    STATE.lastTime = currentTime;
+    
+    // Animate Ocean Waves always
+    const timeSec = currentTime * 0.001;
+    for(let i=0; i < posAttribute.count; i++) {
+        const x = posAttribute.getX(i);
+        const y = posAttribute.getY(i);
+        const wave = Math.sin(x * 0.2 + timeSec) * Math.cos(y * 0.2 + timeSec) * 0.5;
+        posAttribute.setZ(i, oceanInitZ[i] + wave);
+    }
+    posAttribute.needsUpdate = true;
+    
+    if (STATE.mode !== 'playing') {
+        renderer.render(scene, camera);
+        return;
+    }
+    
+    STATE.time += dt;
+    STATE.wave = 1 + Math.floor(STATE.time / 60);
+
+    // 1. Player Movement
+    const dir = Input.getDirection();
+    Player.vel.copy(dir).multiplyScalar(CONFIG.playerBaseSpeed * STATE.upgrades.speedMult);
+    Player.pos.add(Player.vel.clone().multiplyScalar(dt));
+    Player.updateTransform();
+
+    // 2. Camera & Ocean Follow
+    camera.position.lerp(
+        new THREE.Vector3(Player.pos.x + cameraOffset.x, cameraOffset.y, Player.pos.z + cameraOffset.z),
+        5 * dt
+    );
+    camera.lookAt(Player.pos);
+    
+    // Snap ocean to integer grid to create infinite illusion
+    ocean.position.x = Math.round(Player.pos.x / 10) * 10;
+    ocean.position.z = Math.round(Player.pos.z / 10) * 10;
+
+    // 3. Spawning
+    if (Math.random() < dt * 1.5) spawnEnemyWave();
+
+    // 4. Update Entities
+    // Enemies follow player
+    for(let e of enemyPool.active) {
+        const moveDir = Player.pos.clone().sub(e.pos).normalize();
+        e.vel.copy(moveDir).multiplyScalar(e.speed);
+        e.pos.add(e.vel.clone().multiplyScalar(dt));
+        e.mesh.position.copy(e.pos);
+        e.mesh.rotation.y = Math.atan2(e.vel.x, e.vel.z);
+        // Bobbing
+        e.mesh.position.y = Math.sin(STATE.time * 2 + e.pos.x) * 0.2;
+    }
+    
+    // Projectiles
+    for(let p of projPool.active) {
+        p.pos.add(p.vel.clone().multiplyScalar(dt));
+        p.mesh.position.copy(p.pos);
+        // Spin
+        p.mesh.rotation.x += 10 * dt;
+        // Gravity Arc approximation
+        const life = STATE.time - p.spawnTime;
+        p.mesh.position.y = Math.max(0, 1.5 - (life * life * 5)); // Parabola
+        
+        if (life > 2) projPool.kill(p);
+    }
+    
+    // Drops (Bobbing)
+    for(let d of dropPool.active) {
+        d.mesh.rotation.y += 2 * dt;
+        d.mesh.position.y = 0.5 + Math.sin(STATE.time * 5 + d.pos.x) * 0.2;
+        
+        if (STATE.time - d.spawnTime > 15) dropPool.kill(d); // Despawn after 15s
+    }
+
+    // 5. Combat & Collisions
+    fireWeapons();
+    checkCollisions();
+    
+    // Update UI occasionally
+    if(Math.floor(currentTime) % 10 === 0) updateHUD();
+
+    renderer.render(scene, camera);
+}
+
+// Window resize handling
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+
+// ==========================================
+// 10. BOOTSTRAP
+// ==========================================
+
+document.getElementById('start-btn').addEventListener('click', () => {
+    AudioSys.init();
+    
+    // Init Pools
+    enemyPool = new ObjectPool('enemy_row', CONFIG.poolSizes.enemies);
+    projPool = new ObjectPool('cannonball', CONFIG.poolSizes.projectiles, 0.5);
+    dropPool = new ObjectPool('chest', CONFIG.poolSizes.drops, 0.8);
+    
+    Input.init();
+    
+    document.getElementById('start-screen').classList.add('hidden');
+    resetGame();
+});
+
+document.getElementById('restart-btn').addEventListener('click', resetGame);
+
+// Kickoff
+loadAssets().then(() => {
+    // Start animation loop immediately (runs rendering in background)
+    STATE.lastTime = performance.now();
+    animate(STATE.lastTime);
+});
+
+</script>
 </body>
 </html>
