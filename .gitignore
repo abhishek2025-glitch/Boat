@@ -1,12 +1,31 @@
-# Ignore editor and system files
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
-
-# Ignore node modules (if any)
+```
+# Dependencies
 node_modules/
 
-# Keep all game files
-!.gitignore
+# Environment
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+
+# Editors
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+.env
+.env.local
+```
