@@ -2,2062 +2,1696 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<meta name="description" content="MAELSTROM - Free Pirate Naval Survivor Game. Survive endless enemy fleets, grow your armada, defeat Ghost Ship bosses. No download needed.">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="description" content="MAELSTROM — Free pirate naval survivor. Auto-fire cannons, grow your fleet, defeat ghost ship bosses. No download needed.">
+<meta property="og:title" content="MAELSTROM — Survive the Sea. Outlast the Storm.">
+<meta property="og:description" content="Free pirate naval survivor game. Auto-fire cannons, grow your armada, defeat Ghost Ship bosses. Play in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://abhishek2025-glitch.github.io/boat/assets/Preview.png">
 <title>MAELSTROM — Survive the Sea. Outlast the Storm.</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"MAELSTROM","description":"A free pirate naval survivor browser game","genre":["Roguelite","Survivor","Action"],"playMode":"SinglePlayer","applicationCategory":"Game","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 <style>
-/* ══════════════════════════════════════════
-   BASE RESET & TYPOGRAPHY
-══════════════════════════════════════════ */
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#04090f;color:#f0e6c8}
-body{font-family:'Georgia','Times New Roman',serif}
-#canvas{position:fixed;inset:0;display:block;width:100%;height:100%;z-index:0}
-#ui{position:fixed;inset:0;z-index:10;pointer-events:none}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.hidden{display:none!important}
-button{cursor:pointer;font-family:inherit;border:none;outline:none}
+/* ═══════════════════════════════════════════════════════
+   MAELSTROM v3 — Production CSS
+   Cinzel + Georgia — No external font CDN to avoid blocking
+   ═══════════════════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#04101e}
+body{font-family:Georgia,'Times New Roman',serif;color:#c8d8e8;-webkit-tap-highlight-color:transparent;user-select:none}
+canvas#c{display:block;position:fixed;inset:0;width:100%!important;height:100%!important;z-index:0}
 
-/* ══════════════════════════════════════════
-   LOADING SCREEN
-══════════════════════════════════════════ */
-#loading{
-  background:radial-gradient(ellipse at 50% 60%,#0a1828 0%,#04090f 70%);
-  z-index:200;pointer-events:all;
-}
-.load-anchor{font-size:clamp(1.8rem,5vw,3rem);margin-bottom:1rem;animation:anchorSpin 4s linear infinite;display:inline-block}
-@keyframes anchorSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-.load-waves{position:absolute;bottom:0;left:0;width:100%;height:120px;overflow:hidden}
-.load-wave{position:absolute;bottom:0;width:200%;height:100%;background:rgba(26,111,168,.18);border-radius:50% 50% 0 0/30px 30px 0 0;animation:waveAnim 4s ease-in-out infinite}
-.load-wave:nth-child(2){background:rgba(26,111,168,.12);animation-delay:-2s;animation-duration:5s}
-@keyframes waveAnim{0%,100%{transform:translateX(-25%) scaleY(1)}50%{transform:translateX(-20%) scaleY(1.12)}}
-.load-title{
-  font-size:clamp(3.5rem,11vw,9rem);font-weight:700;
-  letter-spacing:.4em;color:#f0c040;
-  text-shadow:0 0 30px #f0c04099,0 0 80px #c0800055,0 4px 0 #5a3a00,0 8px 25px #000c;
-  animation:titlePulse 2.5s ease-in-out infinite alternate;
-  margin-bottom:.15em;line-height:1;
-}
-@keyframes titlePulse{
-  from{text-shadow:0 0 20px #f0c04066,0 0 50px #c0800033,0 4px 0 #5a3a00}
-  to{text-shadow:0 0 60px #f0c040cc,0 0 120px #f0800066,0 4px 0 #5a3a00,0 0 200px #f0c04022}
-}
-.load-sub{font-size:clamp(.65rem,1.6vw,.85rem);letter-spacing:.4em;color:#6a6050;text-transform:uppercase;margin-bottom:2.5rem}
-.load-bar-outer{
-  width:min(440px,75vw);height:8px;
-  background:linear-gradient(90deg,#0a1828,#0d2040);
-  border-radius:4px;border:1px solid #1a3050;overflow:hidden;margin-bottom:1.2rem;
-}
-.load-bar-fill{height:100%;width:0%;border-radius:4px;transition:width .35s ease;
-  background:linear-gradient(90deg,#1a6fa8,#4abfff,#f0c040)}
-.load-tip{font-size:.82rem;color:#4a5a6a;font-style:italic;text-align:center;max-width:380px;line-height:1.5;min-height:2.5em;transition:opacity .5s}
-.load-pct{font-size:.7rem;color:#3a4a5a;margin-top:.4rem;letter-spacing:.15em}
+/* ── SHARED ─────────────────────────────────────────────── */
+.scr{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:50}
+.scr.on{display:flex}
+.btn{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.7em 1.6em;border-radius:8px;border:none;cursor:pointer;font-family:inherit;letter-spacing:.08em;font-size:.92rem;transition:all .14s;user-select:none;-webkit-tap-highlight-color:transparent;white-space:nowrap;position:relative;overflow:hidden}
+.btn::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.07) 0%,transparent 60%);pointer-events:none}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn-gold{background:linear-gradient(135deg,#6a3c00,#b87820);color:#ffe0a0;border:1.5px solid #d4a030;box-shadow:0 4px 18px rgba(180,120,0,.35)}
+.btn-gold:hover{box-shadow:0 6px 26px rgba(212,175,55,.5)}
+.btn-dark{background:rgba(10,22,44,.85);color:#8ab4d8;border:1.5px solid #1a3054}
+.btn-dark:hover{border-color:#3a6090;background:rgba(16,30,60,.9);color:#b0d0ee}
+.btn-red{background:linear-gradient(135deg,#660010,#aa0020);color:#ffaaaa;border:1.5px solid #cc2233}
+.btn-red:hover{box-shadow:0 4px 18px rgba(200,0,30,.4)}
+.btn-ghost{background:rgba(0,20,8,.7);color:#4dff9b;border:1.5px solid rgba(77,255,155,.35)}
+.btn-ghost:hover{box-shadow:0 0 18px rgba(77,255,155,.3)}
 
-/* ══════════════════════════════════════════
-   MAIN MENU
-══════════════════════════════════════════ */
-#menu{
-  background:linear-gradient(180deg,rgba(4,9,15,.3) 0%,rgba(4,9,15,.97) 45%,rgba(4,9,15,1) 100%);
-  pointer-events:all;
-}
-.menu-title{
-  font-size:clamp(3rem,9vw,7.5rem);font-weight:700;
-  letter-spacing:.38em;color:#f0c040;
-  text-shadow:0 0 40px #f0c040aa,0 4px 0 #6a4000,0 10px 30px #000;
-  animation:menuFloat 4s ease-in-out infinite alternate;
-  margin-bottom:.2em;
-}
-@keyframes menuFloat{from{transform:translateY(0)}to{transform:translateY(-6px)}}
-.menu-sub{font-size:clamp(.7rem,1.7vw,.9rem);letter-spacing:.35em;color:#6a6050;text-transform:uppercase;margin-bottom:2.8rem}
-.menu-btns{display:flex;flex-direction:column;align-items:center;gap:.5rem;width:100%}
-.btn{
-  display:flex;align-items:center;justify-content:center;gap:.6rem;
-  width:min(330px,88vw);padding:.95rem 1.8rem;
-  font-family:inherit;font-size:1rem;letter-spacing:.1em;text-transform:uppercase;
-  border-radius:7px;cursor:pointer;transition:all .2s ease;pointer-events:all;
-  border:2px solid;position:relative;overflow:hidden;
-}
-.btn::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s}
-.btn:hover::before{opacity:1}
-.btn-primary{
-  background:linear-gradient(135deg,#0e4a7a,#1a7ac0);
-  border-color:#3abfff;color:#fff;font-size:1.15rem;padding:1.05rem 2rem;
-  box-shadow:0 0 20px #1a7ac030,0 4px 20px #000a;
-}
-.btn-primary::before{background:linear-gradient(135deg,#1a6fa8,#2a90e0)}
-.btn-primary:hover{transform:translateY(-3px);box-shadow:0 0 40px #1a7ac060,0 8px 30px #000c}
-.btn-secondary{background:linear-gradient(135deg,#0c1824,#162438);border-color:#f0c04050;color:#f0c040}
-.btn-secondary::before{background:linear-gradient(135deg,#162438,#1e3048)}
-.btn-secondary:hover{border-color:#f0c040aa;transform:translateY(-2px);box-shadow:0 0 25px #f0c04025}
-.btn-danger{background:linear-gradient(135deg,#1c0808,#2c1010);border-color:#ff404050;color:#ff8080}
-.btn-danger:hover{border-color:#ff4040;transform:translateY(-2px)}
-.menu-stats{
-  margin-top:1.8rem;display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;
-  font-size:.82rem;color:#4a5060;
-}
-.menu-stats span{color:#f0c040;font-weight:700}
-.menu-version{position:absolute;bottom:10px;right:14px;font-size:.6rem;color:#2a3040;letter-spacing:.1em}
+/* ── LOADING ─────────────────────────────────────────────── */
+#LS{background:radial-gradient(ellipse at 50% 30%,#071a38 0%,#04101e 70%);z-index:200;transition:opacity .9s}
+#LS.out{opacity:0;pointer-events:none}
+#LS h1{font-size:clamp(2.8rem,9vw,6.5rem);font-weight:900;color:#f0c040;text-transform:uppercase;letter-spacing:.2em;text-shadow:0 0 60px #f0c04055,0 4px 12px #000;animation:titlePulse 3s ease-in-out infinite;margin-bottom:.1em}
+@keyframes titlePulse{0%,100%{text-shadow:0 0 40px #f0c04044,0 4px 12px #000}50%{text-shadow:0 0 100px #f0c040aa,0 4px 12px #000}}
+#LS .sub{color:#88ccff;font-size:clamp(.7rem,2vw,.9rem);letter-spacing:.35em;text-transform:uppercase;margin-bottom:2.2em;font-style:italic}
+#LBW{width:min(340px,72vw);height:8px;background:#0a1828;border-radius:4px;border:1px solid #1a3050;overflow:hidden;margin-bottom:.6em}
+#LBF{height:100%;width:0%;background:linear-gradient(90deg,#0055bb,#44aaff,#00ddff);border-radius:4px;transition:width .28s ease;box-shadow:0 0 10px #44aaff88}
+#LT{color:#2a4a70;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;min-height:1.2em;text-align:center}
 
-/* ══════════════════════════════════════════
-   SKULL UPGRADE MODAL
-══════════════════════════════════════════ */
-#skullModal{
-  position:fixed;inset:0;z-index:180;display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.88);backdrop-filter:blur(6px);pointer-events:all;
-}
-.modal-box{
-  background:linear-gradient(135deg,#0a1828,#101e30);
-  border:2px solid #f0c04040;border-radius:14px;
-  padding:2rem;width:min(680px,94vw);max-height:88vh;overflow-y:auto;
-  box-shadow:0 0 60px #f0c04018,0 20px 80px #000;
-}
-.modal-title{font-size:1.4rem;color:#f0c040;letter-spacing:.2em;text-align:center;margin-bottom:.3rem}
-.modal-skulls{text-align:center;font-size:.9rem;color:#8a8070;margin-bottom:1.4rem}
-.modal-skulls b{color:#f0c040;font-size:1.1rem}
-.upgrade-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:.8rem;margin-bottom:1.2rem}
-.upgrade-node{
-  background:linear-gradient(135deg,#0d1c30,#152338);
-  border:2px solid #2a3848;border-radius:10px;padding:1rem .8rem;text-align:center;
-  cursor:pointer;transition:all .2s;position:relative;
-}
-.upgrade-node.owned{border-color:#f0c04060;background:linear-gradient(135deg,#1a2c10,#1e3818)}
-.upgrade-node.owned::after{content:'✓';position:absolute;top:6px;right:9px;color:#4dff9b;font-size:.9rem}
-.upgrade-node:not(.owned):hover{border-color:#f0c040;transform:translateY(-2px)}
-.upgrade-node:not(.owned):hover .un-btn{background:#f0c040;color:#000}
-.un-ico{font-size:1.8rem;margin-bottom:.4rem}
-.un-name{font-size:.8rem;color:#f0e6c8;font-weight:700;margin-bottom:.2rem}
-.un-desc{font-size:.68rem;color:#6a7080;line-height:1.4;margin-bottom:.5rem}
-.un-btn{
-  background:rgba(240,192,64,.12);border:1px solid #f0c04050;
-  color:#f0c040;font-size:.7rem;padding:.3rem .7rem;border-radius:4px;
-  font-family:inherit;cursor:pointer;transition:all .15s;pointer-events:all;
-}
-.modal-close{
-  display:block;width:100%;padding:.8rem;
-  background:rgba(240,192,64,.08);border:1px solid #f0c04030;
-  color:#f0c040;border-radius:7px;font-family:inherit;font-size:.9rem;
-  cursor:pointer;transition:all .2s;pointer-events:all;letter-spacing:.1em;
-}
-.modal-close:hover{background:rgba(240,192,64,.18);border-color:#f0c040}
+/* ── MAIN MENU ────────────────────────────────────────────── */
+#MN{background:radial-gradient(ellipse at 50% 5%,rgba(10,40,90,.95) 0%,rgba(4,16,30,.97) 60%)}
+#MN::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+.mn-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:.45rem;width:min(400px,88vw)}
+#MN h1{font-size:clamp(3.2rem,10vw,7rem);font-weight:900;color:#f0c040;text-transform:uppercase;letter-spacing:.18em;text-shadow:0 0 70px #f0c04055,0 6px 16px #000;animation:logoFloat 4s ease-in-out infinite;text-align:center;line-height:1;margin-bottom:.1em}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+#MN .divider{width:160px;height:2px;background:linear-gradient(90deg,transparent,#f0c040,transparent);box-shadow:0 0 12px #f0c04055;margin:.25rem 0}
+#MN .tagline{color:#88aacc;font-style:italic;font-size:clamp(.7rem,2vw,.9rem);letter-spacing:.3em;text-transform:uppercase;margin-bottom:.8rem;text-align:center}
+#MN .skull-row{color:#aa88ff;font-size:.82rem;margin-bottom:.1rem}
+#MN .best-row{color:#3a5a7a;font-size:.75rem;margin-bottom:.6rem}
+#MN .hint{color:#2a4060;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;margin-top:.8rem;text-align:center;line-height:1.8}
 
-/* ══════════════════════════════════════════
-   HUD
-══════════════════════════════════════════ */
-#hud{pointer-events:none}
-/* HP bar — top left */
-.hud-tl{position:absolute;top:14px;left:14px;display:flex;flex-direction:column;gap:5px}
-.hbar{
-  display:flex;align-items:center;gap:7px;
-  background:rgba(0,0,0,.6);padding:7px 12px;
-  border-radius:7px;border:1px solid rgba(255,255,255,.09);
-  min-width:175px;
-}
-.hbar-icon{font-size:1rem;width:18px;text-align:center}
-.hbar-bg{flex:1;height:10px;background:rgba(0,0,0,.55);border-radius:5px;overflow:hidden}
-.hbar-fill{height:100%;border-radius:5px;transition:width .12s ease}
-.hbar-fill.hp{background:linear-gradient(90deg,#c02020,#f04040)}
-.hbar-fill.shield{background:linear-gradient(90deg,#1a6fa8,#4abfff)}
-.hbar-txt{font-size:.7rem;color:#8a8070;width:34px;text-align:right;min-width:34px}
-/* Timer — top center */
-.hud-timer{
-  position:absolute;top:14px;left:50%;transform:translateX(-50%);
-  font-size:clamp(1.4rem,3.5vw,2.4rem);font-weight:700;color:#f0c040;
-  text-shadow:0 0 12px #f0c04070,0 2px 6px #000;
-  background:rgba(0,0,0,.55);padding:7px 20px;border-radius:8px;
-  border:1px solid rgba(240,192,64,.28);letter-spacing:.12em;white-space:nowrap;
-}
-.hud-timer.urgent{color:#ff4040!important;text-shadow:0 0 15px #ff404080!important;animation:urgentBlink .65s ease-in-out infinite alternate}
-@keyframes urgentBlink{from{opacity:1}to{opacity:.55}}
-/* Doubloons — top right */
-.hud-tr{
-  position:absolute;top:14px;right:14px;
-  background:rgba(0,0,0,.6);padding:8px 14px;border-radius:8px;
-  border:1px solid rgba(255,255,255,.09);text-align:right;min-width:130px;
-}
-.hud-tr-lbl{font-size:.62rem;letter-spacing:.2em;color:#6a6050;text-transform:uppercase}
-.hud-tr-val{font-size:1.4rem;color:#f0c040;font-weight:700;line-height:1.1}
-.hud-lv-row{display:flex;align-items:center;gap:4px;margin-top:3px}
-.hud-lv-bg{flex:1;height:4px;background:rgba(0,0,0,.5);border-radius:2px;overflow:hidden}
-.hud-lv-fill{height:100%;background:linear-gradient(90deg,#f0c040,#f08000);border-radius:2px;transition:width .3s ease}
-.hud-lv-txt{font-size:.62rem;color:#f0c040;white-space:nowrap}
-/* Fleet counter — bottom center */
-.hud-fleet{
-  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,.6);padding:7px 18px;border-radius:8px;
-  border:1px solid rgba(255,255,255,.09);font-size:.82rem;color:#8a8070;white-space:nowrap;
-}
-.hud-fleet b{color:#f0e6c8}
-/* Boss HP bar */
-.boss-bar-wrap{
-  position:absolute;top:82px;left:50%;transform:translateX(-50%);
-  width:min(500px,82vw);background:rgba(0,0,0,.75);padding:9px 15px;
-  border-radius:10px;border:2px solid #4dff9b50;display:none;
-}
-.boss-bar-wrap.show{display:block}
-.boss-bar-lbl{font-size:.7rem;letter-spacing:.2em;color:#4dff9b;text-transform:uppercase;text-align:center;margin-bottom:5px}
-.boss-bar-bg{height:12px;background:rgba(0,0,0,.6);border-radius:6px;overflow:hidden}
-.boss-bar-fill{height:100%;background:linear-gradient(90deg,#4dff9b,#00ff66);border-radius:6px;transition:width .25s ease}
-/* Wave message */
-.wave-msg{
-  position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);
-  font-size:clamp(1.2rem,3.3vw,2.3rem);font-weight:700;text-align:center;
-  pointer-events:none;opacity:0;transition:opacity .4s;
-  letter-spacing:.12em;text-shadow:0 0 25px currentColor;white-space:nowrap;
-}
-.wave-msg.show{opacity:1}
-/* Boss warning overlay */
-.boss-warn{
-  position:fixed;inset:0;pointer-events:none;z-index:50;
-  display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:opacity .3s;
-}
-.boss-warn.show{opacity:1}
-.boss-warn-inner{
-  font-size:clamp(1.6rem,4.5vw,3rem);font-weight:700;color:#4dff9b;
-  text-shadow:0 0 35px #4dff9b;text-transform:uppercase;letter-spacing:.3em;text-align:center;
-  animation:warnPulse .5s ease-in-out infinite alternate;
-}
-@keyframes warnPulse{from{transform:scale(1)}to{transform:scale(1.07)}}
-/* Active abilities bar */
-.hud-abilities{
-  position:absolute;bottom:50px;left:50%;transform:translateX(-50%);
-  display:flex;gap:.4rem;
-}
-.ability-slot{
-  width:44px;height:44px;border-radius:7px;background:rgba(0,0,0,.7);
-  border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;
-  justify-content:center;font-size:1.2rem;position:relative;
-}
-.ability-cd{
-  position:absolute;inset:0;border-radius:5px;
-  background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;
-  font-size:.6rem;color:#aaa;
-}
-/* Kill counter */
-.hud-kills{
-  position:absolute;top:14px;left:50%;transform:translateX(-50%);
-  top:unset;bottom:55px;right:14px;left:unset;transform:none;
-  background:rgba(0,0,0,.6);padding:6px 12px;border-radius:7px;
-  border:1px solid rgba(255,255,255,.09);font-size:.8rem;color:#8a8070;
-}
-.hud-kills b{color:#ff8080}
+/* ── HUD ─────────────────────────────────────────────────── */
+#HUD{display:none;position:fixed;inset:0;pointer-events:none;z-index:10}
+#HUD.on{display:block}
+/* HP */
+#HPW{position:absolute;top:12px;left:12px;min-width:150px}
+.hud-lbl{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:#557799;margin-bottom:3px}
+#HPB{width:152px;height:10px;background:#1a0008;border-radius:5px;border:1px solid #330010;overflow:hidden;box-shadow:inset 0 2px 4px #0006}
+#HPF{height:100%;width:100%;border-radius:5px;background:linear-gradient(90deg,#cc2222,#ff5555);transition:width .2s,background .3s;box-shadow:0 0 6px #ff333344}
+/* Shield pulse */
+#FTZ{position:absolute;top:38px;left:12px;color:#4dff9b;font-size:.58rem;letter-spacing:.1em;text-shadow:0 0 8px #4dff9b;display:none;animation:pp .9s ease-in-out infinite}
+@keyframes pp{0%,100%{opacity:1}50%{opacity:.3}}
+/* Timer */
+#TMR{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:clamp(1.3rem,4.5vw,2.2rem);font-weight:900;color:#fff;text-shadow:0 2px 12px #000;letter-spacing:.12em;pointer-events:none}
+#TMR.danger{color:#ff3333;animation:blink .55s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.6}}
+/* Right panel */
+#SCR{position:absolute;top:12px;right:12px;text-align:right}
+.h1{color:#f0c040;font-size:.9rem;text-shadow:0 1px 4px #000;display:block}
+.h2{color:#7abadd;font-size:.74rem;display:block;margin-top:.12em}
+.h3{color:#aa88ff;font-size:.74rem;display:block;margin-top:.12em}
+/* XP */
+#XPW{position:absolute;top:56px;right:12px;width:130px}
+#XPB{height:5px;background:#000e20;border-radius:3px;overflow:hidden;border:1px solid #112030}
+#XPF{height:100%;background:linear-gradient(90deg,#5500ff,#9944ff,#cc66ff);width:0%;border-radius:3px;transition:width .3s}
+/* Boss bar */
+#BSB{position:absolute;top:58px;left:50%;transform:translateX(-50%);width:min(420px,78vw);display:none}
+#BSL{color:#4dff9b;font-size:.68rem;text-align:center;display:block;letter-spacing:.22em;text-transform:uppercase;text-shadow:0 0 12px #4dff9b66;margin-bottom:3px}
+#BST{height:14px;background:#001108;border-radius:6px;border:1.5px solid #4dff9b33;overflow:hidden;box-shadow:0 0 16px #4dff9b18}
+#BSF{height:100%;background:linear-gradient(90deg,#008833,#4dff9b);width:100%;transition:width .12s;border-radius:4px}
+/* Wave */
+#WVL{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);color:#1e3850;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;text-shadow:0 1px 3px #000;white-space:nowrap;pointer-events:none}
+/* Minimap */
+#MM{position:absolute;bottom:32px;left:12px}
+#MMC{width:88px;height:88px;border-radius:50%;border:1.5px solid #1a3050;background:rgba(0,8,20,.8);display:block;box-shadow:0 2px 10px #000a}
+/* FPS */
+#FPS{position:absolute;bottom:2px;right:4px;color:#0e1e30;font-size:.58rem;pointer-events:none}
 
-/* ══════════════════════════════════════════
-   UPGRADE CARD SCREEN
-══════════════════════════════════════════ */
-#upgrade{
-  background:rgba(0,0,0,.84);pointer-events:all;
-  backdrop-filter:blur(6px);
-}
-.up-title{font-size:clamp(1.3rem,3.3vw,2rem);letter-spacing:.25em;color:#f0c040;text-transform:uppercase;margin-bottom:.25rem}
-.up-sub{font-size:.8rem;color:#6a6050;margin-bottom:1.8rem;letter-spacing:.1em}
-.cards-row{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center;padding:0 1rem}
-.card{
-  background:linear-gradient(145deg,#0b1c34,#0e2040);
-  border-radius:13px;padding:1.5rem 1rem;width:min(200px,88vw);
-  cursor:pointer;transition:all .22s cubic-bezier(.34,1.56,.64,1);
-  text-align:center;pointer-events:all;position:relative;overflow:hidden;
-}
-.card::after{
-  content:'';position:absolute;inset:0;border-radius:13px;
-  opacity:0;transition:opacity .25s;
-}
-.card:hover{transform:translateY(-10px) scale(1.04)}
-.card:hover::after{opacity:1}
-/* Rarity borders & glows */
-.card.common{border:2px solid #808080}.card.common:hover{box-shadow:0 10px 35px #80808030;border-color:#b0b0b0}.card.common::after{background:radial-gradient(ellipse at 50% 0%,#80808012,transparent 60%)}
-.card.rare{border:2px solid #3060ff}.card.rare:hover{box-shadow:0 10px 35px #3060ff45;border-color:#80a8ff}.card.rare::after{background:radial-gradient(ellipse at 50% 0%,#3060ff15,transparent 60%)}
-.card.epic{border:2px solid #8820d8}.card.epic:hover{box-shadow:0 10px 35px #8820d848;border-color:#b868ff}.card.epic::after{background:radial-gradient(ellipse at 50% 0%,#8820d818,transparent 60%)}
-.card.legendary{border:2px solid #f0c040}.card.legendary:hover{box-shadow:0 10px 35px #f0c04055;border-color:#f8e080}.card.legendary::after{background:radial-gradient(ellipse at 50% 0%,#f0c04018,transparent 60%)}
-.card-key-hint{position:absolute;top:8px;right:10px;font-size:.62rem;color:rgba(255,255,255,.2);font-family:monospace}
-.card-icon{font-size:3rem;margin-bottom:.5rem;display:block}
-.card-rar-lbl{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;margin-bottom:.4rem;font-weight:700}
-.card.common .card-rar-lbl{color:#a0a0a0}
-.card.rare .card-rar-lbl{color:#80a8ff}
-.card.epic .card-rar-lbl{color:#c880ff}
-.card.legendary .card-rar-lbl{color:#f0c040}
-.card-name{font-size:.92rem;font-weight:700;color:#f0e6c8;margin-bottom:.4rem;line-height:1.3}
-.card-desc{font-size:.74rem;color:#8a8070;line-height:1.45}
-.up-hint{margin-top:1.5rem;font-size:.7rem;color:#3a4050;letter-spacing:.08em}
+/* ── OVERLAYS ─────────────────────────────────────────────── */
+#WAN{position:fixed;top:46%;left:50%;transform:translate(-50%,-50%);color:#ff8844;font-size:clamp(.95rem,4vw,1.9rem);font-weight:900;text-shadow:0 0 28px #ff884466;letter-spacing:.2em;text-transform:uppercase;opacity:0;transition:opacity .4s;pointer-events:none;z-index:40;text-align:center}
+#TOAST{position:fixed;top:74px;left:50%;transform:translateX(-50%);background:rgba(0,12,36,.94);border:1px solid #244870;border-radius:6px;color:#88ccff;font-size:.78rem;padding:.46em 1.2em;letter-spacing:.1em;opacity:0;transition:opacity .25s;pointer-events:none;z-index:60;white-space:nowrap;box-shadow:0 2px 12px #0008}
+#DAMO{position:fixed;inset:0;background:rgba(200,0,20,.15);pointer-events:none;opacity:0;z-index:12;transition:opacity .14s}
 
-/* ══════════════════════════════════════════
-   DEATH SCREEN
-══════════════════════════════════════════ */
-#death{
-  background:linear-gradient(180deg,rgba(20,0,0,.97),rgba(4,9,15,.99));
-  pointer-events:all;
-}
-.death-ship{font-size:4rem;animation:shipSink 2.4s ease-in-out infinite alternate;display:block;margin-bottom:.5rem}
-@keyframes shipSink{
-  from{transform:rotate(-8deg) translateY(0)}
-  to{transform:rotate(8deg) translateY(10px)}
-}
-.death-quote{font-size:clamp(.7rem,1.7vw,.88rem);letter-spacing:.3em;color:#6a6050;text-transform:uppercase;margin-bottom:.6rem;font-style:italic}
-.death-time{font-size:clamp(2.5rem,7vw,5rem);font-weight:700;color:#f0c040;text-shadow:0 0 35px #f0c04060;margin-bottom:.15rem;line-height:1}
-.death-score{font-size:1.05rem;color:#6a7080;margin-bottom:.25rem}.death-score span{color:#f0e6c8;font-weight:700}
-.death-best{font-size:.8rem;color:#3a4050;margin-bottom:1rem}.death-best span{color:#f0c04080}
-.death-skulls{
-  background:linear-gradient(135deg,rgba(240,192,64,.08),rgba(240,192,64,.04));
-  border:1px solid #f0c04030;border-radius:9px;
-  padding:.7rem 1.8rem;font-size:.95rem;color:#f0c040;margin-bottom:1rem;
-}
-.death-ups{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center;margin-bottom:1.1rem;max-width:520px}
-.death-tag{background:rgba(255,255,255,.06);border-radius:5px;padding:.22rem .55rem;font-size:.7rem;color:#7a8090}
-.death-btns{display:flex;gap:.9rem;flex-wrap:wrap;justify-content:center}
-.death-share{
-  margin-top:1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
-  border-radius:7px;padding:.6rem 1.4rem;font-size:.78rem;color:#a0b0c0;
-  cursor:pointer;transition:all .2s;pointer-events:all;font-family:inherit;
-}
-.death-share:hover{background:rgba(255,255,255,.1);color:#f0e6c8}
-.death-share.copied{color:#4dff9b;border-color:#4dff9b40}
+/* ── UPGRADE SCREEN ───────────────────────────────────────── */
+#UPS{background:rgba(0,4,14,.94);backdrop-filter:blur(8px);pointer-events:all;z-index:55}
+#UPS h2{color:#f0c040;font-size:clamp(1.1rem,4vw,2rem);letter-spacing:.25em;text-transform:uppercase;text-shadow:0 0 28px #f0c04055;margin-bottom:.15em}
+#UPSUB{color:#2a4a6a;font-size:.78rem;margin-bottom:1.3em;letter-spacing:.1em}
+#CDS{display:flex;gap:.8em;flex-wrap:wrap;justify-content:center;max-width:860px;padding:0 1rem}
+.card{width:min(198px,28vw);background:linear-gradient(160deg,#06101e,#030c16);border-radius:10px;padding:.95em .8em;cursor:pointer;transition:all .14s;border:2.5px solid #182840;text-align:center;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:-100%;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,.06),transparent);transition:top .35s}
+.card:hover::before{top:0}
+.card:hover{transform:scale(1.06) translateY(-5px)}
+.card.common{border-color:#4a5a6a}
+.card.common:hover{box-shadow:0 0 20px #4a5a6a55}
+.card.rare{border-color:#2266ee}
+.card.rare:hover{box-shadow:0 0 22px #2266ee66}
+.card.epic{border-color:#8822dd}
+.card.epic:hover{box-shadow:0 0 24px #8822dd66}
+.card.legendary{border-color:#f0c040;animation:lglow 1.6s ease-in-out infinite}
+@keyframes lglow{0%,100%{box-shadow:0 0 18px #f0c04044}50%{box-shadow:0 0 40px #f0c040aa}}
+.ci{font-size:2.4em;margin-bottom:.2em;filter:drop-shadow(0 2px 4px #000)}
+.cn{color:#dde;font-size:.8rem;font-weight:700;margin-bottom:.25em}
+.cd{color:#5a7a9a;font-size:.65rem;line-height:1.45;margin-bottom:.4em;min-height:40px}
+.cr{font-size:.56rem;text-transform:uppercase;letter-spacing:.18em;font-weight:700}
+.card.common .cr{color:#6a8a9a}.card.rare .cr{color:#4488ff}
+.card.epic .cr{color:#aa55ff}.card.legendary .cr{color:#f0c040}
+#UPHINT{color:#152535;font-size:.68rem;margin-top:.9em;letter-spacing:.1em}
 
-/* ══════════════════════════════════════════
-   VICTORY SCREEN
-══════════════════════════════════════════ */
-#victory{
-  background:radial-gradient(ellipse at center,#0a2010 0%,#04090f 70%);
-  pointer-events:all;
-}
-.victory-ico{font-size:4rem;margin-bottom:.5rem;animation:victoryBounce 1s ease-in-out infinite alternate}
-@keyframes victoryBounce{from{transform:scale(1) rotate(-5deg)}to{transform:scale(1.1) rotate(5deg)}}
-.victory-title{font-size:clamp(2.5rem,7vw,5rem);font-weight:700;color:#4dff9b;text-shadow:0 0 50px #4dff9b80;margin-bottom:.4rem}
-.victory-sub{font-size:clamp(.7rem,1.7vw,.9rem);letter-spacing:.3em;color:#4dff9b80;text-transform:uppercase;margin-bottom:1.2rem}
-.victory-stat{font-size:1.2rem;color:#f0e6c8;margin-bottom:.4rem}
+/* ── DEATH SCREEN ─────────────────────────────────────────── */
+#DS{background:linear-gradient(160deg,#1a0008,#04101e 50%,#04101e);pointer-events:all;z-index:70;padding:1rem;overflow-y:auto}
+#DTT{font-size:clamp(1.6rem,6vw,3.5rem);color:#ff2222;text-shadow:0 0 44px #ff222255;text-transform:uppercase;font-weight:900;letter-spacing:.2em;text-align:center;margin-bottom:.2em}
+#DFL{color:#5a2222;font-style:italic;font-size:.82rem;margin-bottom:1.3em;text-align:center}
+.dbox{background:rgba(6,12,26,.9);border:1px solid #1a2a3a;border-radius:10px;padding:1.2em 1.4em;max-width:min(460px,90vw);width:100%;margin-bottom:1rem}
+#DTIME{font-size:2.8rem;font-weight:900;color:#f0c040;text-align:center;line-height:1}
+#DTIMELBL{color:#2a4060;font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;text-align:center;margin-bottom:.9rem}
+.dstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:.8rem}
+.dstat{background:#04101e;border-radius:7px;padding:.65rem .4rem;text-align:center;border:1px solid #0e1e2e}
+.dslbl{color:#2a3a4a;font-size:.57rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.22rem}
+.dsval{font-size:1.2rem;font-weight:700}
+.dfleet{display:flex;justify-content:center;flex-wrap:wrap;gap:.35rem;font-size:1.6rem;border-top:1px solid #0e1e2e;padding-top:.8rem}
+#DSHARE{background:#040e1c;border:1px solid #1a2e44;border-radius:6px;padding:.7em 1em;color:#446688;font-size:.7rem;font-family:monospace;white-space:pre-line;max-width:min(310px,88vw);line-height:1.65;cursor:pointer;transition:border-color .18s;margin:.4rem 0 .2rem;word-break:break-word;text-align:left}
+#DSHARE:hover{border-color:#3a5a88}
+#DSHARELBL{color:#1a3050;font-size:.6rem;margin-bottom:.8rem;text-align:center}
+.dbtns{display:flex;flex-direction:column;gap:.4rem;align-items:center;width:min(320px,88vw)}
 
-/* ══════════════════════════════════════════
-   LEADERBOARD
-══════════════════════════════════════════ */
-#leaderboard{
-  position:fixed;inset:0;z-index:170;display:flex;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.9);backdrop-filter:blur(6px);pointer-events:all;
-}
-.lb-box{
-  background:linear-gradient(135deg,#08121e,#0c1828);
-  border:2px solid #f0c04030;border-radius:14px;
-  padding:1.8rem;width:min(560px,94vw);max-height:86vh;overflow-y:auto;
-  box-shadow:0 0 60px #f0c04012,0 20px 80px #000;
-}
-.lb-title{font-size:1.3rem;color:#f0c040;letter-spacing:.25em;text-align:center;margin-bottom:1.2rem}
-.lb-entry{
-  display:flex;align-items:center;gap:.7rem;padding:.6rem .8rem;
-  border-radius:7px;margin-bottom:.3rem;font-size:.85rem;
-  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
-}
-.lb-entry.gold{background:rgba(240,192,64,.08);border-color:#f0c04040}
-.lb-rank{width:26px;text-align:right;color:#6a7080;font-size:.8rem;font-weight:700}
-.lb-ship{font-size:1rem;width:22px;text-align:center}
-.lb-name{flex:1;color:#f0e6c8}
-.lb-time{color:#f0c040;width:52px;text-align:right;font-size:.8rem}
-.lb-score{color:#8a9080;width:62px;text-align:right;font-size:.75rem}
-.lb-empty{text-align:center;color:#3a4050;font-style:italic;padding:2rem;font-size:.85rem}
+/* ── META SCREEN ──────────────────────────────────────────── */
+#MS{background:rgba(0,3,12,.97);pointer-events:all;z-index:60;padding:1.5rem 1rem;overflow-y:auto}
+#MS h2{color:#f0c040;font-size:clamp(1rem,4vw,1.7rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:.2em}
+#MSKD{color:#f0c040;font-size:.86rem;margin-bottom:1.1em}
+#MG{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:.7rem;max-width:860px;width:100%;margin-bottom:1rem}
+.mu{background:linear-gradient(135deg,#060f1a,#030c14);border:2px solid #0e1e2e;border-radius:8px;padding:.82em;transition:all .14s;text-align:center}
+.mu.can{border-color:#154a20;cursor:pointer}
+.mu.can:hover{border-color:#2a8a40;background:linear-gradient(135deg,#071410,#060e0a);transform:translateY(-2px)}
+.mu.own{border-color:#1a4a18;background:linear-gradient(135deg,#041008,#020c06)}
+.mu.disabled{opacity:.38;cursor:default}
+.mui{font-size:1.7em;margin-bottom:.24em}
+.mun{color:#ccd;font-size:.76rem;font-weight:700;margin-bottom:.15em}
+.mud{color:#2a4a5a;font-size:.63rem;line-height:1.42;margin-bottom:.3em}
+.muc{color:#f0c040;font-size:.68rem}
+.mu.own .muc{color:#4dff9b}
 
-/* ══════════════════════════════════════════
-   MINIMAP
-══════════════════════════════════════════ */
-#minimap{
-  position:fixed;bottom:14px;right:14px;width:115px;height:115px;
-  border-radius:50%;border:2px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.72);z-index:15;display:none;
-}
+/* ── SHIP SELECT ──────────────────────────────────────────── */
+#SHS{background:rgba(0,3,12,.97);pointer-events:all;z-index:60;padding:1.5rem 1rem;overflow-y:auto}
+#SHS h2{color:#f0c040;font-size:clamp(1rem,4vw,1.7rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:1rem}
+#SHG{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:.7rem;max-width:720px;width:100%;margin-bottom:1rem}
+.sc{background:linear-gradient(135deg,#060f1a,#030c14);border:2px solid #0e1e2e;border-radius:8px;padding:.9em;transition:all .14s;text-align:center;cursor:pointer}
+.sc:hover:not(.locked){border-color:#3a6090;background:linear-gradient(135deg,#0a1a28,#060f1a)}
+.sc.sel{border-color:#f0c040;box-shadow:0 0 18px #f0c04030}
+.sc.locked{opacity:.36;cursor:default}
+.sci{font-size:2.2em;margin-bottom:.28em}
+.scn{color:#dde;font-size:.78rem;font-weight:700;margin-bottom:.15em}
+.scd{color:#2a4060;font-size:.63rem;line-height:1.38;margin-bottom:.28em}
+.scc{color:#f0c040;font-size:.66rem}
+.sc.sel .scc{color:#4dff9b}
 
-/* ══════════════════════════════════════════
-   MOBILE JOYSTICK
-══════════════════════════════════════════ */
-#joystick{
-  position:fixed;bottom:75px;left:30px;width:100px;height:100px;
-  pointer-events:all;display:none;z-index:15;touch-action:none;
-}
-@media(pointer:coarse),(max-width:800px){#joystick{display:block}}
-.joy-base{
-  width:100%;height:100%;border-radius:50%;
-  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);
-  position:relative;touch-action:none;
-}
-.joy-knob{
-  position:absolute;width:36px;height:36px;border-radius:50%;
-  background:rgba(255,255,255,.26);border:2px solid rgba(255,255,255,.45);
-  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;
-}
-/* ══════════════════════════════════════════
-   OVERLAYS
-══════════════════════════════════════════ */
-#dmgFlash{position:fixed;inset:0;pointer-events:none;z-index:45;opacity:0;transition:opacity .12s;
-  background:radial-gradient(ellipse at center,transparent 38%,rgba(200,0,0,.55))}
-#ghostVignette{position:fixed;inset:0;pointer-events:none;z-index:44;opacity:0;transition:opacity .8s;
-  background:radial-gradient(ellipse at center,transparent 32%,rgba(0,200,100,.3))}
-#stormVignette{position:fixed;inset:0;pointer-events:none;z-index:43;opacity:0;transition:opacity 3s;
-  background:radial-gradient(ellipse at center,transparent 25%,rgba(0,20,60,.6))}
-/* Floating pickup text */
-.pfloat{
-  position:fixed;pointer-events:none;z-index:60;
-  font-size:.95rem;font-weight:700;color:#f0c040;
-  animation:floatUp 1.1s ease-out forwards;
-}
-@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-58px)}}
-.pfloat.skull{color:#bb88ff}
-.pfloat.green{color:#4dff9b}
-/* Particle canvas */
-#particles{position:fixed;inset:0;pointer-events:none;z-index:5}
-/* Tooltip */
-.tooltip{
-  position:fixed;z-index:300;background:rgba(0,0,0,.92);border:1px solid #f0c04050;
-  border-radius:7px;padding:.6rem .9rem;font-size:.75rem;color:#f0e6c8;max-width:200px;
-  pointer-events:none;line-height:1.5;
-}
+/* ── LEADERBOARD ──────────────────────────────────────────── */
+#LBS{background:rgba(0,3,12,.97);pointer-events:all;z-index:60;padding:1.5rem 1rem;overflow-y:auto}
+#LBS h2{color:#f0c040;font-size:clamp(1rem,4vw,1.7rem);letter-spacing:.22em;text-transform:uppercase;margin-bottom:1rem}
+#LBL{max-width:440px;width:100%;font-size:.78rem;color:#446688;margin-bottom:1.2rem}
+.lrow{display:flex;justify-content:space-between;align-items:center;padding:.5em .55em;border-bottom:1px solid #0c1c2c;gap:.4em}
+.lrow:nth-child(1){color:#f0c040;font-weight:700}
+.lrow:nth-child(2){color:#cccccc;font-weight:700}
+.lrow:nth-child(3){color:#cc9933;font-weight:700}
+
+/* ── DAILY CHALLENGE BANNER ───────────────────────────────── */
+#DCB{position:fixed;top:12px;left:50%;transform:translateX(-50%) translateY(-60px);background:rgba(0,30,60,.95);border:1px solid #0055aa;border-radius:8px;color:#88bbff;font-size:.72rem;padding:.38em .9em;z-index:80;transition:transform .5s;pointer-events:none;letter-spacing:.1em}
+#DCB.show{transform:translateX(-50%) translateY(0)}
+
+/* ── PAUSE ────────────────────────────────────────────────── */
+#POV{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:center;justify-content:center;pointer-events:all}
+#POV.on{display:flex}
+.pbox{background:rgba(0,8,22,.97);border:2px solid #244870;border-radius:10px;padding:1.8em 2.6em;text-align:center}
+.pbox h3{color:#f0c040;font-size:1.4rem;letter-spacing:.2em;margin-bottom:.9em;text-transform:uppercase}
+
+/* ── MOBILE JOYSTICK ──────────────────────────────────────── */
+#JZ{position:fixed;bottom:0;left:0;width:55%;height:48%;z-index:22;pointer-events:none;display:none}
+#JZ.mob{pointer-events:all;display:block}
+#JB{position:absolute;width:108px;height:108px;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);display:none;pointer-events:none}
+#JT{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.34);top:32px;left:32px}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1a3050;border-radius:3px}
 </style>
 </head>
 <body>
+<!-- Loading -->
+<div id="LS" class="scr on">
+  <h1>MAELSTROM</h1>
+  <div class="sub">Survive the Sea &nbsp;·&nbsp; Outlast the Storm</div>
+  <div id="LBW"><div id="LBF"></div></div>
+  <div id="LT">Initialising seas…</div>
+</div>
 
-<!-- THREE.JS CANVAS -->
-<canvas id="canvas"></canvas>
-<!-- PARTICLE CANVAS -->
-<canvas id="particles"></canvas>
+<canvas id="c" tabindex="0"></canvas>
 
-<!-- ══════════════ UI LAYER ══════════════ -->
-<div id="ui">
+<!-- UI overlays always in DOM -->
+<div id="TOAST"></div>
+<div id="WAN"></div>
+<div id="DCB"></div>
+<div id="DAMO"></div>
 
-  <!-- LOADING -->
-  <div id="loading" class="screen">
-    <div class="load-anchor">⚓</div>
-    <div class="load-title">MAELSTROM</div>
-    <div class="load-sub">Survive the Sea &middot; Outlast the Storm</div>
-    <div class="load-bar-outer"><div class="load-bar-fill" id="ldBar"></div></div>
-    <div class="load-pct" id="ldPct">0%</div>
-    <div class="load-tip" id="ldTip">Charting the seven seas...</div>
-    <div class="load-waves"><div class="load-wave"></div><div class="load-wave"></div></div>
-  </div>
+<!-- HUD -->
+<div id="HUD">
+  <div id="HPW"><div class="hud-lbl">⚓ Hull</div><div id="HPB"><div id="HPF"></div></div></div>
+  <div id="FTZ">👻 PHASED</div>
+  <div id="TMR">0:00</div>
+  <div id="SCR"><span class="h1" id="DBL">🪙 0</span><span class="h2" id="FLT">⛵ Fleet: 1</span><span class="h3" id="LVL">Lv.1</span></div>
+  <div id="XPW"><div class="hud-lbl">Next Level</div><div id="XPB"><div id="XPF"></div></div></div>
+  <div id="BSB"><span id="BSL">💀 Ghost Ship Boss</span><div id="BST"><div id="BSF"></div></div></div>
+  <div id="WVL">Open Ocean · Minute 0</div>
+  <div id="MM"><canvas id="MMC" width="88" height="88"></canvas></div>
+  <div id="FPS"></div>
+</div>
 
-  <!-- MAIN MENU -->
-  <div id="menu" class="screen hidden">
-    <div class="menu-title">MAELSTROM</div>
-    <div class="menu-sub">Survive the Sea &middot; Outlast the Storm</div>
-    <div class="menu-btns">
-      <button class="btn btn-primary" onclick="startGame()">⚔️&nbsp; Play — Open Ocean</button>
-      <button class="btn btn-secondary" onclick="openLeaderboard()">🏆&nbsp; Leaderboard</button>
-      <button class="btn btn-secondary" onclick="openSkulls()">💀&nbsp; Skull Upgrades &nbsp;<span id="menuSkullBadge">0</span>&nbsp;Skulls</button>
-      <button class="btn btn-secondary" onclick="shareGame()">📣&nbsp; Share the Game</button>
-    </div>
-    <div class="menu-stats">
-      Best: <span id="menuBest">0:00</span>
-      &nbsp;|&nbsp; Skulls: <span id="menuSkulls">0</span>
-      &nbsp;|&nbsp; Runs: <span id="menuRuns">0</span>
-    </div>
-    <div class="menu-version">MAELSTROM v1.0 — Kenney Pirate Kit CC0</div>
-  </div>
-
-  <!-- HUD (visible while playing) -->
-  <div id="hud" class="hidden">
-    <!-- Top Left: HP -->
-    <div class="hud-tl">
-      <div class="hbar">
-        <div class="hbar-icon">⚓</div>
-        <div class="hbar-bg"><div class="hbar-fill hp" id="hpBar" style="width:100%"></div></div>
-        <div class="hbar-txt" id="hpTxt">100</div>
-      </div>
-    </div>
-    <!-- Top Center: Timer -->
-    <div class="hud-timer" id="hudTimer">0:00</div>
-    <!-- Top Right: Doubloons & Level -->
-    <div class="hud-tr">
-      <div class="hud-tr-lbl">Doubloons</div>
-      <div class="hud-tr-val" id="hudDbl">0</div>
-      <div class="hud-lv-row">
-        <div class="hud-lv-bg"><div class="hud-lv-fill" id="hudLvBar" style="width:0%"></div></div>
-        <div class="hud-lv-txt" id="hudLvTxt">Lv 0 → 100</div>
-      </div>
-    </div>
-    <!-- Fleet count -->
-    <div class="hud-fleet">Fleet: <b id="hudFleet">1</b>&nbsp;ship(s) &nbsp;|&nbsp; Kills: <b id="hudKills" style="color:#ff8080">0</b></div>
-    <!-- Active abilities -->
-    <div class="hud-abilities" id="hudAbilities"></div>
-    <!-- Boss Bar -->
-    <div class="boss-bar-wrap" id="bossBarWrap">
-      <div class="boss-bar-lbl">☠ Ghost Ship — The Dread</div>
-      <div class="boss-bar-bg"><div class="boss-bar-fill" id="bossBarFill" style="width:100%"></div></div>
-    </div>
-    <!-- Wave message -->
-    <div class="wave-msg" id="waveMsg"></div>
-  </div>
-
-  <!-- UPGRADE SCREEN -->
-  <div id="upgrade" class="screen hidden">
-    <div class="up-title">⬆ Choose Your Upgrade</div>
-    <div class="up-sub">Select a card to empower your fleet — choose wisely, Captain</div>
-    <div class="cards-row" id="cardsRow"></div>
-    <div class="up-hint">Keyboard: [1] [2] [3] to select instantly</div>
-  </div>
-
-  <!-- DEATH SCREEN -->
-  <div id="death" class="screen hidden">
-    <span class="death-ship">🚢</span>
-    <div class="death-quote">The sea claims another legend… for now.</div>
-    <div class="death-time" id="deathTime">0:00</div>
-    <div class="death-score">Score: <span id="deathScore">0</span> Doubloons</div>
-    <div class="death-best">Personal Best: <span id="deathBest">0:00</span></div>
-    <div class="death-skulls">💀 Skulls Earned: <span id="deathSkulls">0</span> &nbsp;(Total: <span id="deathSkullsTotal">0</span>)</div>
-    <div class="death-ups" id="deathUps"></div>
-    <div class="death-btns">
-      <button class="btn btn-primary" onclick="startGame()" style="pointer-events:all">🔄 Play Again</button>
-      <button class="btn btn-secondary" onclick="showMenu()" style="pointer-events:all">🏠 Main Menu</button>
-    </div>
-    <button class="death-share" id="shareBtn" onclick="shareScore()">📋 Copy Share Card</button>
-  </div>
-
-  <!-- VICTORY SCREEN -->
-  <div id="victory" class="screen hidden">
-    <span class="victory-ico">👑</span>
-    <div class="victory-title">LEGEND!</div>
-    <div class="victory-sub">Only 0.3% of Captains survive 30 minutes</div>
-    <div class="victory-stat" id="victoryStat">Score: 0</div>
-    <div style="display:flex;gap:.9rem;margin-top:1.4rem;flex-wrap:wrap;justify-content:center;pointer-events:all">
-      <button class="btn btn-primary" onclick="startGame()" style="pointer-events:all">🔄 Play Again</button>
-      <button class="btn btn-secondary" onclick="showMenu()" style="pointer-events:all">🏠 Main Menu</button>
-    </div>
-  </div>
-
-</div><!-- #ui -->
-
-<!-- SKULL UPGRADE MODAL -->
-<div id="skullModal" class="hidden">
-  <div class="modal-box">
-    <div class="modal-title">💀 Skull Upgrades</div>
-    <div class="modal-skulls">Available Skulls: <b id="modalSkullCount">0</b></div>
-    <div class="upgrade-grid" id="upgradeGrid"></div>
-    <button class="modal-close" onclick="closeSkulls()">Close</button>
+<!-- Main Menu -->
+<div id="MN" class="scr">
+  <div class="mn-inner">
+    <h1>MAELSTROM</h1>
+    <div class="divider"></div>
+    <div class="tagline">Survive the Sea &nbsp;·&nbsp; Outlast the Storm</div>
+    <div class="skull-row" id="MNSKULL">💀 Skulls: 0</div>
+    <div class="best-row" id="MNBEST"></div>
+    <button class="btn btn-gold" id="bP" style="width:100%;justify-content:center;padding:.85em 2em;font-size:1rem">⚔️ &nbsp;PLAY — Open Ocean</button>
+    <button class="btn btn-dark" id="bSH" style="width:100%"><span>🎭 Ship Select</span><span id="SHIPLBL" style="opacity:.5;font-size:.78rem">Sloop</span></button>
+    <button class="btn btn-dark" id="bMT" style="width:100%"><span>💀 Skull Upgrades</span><span id="SKULLLBL" style="font-size:.78rem;color:#aa88ff">0 💀</span></button>
+    <button class="btn btn-dark" id="bLB" style="width:100%"><span>🏆 Leaderboard</span><span style="font-size:.72rem;opacity:.4">Top 15</span></button>
+    <div class="hint">WASD / Arrows to move &nbsp;·&nbsp; Auto-fire enabled<br>Mobile: virtual joystick bottom-left</div>
   </div>
 </div>
 
-<!-- LEADERBOARD MODAL -->
-<div id="leaderboard" class="hidden">
-  <div class="lb-box">
-    <div class="lb-title">🏆 Top Captains</div>
-    <div id="lbEntries"></div>
-    <button class="modal-close" onclick="closeLeaderboard()" style="margin-top:1rem;pointer-events:all">Close</button>
+<!-- Ship Select -->
+<div id="SHS" class="scr">
+  <h2>Choose Your Vessel</h2>
+  <div id="SHG"></div>
+  <button class="btn btn-dark" id="bSHB">← Back to Menu</button>
+</div>
+
+<!-- Meta Upgrades -->
+<div id="MS" class="scr">
+  <h2>💀 Skull Upgrade Tree</h2>
+  <div id="MSKD">Skulls: 0</div>
+  <div id="MG"></div>
+  <button class="btn btn-dark" id="bMTB">← Back to Menu</button>
+</div>
+
+<!-- Leaderboard -->
+<div id="LBS" class="scr">
+  <h2>🏆 Leaderboard</h2>
+  <div id="LBL"></div>
+  <button class="btn btn-dark" id="bLBB">← Back to Menu</button>
+</div>
+
+<!-- Upgrade Cards -->
+<div id="UPS" class="scr">
+  <h2>⚓ Level Up!</h2>
+  <div id="UPSUB">Choose a power — or press 1, 2, 3</div>
+  <div id="CDS"></div>
+  <div id="UPHINT">Click a card · 1 2 3 keys · ESC to skip</div>
+</div>
+
+<!-- Death Screen -->
+<div id="DS" class="scr">
+  <div id="DTT">SHIPWRECKED</div>
+  <div id="DFL">"The sea claims another legend… for now."</div>
+  <div class="dbox">
+    <div id="DTIME">0:00</div>
+    <div id="DTIMELBL">Survival Time</div>
+    <div class="dstats">
+      <div class="dstat"><div class="dslbl">Score</div><div class="dsval" id="DSCO" style="color:#fff">0</div></div>
+      <div class="dstat"><div class="dslbl">Doubloons</div><div class="dsval" id="DDBL" style="color:#f0c040">0</div></div>
+      <div class="dstat" style="border-color:#2a1a4a"><div class="dslbl" style="color:#6a3aaa">Skulls</div><div class="dsval" id="DSKL" style="color:#aa66ff">+0</div></div>
+    </div>
+    <div class="dfleet" id="DFLEET"></div>
+  </div>
+  <div id="DSHARE" title="Click to copy & share"></div>
+  <div id="DSHARELBL">📋 Click to copy &amp; share</div>
+  <div class="dbtns">
+    <button class="btn btn-gold" id="bCON" style="width:100%;justify-content:center">▶️ Continue (Watch Ad — +50% HP)</button>
+    <button class="btn btn-gold" id="bAG" style="width:100%;justify-content:center">⚓ Sail Again</button>
+    <button class="btn btn-dark" id="bDM" style="width:100%;justify-content:center">🏠 Main Menu</button>
   </div>
 </div>
 
-<!-- BOSS WARNING -->
-<div class="boss-warn" id="bossWarn">
-  <div class="boss-warn-inner">👻 GHOST SHIP APPROACHES!</div>
-</div>
-
-<!-- OVERLAYS -->
-<div id="dmgFlash"></div>
-<div id="ghostVignette"></div>
-<div id="stormVignette"></div>
-
-<!-- MINIMAP -->
-<canvas id="minimap" width="115" height="115"></canvas>
-
-<!-- JOYSTICK -->
-<div id="joystick">
-  <div class="joy-base" id="joyBase">
-    <div class="joy-knob" id="joyKnob"></div>
+<!-- Pause -->
+<div id="POV">
+  <div class="pbox">
+    <h3>⏸ Paused</h3>
+    <button class="btn btn-dark" id="bRS">▶ Resume</button>
   </div>
 </div>
 
-<!-- THREE.JS r128 -->
+<!-- Mobile joystick -->
+<div id="JZ"><div id="JB"><div id="JT"></div></div></div>
+
+<!-- THREE.JS — SYNCHRONOUS, NO DEFER/ASYNC, EXACT VERSION LOCK -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<!-- GLTFLoader for r128 -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-
 <script>
+/* ═══════════════════════════════════════════════════════════════════════
+   MAELSTROM v3.0 — Production Game Engine
+   Naval Survivor Roguelite for Poki / CrazyGames / GitHub Pages
+
+   VERIFIED PATTERNS (from skill):
+   ✅ Three.js r128 exact API (outputEncoding, physicallyCorrectLights)
+   ✅ GLTFLoader from examples/js/ (NOT jsm/) — attaches to THREE global
+   ✅ metalness=0 on all materials — prevents black models without envMap
+   ✅ 6s timeout + resolve(fallback) on every load — never hangs
+   ✅ clone(true) deep clone on every asset spawn
+   ✅ processGroup() called on every gltf.scene
+   ✅ cleanupRun() before every initGame() — no mesh accumulation
+   ✅ dt = Math.min(dt, 0.05) — tab-switch protection
+   ✅ Boss spawn guarded by lastBossMinute — never per-frame check
+   ✅ Ghost Breaker dmgMult passed as parameter to fleet ships
+   ✅ Player movement with momentum/inertia
+   ✅ Per-ship turning rates
+   ✅ 3-phase boss system
+   ✅ All 16 upgrades functional (including Treasure Lure)
+   ✅ All 4 ship passives implemented
+   ✅ Web Audio API synth — init on gesture
+   ✅ BufferGeometry particles — single draw call
+   ✅ Bullet pool — pre-allocated, no new in loop
+   ✅ Ocean: 24×24 segments, every-other-frame animation
+   ✅ AdSDK hooks for Poki + CrazyGames
+   ✅ Seeded daily challenge RNG
+   ✅ Share card emoji format
+   ✅ Boss death chest scatter + phases
+   ✅ Rowboat Gang respawn passive
+   ✅ Armada Commander fortress passive
+   ✅ Screen shake system
+   ✅ DOM HP bars tagged data-hpbar for bulk cleanup
+═══════════════════════════════════════════════════════════════════════ */
 'use strict';
-// ═══════════════════════════════════════════════════════════════
-//  MAELSTROM — Production Game Engine
-//  Full implementation: Three.js r128 + GLB assets + game loop
-// ═══════════════════════════════════════════════════════════════
+(function(){
 
-// ── Constants ─────────────────────────────────────────────────
-const GLB   = name => `./assets/Models/GLB%20format/${name}.glb`;
-const PI2   = Math.PI * 2;
-const TIPS  = [
-  'Auto-cannons fire at the nearest enemy — your job is to DODGE.',
-  'Upgrade cards appear every 100 Doubloons collected.',
-  'Ghost Ship bosses appear at minutes 8, 16, and 24.',
-  'Fleet ships orbit you and auto-fight enemies.',
-  'Collect floating coins, chests and bottles for bonus Doubloons.',
-  'Barrel Bombs explode on contact — lay traps in enemy paths.',
-  'Only 0.3% of Captains survive 30 minutes. Be a legend.',
-  'Use rocks as cover — rowboats charge straight through them.',
-  'Ghost Hull upgrade makes you invincible for 5 seconds every 30s.',
-  'The Maelstrom Vortex sucks in and destroys all nearby enemies.',
-];
-const MODELS_TO_LOAD = [
-  ['ship-pirate-small',3.5],['ship-pirate-medium',4.5],['ship-pirate-large',6],
-  ['ship-ghost',5.5],['ship-small',3.2],['ship-medium',4.2],['ship-large',5.8],
-  ['ship-wreck',4.5],['boat-row-small',2],['boat-row-large',3.2],
-  ['cannon-ball',.38],['chest',1.1],['barrel',.9],['crate',.85],
-  ['rocks-a',3.8],['rocks-b',3.8],['rocks-c',3.8],
-  ['palm-straight',4.2],['palm-bend',4],['patch-sand',6],
-  ['flag-pirate-high',2.8],['bottle',1],['bottle-large',1.4],
-];
+// ── CONSTANTS ──────────────────────────────────────────────────────────
+const WORLD=4000,HALF=2000,CAM_H=380,CAM_D=430,TWO_PI=Math.PI*2;
+const ASSETS='assets/Models/GLB format/';
 
-// ── Three.js Setup ─────────────────────────────────────────────
-const canvas3d = document.getElementById('canvas');
-const renderer = new THREE.WebGLRenderer({canvas:canvas3d,antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
-renderer.setClearColor(0x04090f);
+// ── MATH HELPERS ───────────────────────────────────────────────────────
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const rand=(a,b)=>a+Math.random()*(b-a);
+const rInt=(a,b)=>Math.floor(rand(a,b+.999));
+const rFrom=a=>a[rInt(0,a.length-1)];
+const d2=(ax,az,bx,bz)=>(ax-bx)**2+(az-bz)**2;
+const dst=(ax,az,bx,bz)=>Math.sqrt(d2(ax,az,bx,bz));
+const angDiff=(a,b)=>{let d=a-b;while(d>Math.PI)d-=TWO_PI;while(d<-Math.PI)d+=TWO_PI;return d;};
 
-const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x04090f, 0.018);
+// Seeded PRNG — for daily challenge reproducibility
+function mkRng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
 
-const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.1, 320);
-const CAM_BASE = new THREE.Vector3(0, 32, 26);
-camera.position.copy(CAM_BASE);
-camera.lookAt(0,0,0);
+// ── PERLIN NOISE ───────────────────────────────────────────────────────
+const _P=(()=>{const a=[...Array(256)].map((_,i)=>i);for(let i=255;i>0;i--){const j=rInt(0,i);[a[i],a[j]]=[a[j],a[i]];}const pp=[...a,...a];const f=t=>t*t*t*(t*(t*6-15)+10);const g=(h,x,y)=>{const u=h<4?x:y,v=h<4?y:x;return((h&1)?-u:u)+((h&2)?-v:v);};return(x,y)=>{const xi=Math.floor(x)&255,yi=Math.floor(y)&255,xf=x-Math.floor(x),yf=y-Math.floor(y),u=f(xf),v=f(yf),aa=pp[pp[xi]+yi],ab=pp[pp[xi]+yi+1],ba=pp[pp[xi+1]+yi],bb=pp[pp[xi+1]+yi+1];return lerp(lerp(g(aa,xf,yf),g(ba,xf-1,yf),u),lerp(g(ab,xf,yf-1),g(bb,xf-1,yf-1),u),v);};})();
 
-const clock = new THREE.Clock();
-let dt = 0, elapsed = 0;
+// ── SAVE / LOAD ────────────────────────────────────────────────────────
+let META={};
+function loadMeta(){
+  try{META=JSON.parse(localStorage.getItem('maelv5')||'{}');}catch{META={};}
+  META.skulls=META.skulls||0;META.highScore=META.highScore||0;META.bestTime=META.bestTime||0;
+  META.upgrades=META.upgrades||{};META.ship=META.ship||'sloop';
+  META.lb=META.lb||[];META.runs=META.runs||0;META.name=META.name||null;
+  META.coins=META.coins||0;
+}
+function saveMeta(){try{localStorage.setItem('maelv5',JSON.stringify(META));}catch{}}
+loadMeta();
+if(!META.name){META.name=(prompt('Enter your pirate name:','Pirate')||'Pirate').slice(0,20);saveMeta();}
 
-// Resize
-window.addEventListener('resize', ()=>{
-  camera.aspect = innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-}, {passive:true});
-
-// ── Lighting ──────────────────────────────────────────────────
-const ambient = new THREE.AmbientLight(0x5599cc, 0.9);
-scene.add(ambient);
-const sun = new THREE.DirectionalLight(0xfff0cc, 1.6);
-sun.position.set(50, 70, 35);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048,2048);
-sun.shadow.camera.near = 0.1; sun.shadow.camera.far = 220;
-['left','right','top','bottom'].forEach(k=>sun.shadow.camera[k]=(k==='left'||k==='bottom')?-70:70);
-scene.add(sun);
-const fill = new THREE.DirectionalLight(0x2244aa, 0.6);
-fill.position.set(-25,12,-25);
-scene.add(fill);
-const rimLight = new THREE.DirectionalLight(0x4488cc, 0.35);
-rimLight.position.set(0,5,-30);
-scene.add(rimLight);
-
-// ── Ocean ─────────────────────────────────────────────────────
-const OCN_SEGS = 55;
-const oceanGeo = new THREE.PlaneGeometry(700, 700, OCN_SEGS, OCN_SEGS);
-const oceanMat = new THREE.MeshPhongMaterial({
-  color:0x1a6fa8,emissive:0x001624,emissiveIntensity:.4,
-  shininess:110,transparent:true,opacity:.94,
-});
-const ocean = new THREE.Mesh(oceanGeo, oceanMat);
-ocean.rotation.x = -Math.PI/2;
-ocean.receiveShadow = true;
-scene.add(ocean);
-const oPts = oceanGeo.attributes.position;
-
-function animateOcean(t){
-  for(let i=0; i<oPts.count; i++){
-    const x=oPts.getX(i), y=oPts.getY(i);
-    oPts.setZ(i,
-      Math.sin(x*.12+t*.85)*.5 +
-      Math.sin(y*.09+t*.6)*.38 +
-      Math.sin((x+y)*.06+t*1.15)*.22 +
-      Math.cos(x*.08-t*.45)*.15
-    );
+// ── AD SDK (Poki / CrazyGames — platform-agnostic) ─────────────────────
+const AdSDK={
+  ready:false,platform:null,
+  init(){
+    const h=window.location.hostname;
+    if(h.includes('poki.com'))this.platform='poki';
+    else if(h.includes('crazygames.com'))this.platform='crazygames';
+    try{
+      if(this.platform==='poki')window.PokiSDK?.init().then(()=>{this.ready=true;}).catch(()=>{});
+      else if(this.platform==='crazygames')window.CrazyGames?.SDK?.init().then(()=>{this.ready=true;}).catch(()=>{});
+      else this.ready=false;
+    }catch{}
+  },
+  gameplayStart(){if(this.platform==='poki')try{window.PokiSDK?.gameplayStart();}catch{}},
+  gameplayStop(){if(this.platform==='poki')try{window.PokiSDK?.gameplayStop();}catch{}},
+  async midgame(){
+    if(!this.ready)return;
+    _paused=true; this.gameplayStop();
+    try{
+      if(this.platform==='poki')await window.PokiSDK.commercialBreak();
+      else if(this.platform==='crazygames')await new Promise(r=>window.CrazyGames.SDK.ad.requestAd(window.CrazyGames.SDK.ad.AdType.Midgame,{adFinished:r,adError:r,adStarted:()=>{}}));
+    }catch{}
+    this.gameplayStart(); _paused=false;
+  },
+  async rewarded(onGrant){
+    if(!this.ready){onGrant();return;}
+    this.gameplayStop();
+    try{
+      if(this.platform==='poki'){const ok=await window.PokiSDK.rewardedBreak();if(ok)onGrant();}
+      else if(this.platform==='crazygames')await new Promise(r=>window.CrazyGames.SDK.ad.requestAd(window.CrazyGames.SDK.ad.AdType.Rewarded,{adFinished:()=>{onGrant();r();},adError:r,adStarted:()=>{}}));
+    }catch{onGrant();} // fallback: grant on error
+    this.gameplayStart();
   }
-  oPts.needsUpdate = true;
-  oceanGeo.computeVertexNormals();
-}
-
-// ── Particle Canvas ────────────────────────────────────────────
-const pCanvas = document.getElementById('particles');
-const pCtx = pCanvas.getContext('2d');
-pCanvas.width = innerWidth; pCanvas.height = innerHeight;
-window.addEventListener('resize',()=>{pCanvas.width=innerWidth;pCanvas.height=innerHeight;},{passive:true});
-const particles = [];
-function spawnParticle(x,y,color='#f0c040',cnt=6,spd=2,size=4,life=1){
-  for(let i=0;i<cnt;i++){
-    const a=Math.random()*PI2, v=spd*(.5+Math.random()*.8);
-    particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life,maxLife:life,size,color,alpha:1});
-  }
-}
-function updateParticles(){
-  pCtx.clearRect(0,0,pCanvas.width,pCanvas.height);
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];
-    p.x+=p.vx; p.y+=p.vy; p.vy+=.06; p.life-=dt; p.alpha=p.life/p.maxLife;
-    if(p.life<=0){particles.splice(i,1);continue;}
-    pCtx.globalAlpha=p.alpha;
-    pCtx.fillStyle=p.color;
-    pCtx.beginPath();
-    pCtx.arc(p.x,p.y,p.size*p.alpha,0,PI2);
-    pCtx.fill();
-  }
-  pCtx.globalAlpha=1;
-}
-function worldToScreen(pos){
-  const v=pos.clone().project(camera);
-  return {x:(v.x*.5+.5)*innerWidth, y:(-v.y*.5+.5)*innerHeight};
-}
-
-// ── Model Registry ─────────────────────────────────────────────
-const MODELS = {};
-const gltfLoader = new THREE.GLTFLoader();
-
-function loadAllModels(onProgress, onComplete){
-  let loaded = 0;
-  const total = MODELS_TO_LOAD.length;
-  const tipEl = document.getElementById('ldTip');
-  let tipIdx = 0;
-  const tipIv = setInterval(()=>{
-    tipEl.style.opacity='0';
-    setTimeout(()=>{tipEl.textContent=TIPS[tipIdx++%TIPS.length];tipEl.style.opacity='1';},300);
-  },2800);
-
-  MODELS_TO_LOAD.forEach(([name, targetSize])=>{
-    gltfLoader.load(GLB(name), gltf=>{
-      const root = gltf.scene;
-      root.traverse(c=>{
-        if(c.isMesh){
-          c.castShadow = true;
-          c.receiveShadow = true;
-          // Apply colormap texture if mesh has standard material
-          if(c.material){
-            c.material.roughness = 0.65;
-            c.material.metalness = 0.1;
-          }
-        }
-      });
-      // Normalize scale
-      const box = new THREE.Box3().setFromObject(root);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const maxDim = Math.max(size.x, size.y, size.z);
-      if(maxDim > 0) root.scale.setScalar(targetSize / maxDim);
-      MODELS[name] = root;
-      onProgress(++loaded/total);
-      if(loaded===total){clearInterval(tipIv);onComplete();}
-    }, undefined, err=>{
-      console.warn('GLB load failed:', name, err);
-      onProgress(++loaded/total);
-      if(loaded===total){clearInterval(tipIv);onComplete();}
-    });
-  });
-}
-
-function cloneModel(name, fallbackColor=0x8b5a2b){
-  if(MODELS[name]){
-    const c = MODELS[name].clone(true);
-    c.traverse(ch=>{if(ch.isMesh && ch.material){
-      ch.material = ch.material.clone();
-    }});
-    return c;
-  }
-  // Procedural fallback
-  let geo;
-  if(name.includes('ship')||name.includes('boat'))      geo=new THREE.BoxGeometry(1.5,.5,3);
-  else if(name.includes('ball'))                         geo=new THREE.SphereGeometry(.22,8,6);
-  else if(name.includes('chest')||name.includes('barrel')||name.includes('crate'))
-                                                         geo=new THREE.BoxGeometry(.7,.65,.7);
-  else if(name.includes('rock'))                         geo=new THREE.DodecahedronGeometry(1.2,0);
-  else if(name.includes('palm')||name.includes('flag'))  geo=new THREE.CylinderGeometry(.08,.12,3,6);
-  else                                                   geo=new THREE.BoxGeometry(1,1,1);
-  const m = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({color:fallbackColor}));
-  m.castShadow=true; return m;
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PERSISTENT STATE (localStorage)
-// ═══════════════════════════════════════════════════════════════
-function loadPersist(k,def){try{const v=localStorage.getItem('ms_'+k);return v!==null?JSON.parse(v):def;}catch{return def;}}
-function savePersist(k,v){try{localStorage.setItem('ms_'+k,JSON.stringify(v));}catch{}}
-
-let totalSkulls = loadPersist('skulls',0);
-let bestTime    = loadPersist('best',0);
-let totalRuns   = loadPersist('runs',0);
-let ownedUpgrades = loadPersist('owned',[]);
-let leaderboardData = loadPersist('lb',[]);
-
-// ── Skull Upgrade Definitions ──────────────────────────────────
-const SKULL_UPGRADES = [
-  {id:'hull',    ico:'🛡️', name:'Hull Reinforcement',  cost:10,  desc:'Flagship starts with +15% max HP',           fn:p=>{p.maxHp*=1.15; p.hp=Math.min(p.hp,p.maxHp);}},
-  {id:'fleet',   ico:'⛵', name:'Starting Fleet',       cost:20,  desc:'Begin every run with 1 extra rowboat',        fn:()=>addFleetShip('rowboat')},
-  {id:'magnet',  ico:'🪙', name:'Treasure Magnet',      cost:15,  desc:'Doubloon pickup radius +35%',                 fn:p=>p.pickR*=1.35},
-  {id:'cannons', ico:'💣', name:'Cannon Master',        cost:25,  desc:'All cannons deal +12% base damage',           fn:p=>p.canDmg*=1.12},
-  {id:'ghost_w', ico:'👻', name:'Ghost Ward',           cost:30,  desc:'Ghost Ship boss spawns 60s later',            fn:()=>{}},
-  {id:'rapid',   ico:'⚡', name:'Rapid Reload',         cost:35,  desc:'Cannon cooldown reduced by 15%',              fn:p=>p.canCD*=.85},
-  {id:'speed_m', ico:'💨', name:'Seafarer\'s Boots',    cost:20,  desc:'Ship speed +10% permanently',                 fn:p=>p.spd*=1.1},
-  {id:'skull_m', ico:'💀', name:'Skull Mastery',        cost:50,  desc:'+20% Skulls earned per run',                  fn:()=>{}},
-];
-
-// ── All In-Run Upgrade Cards ───────────────────────────────────
-const ALL_CARDS = [
-  // ── Common ──
-  {id:'rowboats',   ico:'⛵',name:'Recruit Rowboats',      desc:'Add 2 rowboat flankers to fleet',           rar:'common',    fn:()=>{addFleetShip('rowboat');addFleetShip('rowboat');}},
-  {id:'hull_c',     ico:'🛡️',name:'Reinforce Hull',        desc:'+25% max HP + partial restore',             rar:'common',    fn:p=>{p.maxHp*=1.25;p.hp=Math.min(p.hp+35,p.maxHp);}},
-  {id:'xcannon',    ico:'💣',name:'Extra Cannon',           desc:'+1 auto-targeting cannon on flagship',      rar:'common',    fn:p=>p.cannons++},
-  {id:'barrel_c',   ico:'🛢️',name:'Barrel Bombs',          desc:'Drop explosive barrel mines every 8s',      rar:'common',    fn:p=>{p.barrelBomb=true;p.barrelT=8;}},
-  {id:'speed_c',    ico:'💨',name:'Full Sail',              desc:'+20% ship movement speed',                  rar:'common',    fn:p=>p.spd*=1.2},
-  // ── Rare ──
-  {id:'sloop_r',    ico:'🚢',name:'Press-Gang Sloops',      desc:'Add 1 sloop warship to fleet orbit',        rar:'rare',      fn:()=>addFleetShip('sloop')},
-  {id:'stolen',     ico:'🏴‍☠️',name:'Stolen Sails',         desc:'+35% speed, fleet looks fiercer',           rar:'rare',      fn:p=>p.spd*=1.35},
-  {id:'magnet_r',   ico:'🪙',name:'Treasure Magnet',        desc:'+60% doubloon pickup radius',               rar:'rare',      fn:p=>p.pickR*=1.6},
-  {id:'rapid_r',    ico:'⚡',name:'Rapid Fire',              desc:'Cannons fire 40% faster',                   rar:'rare',      fn:p=>p.canCD*=.6},
-  {id:'ram_r',      ico:'💥',name:'Ram Prow',                desc:'Collision-deals damage to enemies',         rar:'rare',      fn:p=>p.ram=(p.ram||0)+50},
-  {id:'tower_r',    ico:'🗼',name:'Deploy Cannon Tower',     desc:'Place an auto-firing cannon tower',         rar:'rare',      fn:p=>p.hasTower=true},
-  // ── Epic ──
-  {id:'brig_e',     ico:'⚓',name:'Commandeer Brigantine',  desc:'Add heavy warship to fleet',                rar:'epic',      fn:()=>addFleetShip('frigate')},
-  {id:'spread_e',   ico:'🎯',name:'Cannonball Storm',        desc:'Fire 5-spread shots simultaneously',        rar:'epic',      fn:p=>p.spread=true},
-  {id:'ghostrd_e',  ico:'👻',name:'Ghost Breaker Rounds',   desc:'+100% damage vs Ghost Ships',               rar:'epic',      fn:p=>p.ghostDmg=(p.ghostDmg||1)+1},
-  {id:'lure_e',     ico:'🎣',name:'Treasure Lure',           desc:'Drop decoy chest to cluster enemies',       rar:'epic',      fn:p=>p.lure=true},
-  {id:'galleon_e',  ico:'🏴‍☠️',name:'Commandeer Galleon',   desc:'Add mighty galleon to fleet orbit',          rar:'epic',      fn:()=>addFleetShip('galleon')},
-  // ── Legendary ──
-  {id:'ghosthull',  ico:'🌟',name:'Ghost Hull',              desc:'5s invincibility every 30s',                rar:'legendary', fn:p=>{p.ghostHull=true;p.ghostT=30;p.ghostOn=false;}},
-  {id:'vortex',     ico:'🌀',name:'Maelstrom Vortex',        desc:'Ocean vortex destroys all nearby enemies',  rar:'legendary', fn:p=>{p.vortex=true;p.vortexT=45;}},
-  {id:'flagship',   ico:'👑',name:'The Flagship Arrives',    desc:'Add massive flagship to your fleet',        rar:'legendary', fn:()=>addFleetShip('galleon')},
-  {id:'doubleDmg',  ico:'⚡',name:'Death\'s Ammunition',    desc:'All cannons deal +50% permanent damage',    rar:'legendary', fn:p=>p.canDmg*=1.5},
-];
-
-// ── Enemy Definitions ──────────────────────────────────────────
-const EDEFS = {
-  rowboat:{mdl:'boat-row-small', hp:35, spd:3.2, dmg:12, r:1.1, dbl:2,  intro:0,    col:0x8b4513},
-  sloop:  {mdl:'ship-small',     hp:100,spd:2.2, dmg:22, r:1.8, dbl:9,  intro:120,  col:0x556677},
-  frigate:{mdl:'ship-medium',    hp:260,spd:1.5, dmg:32, r:2.5, dbl:24, intro:300,  col:0x445566},
-  galleon:{mdl:'ship-large',     hp:600,spd:1,   dmg:52, r:3.5, dbl:58, intro:600,  col:0x334455},
-  ghost:  {mdl:'ship-ghost',     hp:1500,spd:1.6,dmg:42, r:4.5, dbl:220,intro:480,  col:0x00cc66,boss:true},
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  GAME STATE
-// ═══════════════════════════════════════════════════════════════
-let GS = 'LOADING'; // LOADING | MENU | PLAYING | UPGRADING | DEAD | VICTORY
-let player = null;
-let enemies = [], projectiles = [], lootItems = [], fleet = [];
-let wrecks = [], barrels = [], floatDebris = [], bottles = [];
-let dbl = 0, dblProgress = 0, level = 0, surviveTime = 0, killCount = 0;
-let chosenCards = [];
-let bossActive = false, bossEntity = null, bossNextMinute = 8;
-let spawnTimer = 3, spawnInterval = 3.5;
-let currentCardOffer = [];
-let waveMsgTimer = null;
-let stormActive = false;
-
-// ── Projectile Pool ────────────────────────────────────────────
-const PRJ_GEO = new THREE.SphereGeometry(.25,7,5);
-const PRJ_MAT_P = new THREE.MeshPhongMaterial({color:0x111111,emissive:0x441100});
-const PRJ_MAT_E = new THREE.MeshPhongMaterial({color:0x660000,emissive:0x880000});
-const PRJ_POOL = [];
-(function buildPool(){
-  for(let i=0;i<120;i++){
-    const m=new THREE.Mesh(PRJ_GEO, i<80?PRJ_MAT_P.clone():PRJ_MAT_E.clone());
-    m.visible=false; scene.add(m);
-    PRJ_POOL.push({m,on:false,vx:0,vz:0,dmg:0,isPlayer:true,life:0,maxLife:2.8});
-  }
-})();
-function getFreePrj(){return PRJ_POOL.find(p=>!p.on)||null;}
-function retirePrj(p){p.on=false;p.m.visible=false;}
-
-// ── HP Bar Billboard Pool ──────────────────────────────────────
-const hpBillboards = [];
-const hpBG_GEO  = new THREE.PlaneGeometry(2.4,.24);
-const hpFG_GEO  = new THREE.PlaneGeometry(2.4,.24);
-function makeHPBillboard(){
-  const bg=new THREE.Mesh(hpBG_GEO,new THREE.MeshBasicMaterial({color:0x220000,depthTest:false,transparent:true,opacity:.8}));
-  const fg=new THREE.Mesh(hpFG_GEO,new THREE.MeshBasicMaterial({color:0xff2020,depthTest:false,transparent:true,opacity:.9}));
-  fg.position.z=.002;
-  const g=new THREE.Group();g.add(bg);g.add(fg);scene.add(g);
-  return {g,fg};
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PLAYER
-// ═══════════════════════════════════════════════════════════════
-function createPlayer(){
-  const mesh = cloneModel('ship-pirate-small', 0x8b5a2b);
-  mesh.position.set(0, .45, 0);
-  scene.add(mesh);
-
-  // Wake / foam trail
-  const wakeGroup = new THREE.Group();
-  scene.add(wakeGroup);
-  const wakeGeo = new THREE.CircleGeometry(.55,8);
-  const wakeMat = new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.18,depthWrite:false});
-  const wakeParticles=[];
-  for(let i=0;i<12;i++){
-    const w=new THREE.Mesh(wakeGeo,wakeMat.clone());
-    w.rotation.x=-Math.PI/2;w.visible=false;
-    wakeGroup.add(w);wakeParticles.push({m:w,life:0,maxLife:0});
-  }
-
-  return {
-    mesh, wakeGroup, wakeParticles, wakeTimer:0,
-    hp:100, maxHp:100, spd:8,
-    vx:0, vz:0, heading:0, turnSpeed:4.5,
-    cannons:1, canCD:1.5, canTimer:0, canRange:22, canDmg:32,
-    pickR:3.8, radius:1.6,
-    // Active upgrades
-    barrelBomb:false, barrelT:8,
-    spread:false,
-    ghostHull:false, ghostT:30, ghostOn:false, ghostOnTimer:0,
-    vortex:false, vortexT:45,
-    ram:0, ghostDmg:1,
-    hasTower:false, towerTimer:0,
-    lure:false, lureTimer:0,
-  };
-}
-
-function applyMetaUpgrades(p){
-  ownedUpgrades.forEach(id=>{
-    const up=SKULL_UPGRADES.find(u=>u.id===id);
-    if(up) up.fn(p);
-  });
-  if(ownedUpgrades.includes('fleet')) addFleetShip('rowboat');
-}
-
-function updatePlayer(){
-  if(!player) return;
-
-  // Input
-  let mx=0,mz=0;
-  if(K['KeyW']||K['ArrowUp'])    mz-=1;
-  if(K['KeyS']||K['ArrowDown'])  mz+=1;
-  if(K['KeyA']||K['ArrowLeft'])  mx-=1;
-  if(K['KeyD']||K['ArrowRight']) mx+=1;
-  if(JOY.active){mx+=JOY.x;mz+=JOY.y;}
-
-  // Normalize diagonal
-  const mag=Math.sqrt(mx*mx+mz*mz);
-  if(mag>1){mx/=mag;mz/=mag;}
-
-  // Momentum physics
-  const acc=24, fric=0.82;
-  player.vx=(player.vx+mx*acc*dt)*fric;
-  player.vz=(player.vz+mz*acc*dt)*fric;
-  const spd=Math.sqrt(player.vx**2+player.vz**2);
-  if(spd>player.spd){player.vx=player.vx/spd*player.spd;player.vz=player.vz/spd*player.spd;}
-
-  player.mesh.position.x+=player.vx*dt;
-  player.mesh.position.z+=player.vz*dt;
-  player.mesh.position.y=.4+Math.sin(elapsed*1.9)*.12;
-
-  // Rotation
-  if(mag>.08){
-    const target=Math.atan2(mx,mz);
-    let diff=target-player.heading;
-    while(diff>Math.PI)diff-=PI2; while(diff<-Math.PI)diff+=PI2;
-    player.heading+=diff*dt*player.turnSpeed;
-    player.mesh.rotation.y=player.heading;
-  }
-  // Subtle rock
-  player.mesh.rotation.z=Math.sin(elapsed*.8)*.03;
-
-  // Wake trail
-  player.wakeTimer-=dt;
-  if(spd>.8&&player.wakeTimer<=0){
-    const w=player.wakeParticles.find(p=>!p.m.visible)||player.wakeParticles[0];
-    w.m.position.set(player.mesh.position.x,0.05,player.mesh.position.z);
-    w.m.visible=true; w.life=0; w.maxLife=1.2;
-    player.wakeTimer=0.08;
-  }
-  player.wakeParticles.forEach(w=>{
-    if(!w.m.visible) return;
-    w.life+=dt;
-    const t=w.life/w.maxLife; if(t>=1){w.m.visible=false;return;}
-    w.m.scale.setScalar(1+t*2.2);
-    w.m.material.opacity=.18*(1-t);
-  });
-
-  // Auto cannon
-  player.canTimer-=dt;
-  if(player.canTimer<=0){fireCannons();player.canTimer=player.canCD;}
-
-  // Barrel bombs
-  if(player.barrelBomb){
-    player.barrelT-=dt;
-    if(player.barrelT<=0){spawnBarrel();player.barrelT=8;}
-  }
-
-  // Ghost Hull
-  if(player.ghostHull){
-    player.ghostT-=dt;
-    if(player.ghostT<=0&&!player.ghostOn){
-      activateGhostHull();
-    }
-    if(player.ghostOn){
-      player.ghostOnTimer-=dt;
-      document.getElementById('ghostVignette').style.opacity='0.6';
-      if(player.ghostOnTimer<=0) deactivateGhostHull();
-    } else {
-      document.getElementById('ghostVignette').style.opacity='0';
-    }
-  }
-
-  // Vortex
-  if(player.vortex){
-    player.vortexT-=dt;
-    if(player.vortexT<=0){doVortex();player.vortexT=45;}
-  }
-
-  // Lure
-  if(player.lure&&player.lureTimer>0){player.lureTimer-=dt;}
-
-  // Collect loot
-  collectLoot();
-
-  // Collect bottles
-  collectBottles();
-}
-
-function activateGhostHull(){
-  player.ghostOn=true; player.ghostOnTimer=5; player.ghostT=30;
-  player.mesh.traverse(c=>{
-    if(c.isMesh){
-      c.material.transparent=true; c.material.opacity=.32;
-      c.material.emissive=new THREE.Color(.05,.45,.2);
-    }
-  });
-  showWaveMsg('👻 GHOST HULL ACTIVE!','#4dff9b');
-}
-function deactivateGhostHull(){
-  player.ghostOn=false;
-  player.mesh.traverse(c=>{
-    if(c.isMesh){c.material.opacity=1;c.material.emissive=new THREE.Color(0,0,0);}
-  });
-  document.getElementById('ghostVignette').style.opacity='0';
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  FLEET
-// ═══════════════════════════════════════════════════════════════
-function addFleetShip(type){
-  if(!player) return;
-  const def=EDEFS[type]||EDEFS.rowboat;
-  const mdlMap={rowboat:'boat-row-small',sloop:'ship-pirate-small',frigate:'ship-pirate-medium',galleon:'ship-pirate-large'};
-  const mesh=cloneModel(mdlMap[type]||'ship-pirate-small',0x3366aa);
-  // Tint fleet ships blue
-  mesh.traverse(c=>{
-    if(c.isMesh){
-      c.material=c.material.clone();
-      c.material.emissive=new THREE.Color(.03,.07,.2);
-    }
-  });
-  mesh.position.copy(player.mesh.position);
-  scene.add(mesh);
-  const hpb=makeHPBillboard();
-  fleet.push({
-    mesh,hp:def.hp,maxHp:def.hp,r:1.1,spd:def.spd+1.2,
-    canTimer:Math.random()*2.5, canCD:2.4, canRange:14, canDmg:24,
-    hpb, type
-  });
-}
-
-function updateFleet(){
-  fleet.forEach((s,i)=>{
-    const tot=fleet.length;
-    const angle=(i/tot)*PI2+elapsed*.25;
-    const orbitR=5.5+Math.floor(i/6)*3.8;
-    const tx=player.mesh.position.x+Math.sin(angle)*orbitR;
-    const tz=player.mesh.position.z+Math.cos(angle)*orbitR;
-    s.mesh.position.x+=(tx-s.mesh.position.x)*dt*3.5;
-    s.mesh.position.z+=(tz-s.mesh.position.z)*dt*3.5;
-    s.mesh.position.y=.35+Math.sin(elapsed*1.4+i)*.09;
-    s.mesh.rotation.y=-angle+Math.PI;
-
-    // Fleet cannon
-    s.canTimer-=dt;
-    if(s.canTimer<=0){
-      const tgt=nearestEnemy(s.mesh.position,s.canRange);
-      if(tgt){fireProjectile(s.mesh.position,tgt.mesh.position,s.canDmg,true);}
-      s.canTimer=tgt?s.canCD:.6;
-    }
-
-    // HP billboard
-    const pct=Math.max(0,s.hp/s.maxHp);
-    s.hpb.fg.scale.x=Math.max(pct,.001);
-    s.hpb.fg.position.x=-(1-pct)*1.2;
-    s.hpb.fg.material.color.setHex(pct>.5?0x44ff44:pct>.25?0xffaa00:0xff2020);
-    s.hpb.g.position.set(s.mesh.position.x,3.8,s.mesh.position.z);
-    s.hpb.g.quaternion.copy(camera.quaternion);
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PROJECTILES
-// ═══════════════════════════════════════════════════════════════
-function fireCannons(){
-  if(!player) return;
-  const sorted=[...enemies].sort((a,b)=>
-    a.mesh.position.distanceTo(player.mesh.position)-b.mesh.position.distanceTo(player.mesh.position)
-  );
-  for(let i=0;i<player.cannons&&i<sorted.length;i++){
-    const e=sorted[i];
-    if(e.mesh.position.distanceTo(player.mesh.position)>player.canRange) break;
-    if(player.spread){
-      for(let s=-2;s<=2;s++){
-        const d=new THREE.Vector3().subVectors(e.mesh.position,player.mesh.position);
-        d.y=0;d.normalize();
-        const perp=new THREE.Vector3(-d.z,0,d.x).multiplyScalar(s*.5);
-        const fd=d.clone().add(perp).normalize();
-        emitProjectile(player.mesh.position,fd,player.canDmg*.5,true);
-      }
-    } else {
-      fireProjectile(player.mesh.position,e.mesh.position,player.canDmg,true);
-    }
-    // Screen shake on fire
-    screenShake(.15,80);
-  }
-}
-
-function fireProjectile(from,to,dmg,isPlayer){
-  const dir=new THREE.Vector3().subVectors(to,from);dir.y=0;dir.normalize();
-  emitProjectile(from,dir,dmg,isPlayer);
-}
-
-function emitProjectile(from,dir,dmg,isPlayer){
-  const p=getFreePrj(); if(!p) return;
-  p.on=true; p.m.visible=true;
-  p.m.position.set(from.x,.75,from.z);
-  p.vx=dir.x*26; p.vz=dir.z*26;
-  p.dmg=dmg; p.isPlayer=isPlayer; p.life=0;
-  p.m.material.emissive.setHex(isPlayer?0x441100:0x881100);
-  // Particle burst at fire point
-  const sc=worldToScreen(new THREE.Vector3(from.x,.75,from.z));
-  spawnParticle(sc.x,sc.y,'#ff8040',5,3,3,.3);
-}
-
-function updateProjectiles(){
-  PRJ_POOL.forEach(p=>{
-    if(!p.on) return;
-    p.m.position.x+=p.vx*dt;
-    p.m.position.z+=p.vz*dt;
-    p.m.position.y=.7+Math.sin(p.life*9)*.35;
-    p.life+=dt;
-    if(p.life>p.maxLife){retirePrj(p);return;}
-
-    if(p.isPlayer){
-      for(let i=enemies.length-1;i>=0;i--){
-        const e=enemies[i];
-        if(p.m.position.distanceTo(e.mesh.position)<e.r+.4){
-          let dmg=p.dmg;
-          if(e.isGhost) dmg*=(player?.ghostDmg||1);
-          hurtEnemy(e,dmg);
-          retirePrj(p);
-          // Hit particles
-          const sc=worldToScreen(p.m.position);
-          spawnParticle(sc.x,sc.y,'#ff6030',8,4,4,.5);
-          return;
-        }
-      }
-    } else {
-      if(player&&!player.ghostOn&&p.m.position.distanceTo(player.mesh.position)<player.radius+.4){
-        hurtPlayer(p.dmg);
-        retirePrj(p);
-        // Hit particles on player
-        const sc=worldToScreen(player.mesh.position);
-        spawnParticle(sc.x,sc.y,'#ff3030',10,5,4,.5);
-      }
-    }
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  ENEMIES
-// ═══════════════════════════════════════════════════════════════
-function spawnEnemy(type, pos){
-  const def=EDEFS[type]||EDEFS.rowboat;
-  const mesh=cloneModel(def.mdl,def.col);
-
-  if(type==='ghost'||type==='bossGhost'){
-    mesh.traverse(c=>{
-      if(c.isMesh) c.material=new THREE.MeshPhongMaterial({
-        color:0x00cc66,emissive:0x002211,
-        transparent:true,opacity:.84,
-      });
-    });
-  }
-
-  if(!pos){
-    const a=Math.random()*PI2, d=40+Math.random()*12;
-    const px=player?player.mesh.position.x:0, pz=player?player.mesh.position.z:0;
-    pos=new THREE.Vector3(px+Math.sin(a)*d,.35,pz+Math.cos(a)*d);
-  }
-  mesh.position.copy(pos);
-  scene.add(mesh);
-
-  const hpb=makeHPBillboard();
-  const isBoss=def.boss||false;
-  const scaledHp=def.hp*(1+surviveTime/360*.4); // Scale HP with time
-  const e={
-    mesh,type,hp:scaledHp,maxHp:scaledHp,
-    spd:def.spd*(1+surviveTime/600*.2),
-    dmg:def.dmg,r:def.r,dbl:def.dbl,
-    isGhost:type==='ghost',isBoss,
-    vx:0,vz:0,alive:true,phase:1,
-    canTimer:1+Math.random(),
-    canCD:isBoss?1.5:type==='rowboat'?99:2.8,
-    canRange:isBoss?30:15,
-    fires:type==='frigate'?3:type==='galleon'?2:1,
-    hpb,
-  };
-  enemies.push(e);
-  return e;
-}
-
-function updateEnemies(){
-  if(!player) return;
-  for(let i=enemies.length-1;i>=0;i--){
-    const e=enemies[i];
-    if(!e.alive){
-      scene.remove(e.mesh);
-      scene.remove(e.hpb.g);
-      enemies.splice(i,1);
-      continue;
-    }
-
-    // Boss phase
-    if(e.isBoss){
-      const hpPct=e.hp/e.maxHp;
-      e.phase=hpPct<.3?3:hpPct<.6?2:1;
-      if(e.phase===3 && !e.enraged){
-        e.enraged=true;
-        e.mesh.traverse(c=>{if(c.isMesh){c.material.emissive=new THREE.Color(.8,.05,.05);}});
-        showWaveMsg('☠ GHOST SHIP ENRAGED!','#ff4040');
-      }
-    }
-
-    // HP billboard
-    const pct=Math.max(0,e.hp/e.maxHp);
-    e.hpb.fg.scale.x=Math.max(pct,.001);
-    e.hpb.fg.position.x=-(1-pct)*1.2;
-    e.hpb.fg.material.color.setHex(pct>.5?0x44ff44:pct>.25?0xffaa00:0xff2020);
-    const bY=e.isBoss?7:4.5;
-    e.hpb.g.position.set(e.mesh.position.x,bY,e.mesh.position.z);
-    e.hpb.g.quaternion.copy(camera.quaternion);
-    if(!e.isBoss) e.hpb.g.visible=(e.hp<e.maxHp);
-
-    // Movement AI
-    const dx=player.mesh.position.x-e.mesh.position.x;
-    const dz=player.mesh.position.z-e.mesh.position.z;
-    const dist=Math.sqrt(dx*dx+dz*dz);
-    if(dist<.01) continue;
-    const nx=dx/dist, nz=dz/dist;
-    const spd=e.spd*(e.isBoss?[1,1.4,2][e.phase-1]:1);
-
-    // Sloops orbit at mid-range
-    if((e.type==='sloop'||e.type==='frigate')&&dist<12&&!e.isBoss){
-      e.vx=-nx*spd; e.vz=-nz*spd;
-    } else {
-      e.vx=nx*spd; e.vz=nz*spd;
-    }
-
-    // Boss spiral pattern
-    if(e.isBoss&&e.phase===2){
-      const perp=new THREE.Vector3(-nz,0,nx);
-      e.vx=nx*spd*.6+perp.x*spd*.8;
-      e.vz=nz*spd*.6+perp.z*spd*.8;
-    }
-
-    e.mesh.position.x+=e.vx*dt;
-    e.mesh.position.z+=e.vz*dt;
-    e.mesh.position.y=.3+Math.sin(elapsed*1.2+i)*.09;
-    e.mesh.rotation.y=Math.atan2(dx,dz);
-
-    // Enemy fire
-    if(e.type!=='rowboat'){
-      e.canTimer-=dt;
-      if(e.canTimer<=0&&dist<=e.canRange){
-        for(let f=0;f<e.fires;f++){
-          const spread=(Math.random()-.5)*.55;
-          const d=new THREE.Vector3(nx+(Math.random()-.5)*.4,0,nz+(Math.random()-.5)*.4).normalize();
-          emitProjectile(e.mesh.position,d,e.dmg,false);
-        }
-        if(e.isBoss&&e.phase===3){
-          for(let a=0;a<6;a++){
-            const ang=a/6*PI2+elapsed;
-            emitProjectile(e.mesh.position,new THREE.Vector3(Math.sin(ang),0,Math.cos(ang)),e.dmg*.45,false);
-          }
-        }
-        e.canTimer=e.canCD/(e.phase||1);
-      }
-    }
-
-    // Collision with player
-    if(dist<player.radius+e.r){
-      if(!player.ghostOn) hurtPlayer(e.dmg*dt*2.8);
-      if(player.ram>0) hurtEnemy(e,player.ram*dt);
-    }
-    // Collision with fleet
-    fleet.forEach(s=>{
-      if(s.mesh.position.distanceTo(e.mesh.position)<s.r+e.r){
-        s.hp-=e.dmg*dt*1.2;
-        hurtEnemy(e,20*dt);
-        if(s.hp<=0) killFleetShip(s);
-      }
-    });
-  }
-}
-
-function killFleetShip(s){
-  fleet=fleet.filter(f=>f!==s);
-  scene.remove(s.mesh);scene.remove(s.hpb.g);
-  const sc=worldToScreen(s.mesh.position);
-  spawnParticle(sc.x,sc.y,'#ff6030',15,5,5,.7);
-}
-
-function hurtEnemy(e,dmg){
-  if(!e.alive) return;
-  e.hp-=dmg;
-  if(e.hp<=0) killEnemy(e);
-  else if(e.isBoss){
-    const pct=e.hp/e.maxHp;
-    document.getElementById('bossBarFill').style.width=(pct*100)+'%';
-  }
-}
-
-function killEnemy(e){
-  if(!e.alive) return;
-  e.alive=false;
-  killCount++;
-
-  // Loot drops
-  const drops=Math.min(Math.ceil(e.dbl/4),8);
-  for(let i=0;i<drops;i++) dropCoin(e.mesh.position,e.dbl/drops);
-
-  if(['frigate','galleon'].includes(e.type)||e.isBoss) spawnWreck(e.mesh.position);
-
-  if(e.isBoss){
-    bossActive=false;bossEntity=null;
-    document.getElementById('bossBarWrap').classList.remove('show');
-    document.getElementById('stormVignette').style.opacity='0';
-    bossNextMinute+=8;
-    // Big loot explosion
-    for(let i=0;i<14;i++){
-      const off=new THREE.Vector3((Math.random()-.5)*12,0,(Math.random()-.5)*12);
-      dropCoin(e.mesh.position.clone().add(off),80);
-    }
-    earnDoubloons(200);
-    screenShake(1.5,600);
-    showWaveMsg('⚡ GHOST SHIP DEFEATED! +200 💰','#4dff9b');
-    const sc=worldToScreen(e.mesh.position);
-    spawnParticle(sc.x,sc.y,'#4dff9b',35,8,8,1.5);
-    spawnParticle(sc.x,sc.y,'#f0c040',25,6,6,1.2);
-    stormActive=false;
-  }
-  earnDoubloons(0); // Refresh HUD
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  LOOT
-// ═══════════════════════════════════════════════════════════════
-const COIN_GEO = new THREE.CylinderGeometry(.28,.28,.07,8);
-const COIN_MAT = new THREE.MeshPhongMaterial({color:0xf0c040,emissive:0x604000,shininess:130});
-
-function dropCoin(pos,val){
-  const m=new THREE.Mesh(COIN_GEO,COIN_MAT.clone());
-  m.position.set(pos.x+(Math.random()-.5)*3.5,.42,pos.z+(Math.random()-.5)*3.5);
-  scene.add(m);
-  lootItems.push({m,val:Math.ceil(val),spawnT:elapsed});
-}
-
-function collectLoot(){
-  if(!player) return;
-  for(let i=lootItems.length-1;i>=0;i--){
-    const l=lootItems[i];
-    l.m.position.y=.4+Math.sin(elapsed*3+i)*.1;
-    l.m.rotation.y+=.05;
-    // Magnetic pull when close
-    const dist=l.m.position.distanceTo(player.mesh.position);
-    if(dist<player.pickR*1.6){
-      const pull=Math.min(12,(player.pickR*1.6-dist)/dist*8);
-      const dir=new THREE.Vector3().subVectors(player.mesh.position,l.m.position).normalize();
-      l.m.position.addScaledVector(dir,pull*dt);
-    }
-    if(dist<player.pickR){
-      earnDoubloons(l.val);
-      // Pickup particles
-      const sc=worldToScreen(l.m.position);
-      spawnParticle(sc.x,sc.y,'#f0c040',4,2,3,.4);
-      pfloat(l.m.position,'+'+l.val);
-      scene.remove(l.m);lootItems.splice(i,1);
-    } else if(elapsed-l.spawnT>25){scene.remove(l.m);lootItems.splice(i,1);}
-  }
-}
-
-function earnDoubloons(n){
-  dbl+=n;dblProgress+=n;
-  while(dblProgress>=100){dblProgress-=100;level++;triggerLevelUp();}
-  refreshHUD();
-}
-
-// ── Bottles ───────────────────────────────────────────────────
-function spawnBottle(){
-  const a=Math.random()*PI2, d=15+Math.random()*35;
-  const px=player?player.mesh.position.x:0, pz=player?player.mesh.position.z:0;
-  const mesh=cloneModel('bottle',0x88aacc);
-  mesh.traverse(c=>{if(c.isMesh){c.material=c.material.clone();c.material.emissive=new THREE.Color(.05,.15,.25);}});
-  mesh.position.set(px+Math.sin(a)*d,.45,pz+Math.cos(a)*d);
-  scene.add(mesh);
-  bottles.push({mesh,large:Math.random()<.2,spawnT:elapsed});
-}
-
-function collectBottles(){
-  if(!player) return;
-  for(let i=bottles.length-1;i>=0;i--){
-    const b=bottles[i];
-    b.mesh.position.y=.45+Math.sin(elapsed*2.5+i)*.12;
-    b.mesh.rotation.y+=.03;
-    const dist=b.mesh.position.distanceTo(player.mesh.position);
-    if(dist<player.pickR+.5){
-      if(b.large) earnDoubloons(30);
-      else earnDoubloons(12);
-      pfloat(b.mesh.position,'🍾 +Bottle!','green');
-      scene.remove(b.mesh);bottles.splice(i,1);
-    } else if(elapsed-b.spawnT>40){scene.remove(b.mesh);bottles.splice(i,1);}
-  }
-}
-
-// ── Float Debris ──────────────────────────────────────────────
-function spawnDebris(){
-  const a=Math.random()*PI2, d=12+Math.random()*50;
-  const px=player?player.mesh.position.x:0, pz=player?player.mesh.position.z:0;
-  const types=['barrel','crate'];
-  const t=types[Math.floor(Math.random()*types.length)];
-  const mesh=cloneModel(t,0x8b6040);
-  mesh.position.set(px+Math.sin(a)*d,.4,pz+Math.cos(a)*d);
-  scene.add(mesh);
-  floatDebris.push({mesh,val:Math.floor(5+Math.random()*22),spawnT:elapsed});
-}
-
-// ── Barrel Bombs ──────────────────────────────────────────────
-function spawnBarrel(){
-  if(!player) return;
-  for(let b=0;b<3;b++){
-    const mesh=cloneModel('barrel',0x8b4513);
-    mesh.traverse(c=>{if(c.isMesh){c.material=c.material.clone();c.material.emissive=new THREE.Color(.2,.05,0);}});
-    mesh.position.set(player.mesh.position.x+(Math.random()-.5)*6,.4,player.mesh.position.z+(Math.random()-.5)*6);
-    scene.add(mesh);
-    barrels.push({mesh,life:12,r:2.4,dmg:62,bounced:0});
-  }
-}
-
-function updateBarrels(){
-  for(let i=barrels.length-1;i>=0;i--){
-    const b=barrels[i];
-    b.life-=dt;
-    b.mesh.position.y=.4+Math.sin(elapsed*2.2+i)*.08;
-    b.mesh.rotation.y+=.03;
-    let hit=false;
-    for(let j=enemies.length-1;j>=0;j--){
-      const e=enemies[j];
-      if(b.mesh.position.distanceTo(e.mesh.position)<b.r+e.r){
-        hurtEnemy(e,b.dmg);
-        const sc=worldToScreen(b.mesh.position);
-        spawnParticle(sc.x,sc.y,'#ff8030',12,5,5,.6);
-        scene.remove(b.mesh);barrels.splice(i,1);hit=true;break;
-      }
-    }
-    if(!hit&&b.life<=0){scene.remove(b.mesh);barrels.splice(i,1);}
-  }
-}
-
-// ── Wrecks ────────────────────────────────────────────────────
-function spawnWreck(pos){
-  const mesh=cloneModel('ship-wreck',0x443322);
-  mesh.position.set(pos.x,0,pos.z);
-  mesh.rotation.y=Math.random()*PI2;
-  scene.add(mesh);wrecks.push(mesh);
-}
-
-// ── Rocks (static map decoration + obstacle) ──────────────────
-function buildStaticRocks(){
-  const types=['rocks-a','rocks-b','rocks-c'];
-  for(let i=0;i<22;i++){
-    const m=cloneModel(types[i%3],0x6a7888);
-    const a=Math.random()*PI2, d=25+Math.random()*75;
-    m.position.set(Math.sin(a)*d,-.1,Math.cos(a)*d);
-    m.rotation.y=Math.random()*PI2;
-    m.rotation.z=(Math.random()-.5)*.15;
-    scene.add(m);
-  }
-}
-
-// ── Islands ───────────────────────────────────────────────────
-function buildIslands(){
-  for(let isle=0;isle<2;isle++){
-    const a=Math.random()*PI2, d=45+Math.random()*40;
-    const cx=Math.sin(a)*d, cz=Math.cos(a)*d;
-    const patch=cloneModel('patch-sand',0xe8c97d);
-    patch.position.set(cx,-.05,cz);
-    scene.add(patch);
-    // Palm trees
-    for(let p=0;p<3;p++){
-      const palm=cloneModel(Math.random()>.5?'palm-straight':'palm-bend',0x228833);
-      palm.position.set(cx+(Math.random()-.5)*5,.1,cz+(Math.random()-.5)*5);
-      palm.rotation.y=Math.random()*PI2;
-      scene.add(palm);
-    }
-    // Flag
-    const flag=cloneModel('flag-pirate-high',0xcc2020);
-    flag.position.set(cx,0,cz);
-    scene.add(flag);
-    // Spawn chest on island
-    dropCoin(new THREE.Vector3(cx,0,cz),45);
-  }
-}
-
-// ── Vortex ────────────────────────────────────────────────────
-function doVortex(){
-  showWaveMsg('🌀 MAELSTROM VORTEX!','#4dff9b');
-  screenShake(2,800);
-  oceanMat.emissive.setHex(0x004422);
-  setTimeout(()=>oceanMat.emissive.setHex(0x001624),700);
-  const cx=player.mesh.position.x, cz=player.mesh.position.z;
-  for(let i=enemies.length-1;i>=0;i--){
-    const e=enemies[i];
-    const dx=e.mesh.position.x-cx, dz=e.mesh.position.z-cz;
-    const d=Math.sqrt(dx*dx+dz*dz);
-    if(d<25){
-      hurtEnemy(e,Math.max(80,240-d*10));
-      e.mesh.position.x-=dx/d*7;
-      e.mesh.position.z-=dz/d*7;
-    }
-  }
-  const sc=worldToScreen(player.mesh.position);
-  spawnParticle(sc.x,sc.y,'#4dff9b',30,8,8,1.2);
-  spawnParticle(sc.x,sc.y,'#0080ff',20,6,6,1);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  WAVE / SPAWN SYSTEM
-// ═══════════════════════════════════════════════════════════════
-function getEnemyTypeForTime(t){
-  const r=Math.random();
-  if(t<120) return 'rowboat';
-  if(t<300) return r<.6?'rowboat':'sloop';
-  if(t<600){if(r<.4)return'rowboat';if(r<.75)return'sloop';return'frigate';}
-  if(r<.2)return'rowboat';if(r<.5)return'sloop';if(r<.8)return'frigate';return'galleon';
-}
-
-function updateSpawner(){
-  if(!player) return;
-  spawnTimer-=dt;
-  if(spawnTimer<=0){
-    const cnt=Math.min(2+Math.floor(surviveTime/22),12);
-    for(let i=0;i<cnt;i++) spawnEnemy(getEnemyTypeForTime(surviveTime));
-    spawnInterval=Math.max(1.2,3.8-surviveTime/90);
-    spawnTimer=spawnInterval;
-  }
-
-  // Bottle spawner
-  if(Math.floor(surviveTime)%20===0&&Math.floor((surviveTime-dt)*10)!==Math.floor(surviveTime*10)){
-    if(Math.random()<.5) spawnBottle();
-  }
-
-  // Debris spawner
-  if(Math.floor(surviveTime)%12===0&&Math.random()<.3) spawnDebris();
-
-  // Boss spawner
-  if(!bossActive&&surviveTime>=bossNextMinute*60) spawnBoss();
-
-  // Storm mode at 16min
-  if(surviveTime>960&&!stormActive){
-    stormActive=true;
-    document.getElementById('stormVignette').style.opacity='1';
-    oceanMat.color.setHex(0x0e4a6a);
-    showWaveMsg('⛈ THE STORM RISES!','#8080ff');
-  }
-
-  // Victory at 30min
-  if(surviveTime>=1800) triggerVictory();
-}
-
-function spawnBoss(){
-  bossActive=true;
-  showBossWarning();
-  setTimeout(()=>{
-    if(GS!=='PLAYING') return;
-    const a=Math.random()*PI2;
-    const d=45+Math.random()*8;
-    const pos=new THREE.Vector3(
-      player.mesh.position.x+Math.sin(a)*d,.35,
-      player.mesh.position.z+Math.cos(a)*d
-    );
-    // Ghost Ward meta upgrade delays boss
-    const delay=ownedUpgrades.includes('ghost_w')?60:0;
-    const scaledHP=1500+surviveTime*2;
-    bossEntity=spawnEnemy('ghost',pos);
-    bossEntity.hp=scaledHP;bossEntity.maxHp=scaledHP;
-    bossEntity.mesh.scale.multiplyScalar(1.9);
-    bossEntity.hpb.g.visible=false;
-    document.getElementById('bossBarWrap').classList.add('show');
-    document.getElementById('bossBarFill').style.width='100%';
-    document.getElementById('stormVignette').style.opacity='.7';
-    showWaveMsg('☠ GHOST SHIP RISES!','#ff4040');
-    screenShake(2,1000);
-    // Boss spawns minions on spawn
-    for(let i=0;i<5;i++){
-      const ma=Math.random()*PI2, md=18+i*4;
-      spawnEnemy('rowboat',new THREE.Vector3(pos.x+Math.sin(ma)*md,.35,pos.z+Math.cos(ma)*md));
-    }
-  },delay*1000+2500);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  PLAYER DAMAGE
-// ═══════════════════════════════════════════════════════════════
-function hurtPlayer(dmg){
-  if(!player||player.ghostOn) return;
-  player.hp=Math.max(0,player.hp-dmg);
-  flashDamage();
-  if(player.hp<=0) triggerDeath();
-  refreshHUD();
-}
-let shakeTimer=0,shakeIntensity=0;
-function screenShake(intensity,ms){
-  shakeIntensity=Math.max(shakeIntensity,intensity);
-  shakeTimer=ms/1000;
-}
-function flashDamage(){
-  const el=document.getElementById('dmgFlash');
-  el.style.opacity='1'; setTimeout(()=>el.style.opacity='0',140);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  LEVEL UP / UPGRADE CARDS
-// ═══════════════════════════════════════════════════════════════
-function triggerLevelUp(){
-  GS='UPGRADING';
-  const rarWeights={common:9,rare:5,epic:2.5,legendary:.8};
-  const pool=[];
-  ALL_CARDS.forEach(c=>{const w=rarWeights[c.rar]||1;for(let i=0;i<w;i++)pool.push(c);});
-  pool.sort(()=>Math.random()-.5);
-  const seen=new Set(),offer=[];
-  for(const c of pool){if(!seen.has(c.id)){seen.has(c.id);seen.add(c.id);offer.push(c);if(offer.length===3)break;}}
-  currentCardOffer=offer;
-  renderUpgradeCards(offer);
-  document.getElementById('upgrade').classList.remove('hidden');
-}
-
-function renderUpgradeCards(cards){
-  const row=document.getElementById('cardsRow');
-  row.innerHTML='';
-  cards.forEach((c,i)=>{
-    const el=document.createElement('div');
-    el.className=`card ${c.rar}`;
-    el.innerHTML=`
-      <div class="card-key-hint">[${i+1}]</div>
-      <span class="card-icon">${c.ico}</span>
-      <div class="card-rar-lbl">${c.rar}</div>
-      <div class="card-name">${c.name}</div>
-      <div class="card-desc">${c.desc}</div>
-    `;
-    el.onclick=()=>selectCard(i);
-    row.appendChild(el);
-  });
-}
-
-function selectCard(i){
-  if(i>=currentCardOffer.length) return;
-  const c=currentCardOffer[i];
-  if(c.fn) c.fn(player);
-  chosenCards.push(c.id);
-  document.getElementById('upgrade').classList.add('hidden');
-  GS='PLAYING';
-  refreshHUD();
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  HUD UPDATE
-// ═══════════════════════════════════════════════════════════════
-function refreshHUD(){
-  if(!player) return;
-  const hpPct=Math.max(0,player.hp/player.maxHp)*100;
-  document.getElementById('hpBar').style.width=hpPct+'%';
-  document.getElementById('hpTxt').textContent=Math.ceil(player.hp);
-
-  const m=Math.floor(surviveTime/60),s=Math.floor(surviveTime%60);
-  const timerEl=document.getElementById('hudTimer');
-  timerEl.textContent=m+':'+(s<10?'0':'')+s;
-  timerEl.classList.toggle('urgent',surviveTime>1500);
-
-  document.getElementById('hudDbl').textContent=Math.floor(dbl);
-  document.getElementById('hudLvBar').style.width=(dblProgress/100*100)+'%';
-  document.getElementById('hudLvTxt').textContent='Lv '+level;
-  document.getElementById('hudFleet').textContent=1+fleet.length;
-  document.getElementById('hudKills').textContent=killCount;
-}
-
-function showWaveMsg(msg,color='#f0c040'){
-  const el=document.getElementById('waveMsg');
-  el.textContent=msg;el.style.color=color;el.classList.add('show');
-  if(waveMsgTimer) clearTimeout(waveMsgTimer);
-  waveMsgTimer=setTimeout(()=>el.classList.remove('show'),3500);
-}
-function showBossWarning(){
-  const el=document.getElementById('bossWarn');el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),3000);
-}
-
-// Pickup floating text
-function pfloat(pos,txt,type=''){
-  const sc=worldToScreen(new THREE.Vector3(pos.x,pos.y+.5,pos.z));
-  const el=document.createElement('div');
-  el.className='pfloat'+(type?' '+type:'');
-  el.textContent=txt;el.style.left=sc.x+'px';el.style.top=sc.y+'px';
-  document.body.appendChild(el);
-  setTimeout(()=>el.remove(),1100);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  CAMERA
-// ═══════════════════════════════════════════════════════════════
-const camTarget=new THREE.Vector3();
-const camCurrentPos=new THREE.Vector3().copy(CAM_BASE);
-function updateCamera(){
-  if(!player) return;
-  const fleetZoom=Math.min(fleet.length*.7,14);
-  const targetPos=new THREE.Vector3(
-    player.mesh.position.x,
-    CAM_BASE.y+fleetZoom,
-    player.mesh.position.z+CAM_BASE.z+fleetZoom*.25
-  );
-  // Screen shake
-  if(shakeTimer>0){
-    shakeTimer-=dt;
-    const s=shakeIntensity*Math.sin(shakeTimer*60)*shakeTimer;
-    targetPos.x+=(Math.random()-.5)*s;
-    targetPos.y+=(Math.random()-.5)*s*.3;
-    if(shakeTimer<=0){shakeIntensity=0;}
-  }
-  camCurrentPos.lerp(targetPos,dt*3.8);
-  camera.position.copy(camCurrentPos);
-  camTarget.lerp(player.mesh.position,dt*4.2);
-  camera.lookAt(camTarget);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  MINIMAP
-// ═══════════════════════════════════════════════════════════════
-const mmCanvas=document.getElementById('minimap');
-const mmCtx=mmCanvas.getContext('2d');
-function updateMinimap(){
-  if(!player) return;
-  const W=115,H=115,sc=6;
-  mmCtx.clearRect(0,0,W,H);
-  // Ocean bg
-  mmCtx.fillStyle='rgba(8,20,38,.9)';mmCtx.fillRect(0,0,W,H);
-  const cx=W/2,cy=H/2,px=player.mesh.position.x,pz=player.mesh.position.z;
-  // Enemies
-  enemies.forEach(e=>{
-    const ex=cx+(e.mesh.position.x-px)/sc, ey=cy+(e.mesh.position.z-pz)/sc;
-    if(ex<0||ex>W||ey<0||ey>H) return;
-    mmCtx.fillStyle=e.isBoss?'#4dff9b':e.type==='rowboat'?'#ff5555':'#ff8844';
-    mmCtx.beginPath();mmCtx.arc(ex,ey,e.isBoss?5:2.2,0,PI2);mmCtx.fill();
-  });
-  // Fleet
-  fleet.forEach(s=>{
-    const fx=cx+(s.mesh.position.x-px)/sc,fy=cy+(s.mesh.position.z-pz)/sc;
-    mmCtx.fillStyle='#4488ff';
-    mmCtx.beginPath();mmCtx.arc(fx,fy,2.5,0,PI2);mmCtx.fill();
-  });
-  // Player
-  mmCtx.fillStyle='#f0c040';
-  mmCtx.beginPath();mmCtx.arc(cx,cy,4.5,0,PI2);mmCtx.fill();
-  mmCtx.strokeStyle='#fff';mmCtx.lineWidth=1.5;
-  mmCtx.beginPath();mmCtx.arc(cx,cy,4.5,0,PI2);mmCtx.stroke();
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  GAME STATE TRANSITIONS
-// ═══════════════════════════════════════════════════════════════
-function startGame(){
-  // Clear old state
-  enemies.forEach(e=>{scene.remove(e.mesh);if(e.hpb)scene.remove(e.hpb.g);});
-  enemies.length=0;
-  PRJ_POOL.forEach(p=>{p.on=false;p.m.visible=false;});
-  lootItems.forEach(l=>scene.remove(l.m));lootItems.length=0;
-  fleet.forEach(s=>{scene.remove(s.mesh);if(s.hpb)scene.remove(s.hpb.g);});fleet.length=0;
-  wrecks.forEach(w=>scene.remove(w));wrecks.length=0;
-  barrels.forEach(b=>scene.remove(b.mesh));barrels.length=0;
-  bottles.forEach(b=>scene.remove(b.mesh));bottles.length=0;
-  floatDebris.forEach(d=>scene.remove(d.mesh));floatDebris.length=0;
-  if(player){scene.remove(player.mesh);scene.remove(player.wakeGroup);player=null;}
-
-  dbl=0;dblProgress=0;level=0;surviveTime=0;killCount=0;
-  chosenCards=[];bossActive=false;bossEntity=null;stormActive=false;
-  bossNextMinute=ownedUpgrades.includes('ghost_w')?9:8;
-  spawnTimer=4;spawnInterval=3.5;
-
-  totalRuns++;savePersist('runs',totalRuns);
-
-  oceanMat.color.setHex(0x1a6fa8);
-  document.getElementById('stormVignette').style.opacity='0';
-  document.getElementById('ghostVignette').style.opacity='0';
-
-  player=createPlayer();
-  applyMetaUpgrades(player);
-  buildStaticRocks();
-  buildIslands();
-
-  ['menu','death','victory','loading'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  document.getElementById('hud').classList.remove('hidden');
-  document.getElementById('minimap').style.display='block';
-  document.getElementById('bossBarWrap').classList.remove('show');
-
-  camera.position.copy(CAM_BASE);camCurrentPos.copy(CAM_BASE);
-
-  GS='PLAYING';
-  clock.getDelta(); // Reset delta to avoid big first frame
-}
-
-function triggerDeath(){
-  GS='DEAD';
-  const skulls=Math.floor(dbl/100)
-    +(surviveTime>=600?10:0)
-    +(surviveTime>=1200?25:0)
-    +(surviveTime>=1800?50:0)
-    +(ownedUpgrades.includes('skull_m')?.2:0|0);
-  totalSkulls+=skulls;
-  savePersist('skulls',totalSkulls);
-
-  if(surviveTime>bestTime){bestTime=Math.floor(surviveTime);savePersist('best',bestTime);}
-
-  // Leaderboard entry
-  const entry={name:'You',time:Math.floor(surviveTime),score:Math.floor(dbl),date:new Date().toLocaleDateString()};
-  leaderboardData.push(entry);
-  leaderboardData.sort((a,b)=>b.time-a.time);
-  if(leaderboardData.length>20) leaderboardData.length=20;
-  savePersist('lb',leaderboardData);
-
-  const m=Math.floor(surviveTime/60),s=Math.floor(surviveTime%60);
-  const bm=Math.floor(bestTime/60),bs=Math.floor(bestTime%60);
-  document.getElementById('deathTime').textContent=m+':'+(s<10?'0':'')+s;
-  document.getElementById('deathScore').textContent=Math.floor(dbl);
-  document.getElementById('deathBest').textContent=bm+':'+(bs<10?'0':'')+bs;
-  document.getElementById('deathSkulls').textContent=skulls;
-  document.getElementById('deathSkullsTotal').textContent=totalSkulls;
-
-  const upsEl=document.getElementById('deathUps');
-  upsEl.innerHTML=chosenCards.map(id=>{
-    const c=ALL_CARDS.find(x=>x.id===id);
-    return c?`<div class="death-tag">${c.ico} ${c.name}</div>`:'';
-  }).join('');
-
-  document.getElementById('hud').classList.add('hidden');
-  document.getElementById('minimap').style.display='none';
-  document.getElementById('death').classList.remove('hidden');
-}
-
-function triggerVictory(){
-  GS='VICTORY';
-  document.getElementById('victoryStat').textContent=`Score: ${Math.floor(dbl)} Doubloons — Survived 30:00`;
-  document.getElementById('hud').classList.add('hidden');
-  document.getElementById('minimap').style.display='none';
-  document.getElementById('victory').classList.remove('hidden');
-}
-
-function showMenu(){
-  GS='MENU';
-  ['death','victory','hud'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  document.getElementById('minimap').style.display='none';
-  document.getElementById('menu').classList.remove('hidden');
-  document.getElementById('bossBarWrap').classList.remove('show');
-
-  const bm=Math.floor(bestTime/60),bs=Math.floor(bestTime%60);
-  document.getElementById('menuBest').textContent=bm+':'+(bs<10?'0':'')+bs;
-  document.getElementById('menuSkulls').textContent=totalSkulls;
-  document.getElementById('menuRuns').textContent=totalRuns;
-  document.getElementById('menuSkullBadge').textContent=totalSkulls;
-
-  if(player){scene.remove(player.mesh);scene.remove(player.wakeGroup);player=null;}
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  SKULL UPGRADE MODAL
-// ═══════════════════════════════════════════════════════════════
-function openSkulls(){
-  document.getElementById('modalSkullCount').textContent=totalSkulls;
-  const grid=document.getElementById('upgradeGrid');
-  grid.innerHTML='';
-  SKULL_UPGRADES.forEach(u=>{
-    const owned=ownedUpgrades.includes(u.id);
-    const node=document.createElement('div');
-    node.className='upgrade-node'+(owned?' owned':'');
-    node.innerHTML=`
-      <div class="un-ico">${u.ico}</div>
-      <div class="un-name">${u.name}</div>
-      <div class="un-desc">${u.desc}</div>
-      ${owned
-        ? '<div style="font-size:.68rem;color:#4dff9b;margin-top:.3rem">Purchased ✓</div>'
-        : `<button class="un-btn" onclick="buySkullUpgrade('${u.id}',${u.cost})" style="pointer-events:all">Buy — ${u.cost} Skulls</button>`
-      }
-    `;
-    grid.appendChild(node);
-  });
-  document.getElementById('skullModal').classList.remove('hidden');
-}
-
-function buySkullUpgrade(id,cost){
-  if(totalSkulls<cost){
-    alert(`Need ${cost} Skulls. You have ${totalSkulls}.`);return;
-  }
-  if(ownedUpgrades.includes(id)){alert('Already owned!');return;}
-  totalSkulls-=cost;
-  ownedUpgrades.push(id);
-  savePersist('skulls',totalSkulls);
-  savePersist('owned',ownedUpgrades);
-  openSkulls(); // Re-render
-}
-
-function closeSkulls(){document.getElementById('skullModal').classList.add('hidden');}
-
-// ═══════════════════════════════════════════════════════════════
-//  LEADERBOARD
-// ═══════════════════════════════════════════════════════════════
-function openLeaderboard(){
-  document.getElementById('leaderboard').classList.remove('hidden');
-  const el=document.getElementById('lbEntries');
-  if(!leaderboardData.length){
-    el.innerHTML='<div class="lb-empty">No runs yet — play a game!</div>';return;
-  }
-  el.innerHTML=leaderboardData.slice(0,15).map((e,i)=>{
-    const m=Math.floor(e.time/60),s=e.time%60;
-    return `<div class="lb-entry${i===0?' gold':''}">
-      <div class="lb-rank">#${i+1}</div>
-      <div class="lb-ship">⛵</div>
-      <div class="lb-name">${e.name||'Captain'}</div>
-      <div class="lb-time">${m}:${s<10?'0':''}${s}</div>
-      <div class="lb-score">${e.score||0}🪙</div>
-    </div>`;
-  }).join('');
-}
-function closeLeaderboard(){document.getElementById('leaderboard').classList.add('hidden');}
-
-// ═══════════════════════════════════════════════════════════════
-//  SHARE
-// ═══════════════════════════════════════════════════════════════
-function shareScore(){
-  const m=Math.floor(surviveTime/60),s=Math.floor(surviveTime%60);
-  const fleetIcons=fleet.map(()=>'⛵').join('')||'—';
-  const text=`🏴‍☠️ MAELSTROM\n⚓ Survived: ${m}:${s<10?'0':''}${s}\n💰 Score: ${Math.floor(dbl)} Doubloons\n⚔️ Kills: ${killCount}\n🚢 Fleet: ${fleetIcons}\n${window.location.href}`;
-  if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>{
-    const btn=document.getElementById('shareBtn');btn.textContent='✅ Copied!';btn.classList.add('copied');
-    setTimeout(()=>{btn.textContent='📋 Copy Share Card';btn.classList.remove('copied');},2500);
-  }).catch(()=>alert(text));}
-  else alert(text);
-}
-function shareGame(){
-  const text=`🏴‍☠️ MAELSTROM — Free Pirate Naval Survivor Game!\n\nSurvive endless enemy fleets, grow your fleet, defeat the Ghost Ship Boss!\n\n${window.location.href}`;
-  if(navigator.clipboard) navigator.clipboard.writeText(text).then(()=>alert('Link copied!'));
-  else alert(text);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  INPUT
-// ═══════════════════════════════════════════════════════════════
+// ── UI HELPERS ─────────────────────────────────────────────────────────
+let _tt=null;
+function toast(msg,dur=2600){const el=document.getElementById('TOAST');el.textContent=msg;el.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>el.style.opacity='0',dur);}
+let _at=null;
+function announce(html){const el=document.getElementById('WAN');el.innerHTML=html;el.style.opacity='1';clearTimeout(_at);_at=setTimeout(()=>el.style.opacity='0',3400);}
+function showScr(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));if(id)document.getElementById(id).classList.add('on');}
+function showHUD(on){document.getElementById('HUD').classList.toggle('on',on);}
+function setLB(p,msg){document.getElementById('LBF').style.width=(p*100)+'%';if(msg)document.getElementById('LT').textContent=msg;}
+function flashDmg(){const o=document.getElementById('DAMO');o.style.opacity='.55';clearTimeout(flashDmg._t);flashDmg._t=setTimeout(()=>o.style.opacity='0',160);}
+
+// ── INPUT ──────────────────────────────────────────────────────────────
 const K={};
-document.addEventListener('keydown',e=>{
+window.addEventListener('keydown',e=>{
   K[e.code]=true;
-  if(GS==='UPGRADING'){
-    if(e.code==='Digit1') selectCard(0);
-    if(e.code==='Digit2') selectCard(1);
-    if(e.code==='Digit3') selectCard(2);
+  if(!_paused&&_running){
+    if(e.code==='Digit1')selCard(0);
+    if(e.code==='Digit2')selCard(1);
+    if(e.code==='Digit3')selCard(2);
+    if(e.code==='Escape'){if(_upPending)skipUpg();else togglePause();}
   }
-  if(e.code==='Escape'&&GS==='PLAYING'){showMenu();}
-},{passive:true});
-document.addEventListener('keyup',e=>{K[e.code]=false;},{passive:true});
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
+});
+window.addEventListener('keyup',e=>delete K[e.code]);
 
-// Joystick
-const JOY={active:false,x:0,y:0,sx:0,sy:0};
-(function initJoystick(){
-  const base=document.getElementById('joyBase');
-  const knob=document.getElementById('joyKnob');
-  if(!base) return;
-  const MAX=40;
-  function onStart(cx,cy){JOY.active=true;JOY.sx=cx;JOY.sy=cy;}
-  function onMove(cx,cy){
-    if(!JOY.active) return;
-    let dx=cx-JOY.sx, dy=cy-JOY.sy;
-    const dist=Math.sqrt(dx*dx+dy*dy);
-    if(dist>MAX){dx=dx/dist*MAX;dy=dy/dist*MAX;}
-    JOY.x=dx/MAX; JOY.y=dy/MAX;
-    knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
-  }
-  function onEnd(){JOY.active=false;JOY.x=0;JOY.y=0;knob.style.transform='translate(-50%,-50%)';}
-  base.addEventListener('touchstart',e=>{const t=e.touches[0];onStart(t.clientX,t.clientY);e.preventDefault();},{passive:false});
-  window.addEventListener('touchmove',e=>{if(JOY.active){const t=e.touches[0];onMove(t.clientX,t.clientY);e.preventDefault();}},{passive:false});
-  window.addEventListener('touchend',onEnd,{passive:true});
-})();
-
-// ═══════════════════════════════════════════════════════════════
-//  UTILITY
-// ═══════════════════════════════════════════════════════════════
-function nearestEnemy(pos,range){
-  let best=null,bd=range;
-  enemies.forEach(e=>{const d=pos.distanceTo(e.mesh.position);if(d<bd){bd=d;best=e;}});
-  return best;
+// Mobile joystick
+let _ja=false,_jid=-1,_jox=0,_joy=0,_jdx=0,_jdy=0;
+const JR=44;
+const mob=()=>'ontouchstart'in window||navigator.maxTouchPoints>0;
+const jz=document.getElementById('JZ'),jb=document.getElementById('JB'),jt=document.getElementById('JT');
+if(mob()){
+  jz.classList.add('mob');
+  jz.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    const tc=e.changedTouches[0];_ja=true;_jid=tc.identifier;_jox=tc.clientX;_joy=tc.clientY;
+    jb.style.left=(tc.clientX-54)+'px';jb.style.top=(tc.clientY-54)+'px';jb.style.display='block';
+    jt.style.left='32px';jt.style.top='32px';
+  },{passive:false});
+  jz.addEventListener('touchmove',e=>{
+    if(!_ja)return;
+    for(const tc of e.changedTouches)if(tc.identifier===_jid){
+      let dx=tc.clientX-_jox,dy=tc.clientY-_joy;
+      const m=Math.sqrt(dx*dx+dy*dy);if(m>JR){dx=dx/m*JR;dy=dy/m*JR;}
+      _jdx=dx/JR;_jdy=dy/JR;
+      jt.style.left=(54+dx-22)+'px';jt.style.top=(54+dy-22)+'px';
+    }
+    e.preventDefault();
+  },{passive:false});
+  const ej=()=>{_ja=false;_jdx=0;_jdy=0;jb.style.display='none';};
+  jz.addEventListener('touchend',ej);jz.addEventListener('touchcancel',ej);
+}
+function getInp(){
+  let dx=0,dy=0;
+  if(K['ArrowLeft']||K['KeyA'])dx-=1;
+  if(K['ArrowRight']||K['KeyD'])dx+=1;
+  if(K['ArrowUp']||K['KeyW'])dy-=1;
+  if(K['ArrowDown']||K['KeyS'])dy+=1;
+  if(_ja){dx=_jdx;dy=_jdy;}
+  const m=Math.sqrt(dx*dx+dy*dy);if(m>1){dx/=m;dy/=m;}
+  return{dx,dy};
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  MAIN LOOP
-// ═══════════════════════════════════════════════════════════════
-let lastHUDT=0;
-function gameLoop(){
-  requestAnimationFrame(gameLoop);
-  dt=Math.min(clock.getDelta(),.05);
-  elapsed=clock.getElapsedTime();
+// ── THREE.JS STATE ─────────────────────────────────────────────────────
+let _rend,_scene,_cam,_ocean,_oceanOrig;
+const _mdls={};
 
-  // Ocean always animates
-  animateOcean(elapsed);
-  // Particles
-  updateParticles();
+// ── RENDERER SETUP (r128 EXACT API) ───────────────────────────────────
+function initThree(){
+  const canvas=document.getElementById('c');
+  _rend=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+  _rend.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  _rend.setSize(window.innerWidth,window.innerHeight);
+  _rend.shadowMap.enabled=true;
+  _rend.shadowMap.type=THREE.PCFSoftShadowMap;
+  _rend.outputEncoding=THREE.sRGBEncoding;        // r128 API (NOT outputColorSpace)
+  _rend.toneMapping=THREE.ACESFilmicToneMapping;
+  _rend.toneMappingExposure=1.12;
+  _rend.physicallyCorrectLights=true;              // r128 API (NOT useLegacyLights)
 
-  if(GS==='PLAYING'){
-    surviveTime+=dt;
-    updatePlayer();
-    updateFleet();
-    updateEnemies();
-    updateProjectiles();
-    updateBarrels();
-    updateSpawner();
-    updateCamera();
-    updateMinimap();
-    if(elapsed-lastHUDT>.05){refreshHUD();lastHUDT=elapsed;}
+  _scene=new THREE.Scene();
+  _scene.background=new THREE.Color(0x0d1e36);
+  _scene.fog=new THREE.FogExp2(0x0d2040,0.00034);
+  // NO scene.environment — would cause black models without full PMREM setup
 
-  } else if(GS==='UPGRADING'){
-    updateCamera();
+  _cam=new THREE.PerspectiveCamera(44,window.innerWidth/window.innerHeight,1,9000);
+  _cam.position.set(0,CAM_H,CAM_D);
+  _cam.lookAt(0,0,0);
 
-  } else {
-    // Idle menu — animated ocean camera
-    camera.position.x=Math.sin(elapsed*.08)*8;
-    camera.position.z=CAM_BASE.z+Math.cos(elapsed*.06)*5;
-    camera.position.y=CAM_BASE.y;
-    camera.lookAt(0,0,0);
-  }
+  // ── 5-LIGHT RIG (compensates for no envMap) ──
+  _scene.add(new THREE.AmbientLight(0xaabbcc,1.4));
+  const sun=new THREE.DirectionalLight(0xfff8e8,1.8);
+  sun.position.set(300,500,200);sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.camera.left=sun.shadow.camera.bottom=-700;
+  sun.shadow.camera.right=sun.shadow.camera.top=700;
+  sun.shadow.camera.near=1;sun.shadow.camera.far=2500;
+  sun.shadow.bias=-0.001;
+  _scene.add(sun);
+  const fill=new THREE.DirectionalLight(0x6699cc,0.8);fill.position.set(-300,200,-100);_scene.add(fill);
+  const rim=new THREE.DirectionalLight(0xffcc88,0.5);rim.position.set(0,80,-500);_scene.add(rim);
+  _scene.add(new THREE.HemisphereLight(0x6688bb,0x3a5522,0.7));
 
-  renderer.render(scene,camera);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════════
-(function init(){
-  const bar=document.getElementById('ldBar');
-  const pct=document.getElementById('ldPct');
-
-  loadAllModels(p=>{
-    const pv=Math.floor(p*100);
-    bar.style.width=pv+'%';
-    pct.textContent=pv+'%';
-  }, ()=>{
-    bar.style.width='100%';
-    pct.textContent='100%';
-    setTimeout(()=>{
-      document.getElementById('loading').classList.add('hidden');
-      showMenu();
-    },600);
+  window.addEventListener('resize',()=>{
+    _cam.aspect=window.innerWidth/window.innerHeight;
+    _cam.updateProjectionMatrix();
+    _rend.setSize(window.innerWidth,window.innerHeight);
   });
+}
 
-  gameLoop();
-})();
+// ── OCEAN (25×25 = 625 verts, every-other-frame animation) ────────────
+function buildOcean(){
+  const geo=new THREE.PlaneGeometry(WORLD*2.4,WORLD*2.4,24,24);
+  _ocean=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
+    color:0x1a5c8a,roughness:0.14,metalness:0,transparent:true,opacity:0.93
+  }));
+  _ocean.rotation.x=-Math.PI/2;
+  _ocean.receiveShadow=true;
+  _scene.add(_ocean);
+  _oceanOrig=new Float32Array(geo.attributes.position.array);
+}
+let _wf=0;
+function animOcean(t){
+  if(++_wf%2!==0)return;
+  const pos=_ocean.geometry.attributes.position;
+  for(let i=0;i<pos.count;i++){
+    pos.array[i*3+2]=_P(_oceanOrig[i*3]/280+t*.22,_oceanOrig[i*3+1]/280+t*.16)*5;
+  }
+  pos.needsUpdate=true;
+  _ocean.geometry.computeVertexNormals();
+}
+
+// ── MATERIAL FIX — CRITICAL ───────────────────────────────────────────
+function fixMat(m){m.metalness=0;m.roughness=Math.max(m.roughness||0,.75);m.needsUpdate=true;}
+function processGroup(grp){
+  grp.traverse(n=>{
+    if(!n.isMesh)return;
+    n.castShadow=n.receiveShadow=true;
+    if(Array.isArray(n.material))n.material=n.material.map(m=>{const mc=m.clone();fixMat(mc);return mc;});
+    else{n.material=n.material.clone();fixMat(n.material);}
+  });
+  return grp;
+}
+
+// ── SCALE TABLE (Kenney GLBs at camera Y=380, world 4000u) ─────────────
+const SC={'ship-pirate-small':12,'ship-pirate-medium':16,'ship-pirate-large':22,'ship-ghost':18,
+  'boat-row-small':9,'boat-row-large':11,'ship-small':12,'ship-medium':15,'ship-large':20,'ship-wreck':14,
+  'cannon-ball':2.5,'chest':6,'barrel':5,'bottle':4,'crate':5,
+  'rocks-a':16,'rocks-b':14,'rocks-c':15,'patch-sand':18,'patch-grass':18,
+  'palm-straight':14,'palm-bend':13,'tower-complete-small':13};
+const sc=n=>SC[n]||12;
+
+// ── FALLBACK GEOMETRY ─────────────────────────────────────────────────
+function mkFallback(type){
+  const g=new THREE.Group();
+  const hull=new THREE.Mesh(new THREE.BoxGeometry(8,5,18),new THREE.MeshStandardMaterial({color:0x8a6040,roughness:.8,metalness:0}));
+  g.add(hull);
+  if(type&&type.includes('ghost')){hull.material.color.set(0x336644);hull.material.transparent=true;hull.material.opacity=0.7;}
+  return g;
+}
+
+// ── MODEL LOADER (6s timeout + fallback, NEVER rejects) ───────────────
+function loadModel(name){
+  return new Promise(resolve=>{
+    if(_mdls[name]){resolve(_mdls[name].clone(true));return;}
+    let done=false;
+    const timer=setTimeout(()=>{if(done)return;done=true;console.warn('Timeout:',name);const f=mkFallback(name);_mdls[name]=f;resolve(f.clone(true));},6000);
+    new THREE.GLTFLoader().load(`${ASSETS}${name}.glb`,
+      gltf=>{if(done)return;done=true;clearTimeout(timer);processGroup(gltf.scene);_mdls[name]=gltf.scene;resolve(gltf.scene.clone(true));},
+      undefined,
+      ()=>{if(done)return;done=true;clearTimeout(timer);console.warn('Failed:',name);const f=mkFallback(name);_mdls[name]=f;resolve(f.clone(true));}
+    );
+  });
+}
+
+function spawnMesh(name){const src=_mdls[name]||mkFallback(name);const m=src.clone(true);m.scale.setScalar(sc(name));m.castShadow=true;return m;}
+
+async function preload(){
+  const models=['ship-pirate-small','ship-pirate-medium','ship-pirate-large','ship-ghost',
+    'boat-row-small','ship-small','ship-medium','ship-large','ship-wreck',
+    'cannon-ball','chest','barrel','bottle','crate','rocks-a','rocks-b','rocks-c',
+    'patch-sand','patch-grass','palm-straight','palm-bend','tower-complete-small'];
+  for(let i=0;i<models.length;i++){
+    setLB(0.08+(i+1)/models.length*.88,'Loading '+models[i]+'…');
+    await loadModel(models[i]);
+  }
+}
+
+// ── AUDIO ENGINE (Web Audio API — init on gesture) ────────────────────
+const Aud={
+  ctx:null,sfx:null,mus:null,
+  init(){
+    if(this.ctx)return;
+    try{
+      this.ctx=new(window.AudioContext||window.webkitAudioContext)();
+      this.sfx=this.ctx.createGain();this.sfx.gain.value=0.52;this.sfx.connect(this.ctx.destination);
+      this.mus=this.ctx.createGain();this.mus.gain.value=0.14;this.mus.connect(this.ctx.destination);
+      this._startAmbient();
+    }catch{}
+  },
+  _tone(f,dur,vol=0.28,type='square',dest=this.sfx){
+    if(!this.ctx)return;
+    try{
+      const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+      o.connect(g);g.connect(dest||this.sfx);
+      o.type=type;o.frequency.setValueAtTime(f,this.ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(f*.12,this.ctx.currentTime+dur);
+      g.gain.setValueAtTime(vol,this.ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001,this.ctx.currentTime+dur);
+      o.start();o.stop(this.ctx.currentTime+dur);
+    }catch{}
+  },
+  cannon(){this._tone(110,.18,.22,'sawtooth');},
+  coin(){this._tone(1300,.055,.1,'sine');},
+  levelUp(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>this._tone(f,.12,.16,'sine'),i*72));},
+  sink(){this._tone(200,.55,.28,'sawtooth');setTimeout(()=>this._tone(80,.4,.18,'sine'),300);},
+  boss(){this._tone(55,1,.32,'sawtooth');this._tone(73,.8,.2,'square');},
+  hit(){this._tone(180,.1,.18,'square');},
+  upgrade(){this._tone(880,.12,.22,'sine');},
+  _startAmbient(){
+    if(!this.ctx)return;
+    try{
+      const buf=this.ctx.createBuffer(1,this.ctx.sampleRate*2,this.ctx.sampleRate);
+      const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*.25;
+      const src=this.ctx.createBufferSource(),f=this.ctx.createBiquadFilter();
+      f.type='lowpass';f.frequency.value=180;src.buffer=buf;src.loop=true;
+      src.connect(f);f.connect(this.mus);src.start();
+    }catch{}
+  }
+};
+
+// ── PARTICLE SYSTEM (single draw call, pre-alloc) ─────────────────────
+class Particles{
+  constructor(max=2000){
+    this.pool=[];this.max=max;
+    this.pos=new Float32Array(max*3);this.col=new Float32Array(max*3);
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(this.pos,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(this.col,3));
+    this.pts=new THREE.Points(geo,new THREE.PointsMaterial({size:5.5,vertexColors:true,transparent:true,depthWrite:false,sizeAttenuation:true}));
+    _scene.add(this.pts);
+  }
+  emit(x,z,{n=8,color='#f0c040',minS=28,maxS=120,life=.8}={}){
+    const c=new THREE.Color(color),ct=Math.min(n,this.max>>2);
+    for(let i=0;i<ct;i++){
+      const a=Math.random()*TWO_PI,s=rand(minS,maxS);
+      this.pool.push({x,y:rand(2,14),z,vx:Math.cos(a)*s,vy:rand(9,48),vz:Math.sin(a)*s,life:1,dec:rand(.9,2)/life,r:c.r,g:c.g,b:c.b});
+    }
+  }
+  update(dt){
+    let i=this.pool.length;
+    while(i--){
+      const p=this.pool[i];
+      p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
+      p.vx*=.94;p.vz*=.94;p.vy-=66*dt;if(p.y<0)p.y=0;
+      p.life-=p.dec*dt;if(p.life<=0)this.pool.splice(i,1);
+    }
+    const n=Math.min(this.pool.length,this.max);
+    for(let j=0;j<n;j++){const p=this.pool[j],a=Math.max(0,p.life);this.pos[j*3]=p.x;this.pos[j*3+1]=p.y;this.pos[j*3+2]=p.z;this.col[j*3]=p.r*a;this.col[j*3+1]=p.g*a;this.col[j*3+2]=p.b*a;}
+    for(let j=n;j<this.max;j++)this.pos[j*3+1]=-9999;
+    this.pts.geometry.attributes.position.needsUpdate=true;
+    this.pts.geometry.attributes.color.needsUpdate=true;
+  }
+  destroy(){_scene.remove(this.pts);}
+}
+
+// ── BULLET POOL (pre-allocated, never new in loop) ────────────────────
+let _BPOOL=[];
+function buildBulletPool(n=120){
+  _BPOOL.forEach(b=>_scene.remove(b.mesh));_BPOOL=[];
+  const geo=new THREE.SphereGeometry(2.2,7,5);
+  const matP=new THREE.MeshStandardMaterial({color:0x222222,roughness:.7,metalness:0});
+  const matE=new THREE.MeshStandardMaterial({color:0xcc2200,roughness:.5,metalness:0,emissive:new THREE.Color(0x440000),emissiveIntensity:.4});
+  const matG=new THREE.MeshStandardMaterial({color:0x00ff88,roughness:.3,metalness:0,emissive:new THREE.Color(0x00ff88),emissiveIntensity:.8});
+  for(let i=0;i<n;i++){
+    const m=new THREE.Mesh(geo,matP.clone());m.visible=false;m.castShadow=false;
+    _scene.add(m);
+    _BPOOL.push({mesh:m,active:false,isPlayer:true,dmg:20,x:0,z:0,vx:0,vz:0,vy:0,life:0,r:3.5,matP:matP.clone(),matE:matE.clone(),matG:matG.clone()});
+  }
+}
+function fireBullet(ox,oz,tx,tz,dmg,owner,isGhost=false){
+  const b=_BPOOL.find(p=>!p.active);if(!b)return;
+  b.active=true;b.mesh.visible=true;b.isPlayer=(owner!=='enemy');b.dmg=dmg;
+  b.x=ox;b.z=oz;
+  b.mesh.material=owner==='enemy'?b.matE:isGhost?b.matG:b.matP;
+  const dd=Math.max(1,dst(ox,oz,tx,tz)),spd=155;
+  b.vx=(tx-ox)/dd*spd;b.vz=(tz-oz)/dd*spd;b.vy=22;
+  b.life=dd/spd+.38;
+}
+function updateBullets(dt){
+  for(const b of _BPOOL){
+    if(!b.active)continue;
+    b.x+=b.vx*dt;b.z+=b.vz*dt;b.vy-=96*dt;
+    b.mesh.position.set(b.x-HALF,Math.max(0,b.vy*dt*8)+2.5,b.z-HALF);
+    b.life-=dt;if(b.life<=0){b.active=false;b.mesh.visible=false;}
+  }
+}
+
+// ── HP BAR DOM ELEMENT ────────────────────────────────────────────────
+function mkHpBar(){
+  const w=document.createElement('div');
+  w.dataset.hpbar='1';
+  w.style.cssText='position:fixed;pointer-events:none;z-index:20;display:none';
+  w.innerHTML='<div style="width:36px;height:4px;background:#1a0000;border-radius:2px;border:1px solid #330000;box-shadow:0 1px 4px #0008"><div style="height:100%;width:100%;background:#22cc22;border-radius:2px;transition:width .14s,background .25s"></div></div>';
+  document.body.appendChild(w);
+  return{wrap:w,fill:w.querySelector('div div')};
+}
+function syncHpBar(hel,wx,wz,hp,maxHp){
+  if(!_running||!_cam){hel.wrap.style.display='none';return;}
+  const v=new THREE.Vector3(wx-HALF,12,wz-HALF);v.project(_cam);
+  const sx=(v.x+1)/2*window.innerWidth,sy=(-v.y+1)/2*window.innerHeight;
+  if(v.z>1||sx<-60||sx>window.innerWidth+60||sy<-60||sy>window.innerHeight+60){hel.wrap.style.display='none';return;}
+  hel.wrap.style.display='block';hel.wrap.style.left=(sx-18)+'px';hel.wrap.style.top=(sy-28)+'px';
+  const p=clamp(hp/maxHp,0,1);hel.fill.style.width=(p*100)+'%';
+  hel.fill.style.background=p>.5?'#22cc22':p>.25?'#aacc22':'#cc2222';
+}
+
+// ── FLOATING TEXT ─────────────────────────────────────────────────────
+class FloatTxt{
+  constructor(wx,wz,txt,col='#f0c040'){
+    this.x=wx;this.z=wz;this.wy=8;this.vy=-58;this.life=1;
+    const el=document.createElement('div');
+    el.style.cssText=`position:fixed;pointer-events:none;font:700 .78rem/1 Georgia,serif;text-shadow:0 1px 5px #000;z-index:26;white-space:nowrap;color:${col}`;
+    el.textContent=txt;document.body.appendChild(el);this.el=el;
+  }
+  update(dt){
+    this.wy+=this.vy*dt;this.vy*=.92;this.life-=dt*1.35;
+    if(this.life<=0){this.destroy();return;}
+    const v=new THREE.Vector3(this.x-HALF,this.wy,this.z-HALF);v.project(_cam);
+    this.el.style.left=((v.x+1)/2*window.innerWidth-22)+'px';
+    this.el.style.top=((-v.y+1)/2*window.innerHeight)+'px';
+    this.el.style.opacity=Math.max(0,this.life);
+  }
+  destroy(){this.el?.parentNode?.removeChild(this.el);}
+}
+
+// ── DATA DEFINITIONS ──────────────────────────────────────────────────
+const SHIP_DEFS={
+  sloop:{id:'sloop',name:'The Sloop',icon:'⛵',model:'ship-pirate-small',cost:0,hp:100,spd:7.5,sz:14,cn:1,tr:5,friction:.88,passive:null,desc:'Balanced starter ship — recommended for beginners.'},
+  rowgang:{id:'rowgang',name:'Rowboat Gang',icon:'🚣',model:'boat-row-large',cost:30,hp:70,spd:9,sz:12,cn:0,tr:6.5,friction:.86,passive:'swarm',desc:'Starts with 4 rowboats that RESPAWN after sinking.'},
+  wraith:{id:'wraith',name:'The Wraith',icon:'👻',model:'ship-ghost',cost:150,hp:55,spd:10,sz:14,cn:1,tr:7,friction:.92,passive:'ghost',desc:'Glass cannon. Phases through enemies every 60 seconds.'},
+  armada:{id:'armada',name:'Armada Commander',icon:'🏴‍☠️',model:'ship-pirate-large',cost:200,hp:200,spd:4.8,sz:18,cn:2,tr:2.5,friction:.84,passive:'fortress',desc:'Cannot die while fleet is alive. Starts with cannon towers.'},
+};
+const ENEMY_CFG={
+  rowboat:{model:'boat-row-small',hp:28,spd:4.8,sz:9,dmg:8,fr:0,rng:0,xp:10,sk:0},
+  sloop:{model:'ship-small',hp:65,spd:3.8,sz:14,dmg:12,fr:2.6,rng:230,xp:25,sk:0},
+  frigate:{model:'ship-medium',hp:165,spd:2.6,sz:20,dmg:18,fr:3.1,rng:265,xp:55,sk:1},
+  galleon:{model:'ship-large',hp:345,spd:1.8,sz:26,dmg:24,fr:3.5,rng:295,xp:130,sk:2},
+  ghost:{model:'ship-ghost',hp:560,spd:3.4,sz:22,dmg:20,fr:2.2,rng:285,xp:220,sk:5,boss:true},
+};
+const FLEET_CFG={
+  rowboat:{model:'boat-row-small',hp:40,spd:8,sz:9,dmg:12,fr:2.5,rng:205,cn:1},
+  sloop:{model:'ship-small',hp:72,spd:7,sz:14,dmg:18,fr:2.1,rng:255,cn:1},
+  brigantine:{model:'ship-pirate-medium',hp:115,spd:5.5,sz:20,dmg:23,fr:1.9,rng:280,cn:2},
+  galleon:{model:'ship-pirate-large',hp:195,spd:3.5,sz:26,dmg:32,fr:2.6,rng:315,cn:4},
+};
+const UPGRADES=[
+  {id:'rows',name:'Recruit Rowboats',icon:'⛵',rarity:'common',desc:'Add 2 rowboat flankers to fleet',type:'fleet',ship:'rowboat',n:2},
+  {id:'slps',name:'Press-Gang Sloop',icon:'🚢',rarity:'rare',desc:'Add 1 Sloop to orbit',type:'fleet',ship:'sloop',n:1},
+  {id:'brig',name:'Commandeer Brigantine',icon:'🛥️',rarity:'epic',desc:'Add 1 Brigantine with double guns',type:'fleet',ship:'brigantine',n:1},
+  {id:'gall',name:'The Flagship Arrives',icon:'🏴‍☠️',rarity:'legendary',desc:'Add a Galleon with 4-cannon volley',type:'fleet',ship:'galleon',n:1,minLvl:6},
+  {id:'xcan',name:'Extra Cannon',icon:'💣',rarity:'common',desc:'+1 auto-targeting cannon on flagship',type:'add_cannon'},
+  {id:'mcan',name:'Mobile Cannon',icon:'🔄',rarity:'rare',desc:'360° rotating cannon, independent target',type:'mobile_cannon'},
+  {id:'strm',name:'Cannonball Storm',icon:'💥',rarity:'epic',desc:'8-cannon burst every 3 seconds',type:'storm'},
+  {id:'gbr',name:'Ghost Breaker Rounds',icon:'🟢',rarity:'legendary',desc:'+100% dmg vs Ghost Ships — all ships',type:'ghost_breaker',minLvl:4},
+  {id:'hull',name:'Reinforce Hull',icon:'⚙️',rarity:'common',desc:'+25% max HP',type:'hull_hp'},
+  {id:'ram',name:'Ram Prow',icon:'⚓',rarity:'rare',desc:'Contact damage when ramming enemies',type:'ram'},
+  {id:'sail',name:'Stolen Sails',icon:'💨',rarity:'epic',desc:'+35% movement speed',type:'speed'},
+  {id:'ghul',name:'Ghost Hull',icon:'👻',rarity:'legendary',desc:'Phase through enemies 8s every 30s',type:'ghost_hull',minLvl:5},
+  {id:'brl',name:'Barrel Bombs',icon:'🛢️',rarity:'common',desc:'Drop 3 mines every 10 seconds',type:'barrels'},
+  {id:'twr',name:'Cannon Tower',icon:'🏰',rarity:'rare',desc:'Deploy auto-firing tower (20s, max 2)',type:'tower'},
+  {id:'lure',name:'Treasure Lure',icon:'💎',rarity:'epic',desc:'Attract nearby enemies for 5s every 12s',type:'lure'},
+  {id:'vrtx',name:'Maelstrom Vortex',icon:'🌀',rarity:'legendary',desc:'Massive vortex pulls + damages enemies',type:'vortex',minLvl:7},
+];
+const META_TREE=[
+  {id:'hull',name:'Hull Reinforcement',icon:'🛡️',cost:10,desc:'+15% starting HP per level'},
+  {id:'fleet',name:'Starting Fleet',icon:'⛵',cost:20,desc:'Start with 1 extra rowboat escort'},
+  {id:'magnet',name:'Treasure Magnet',icon:'💰',cost:15,desc:'+30% doubloon pickup radius'},
+  {id:'cannon',name:'Cannon Master',icon:'💣',cost:25,desc:'+10% cannon damage (all ships)'},
+  {id:'ghost',name:'Ghost Ward',icon:'🔮',cost:30,desc:'Boss spawns 60s later per level'},
+  {id:'anchor',name:'Island Anchor',icon:'⚓',cost:40,desc:'Auto-deploy tower every 90s'},
+  {id:'flag',name:'Flag Bearer',icon:'🏴‍☠️',cost:50,desc:'Enemies -18% accuracy vs all ships'},
+  {id:'mastery',name:'Ghost Mastery',icon:'💀',cost:100,desc:'Legendary upgrades appear more often'},
+];
+
+// ── GAME STATE ─────────────────────────────────────────────────────────
+let _running=false,_paused=false,_upPending=false;
+let _animId=null,_lastTs=0,_fpsC=0,_fpsT=0,_fpsV=0;
+let G={};
+
+// ── SCREEN SHAKE ───────────────────────────────────────────────────────
+function addShake(amt){G.shake=Math.max(G.shake||0,amt);}
+
+// ── TOWER ENTITY ──────────────────────────────────────────────────────
+class Tower{
+  constructor(x,z){
+    this.x=x;this.z=z;this.life=20;this.dead=false;this.ft=0;this.rng=285;
+    this.mesh=spawnMesh('tower-complete-small');
+    this.mesh.position.set(x-HALF,0,z-HALF);
+    _scene.add(this.mesh);
+  }
+  update(dt,enemies,dmMult){
+    this.life-=dt;if(this.life<=0){_scene.remove(this.mesh);this.dead=true;return;}
+    this.ft-=dt;
+    if(this.ft<=0){
+      const e=enemies.filter(e=>!e.dead).sort((a,b)=>d2(this.x,this.z,a.x,a.z)-d2(this.x,this.z,b.x,b.z))[0];
+      if(e&&dst(this.x,this.z,e.x,e.z)<this.rng){fireBullet(this.x,this.z,e.x,e.z,28*dmMult,'tower');this.ft=1.55;}
+      else this.ft=.35;
+    }
+  }
+}
+
+// ── LOOT ENTITY ───────────────────────────────────────────────────────
+class Loot{
+  constructor(x,z,type,val){
+    this.x=x;this.z=z;this.type=type;this.val=val;this.r=type==='chest'?16:type==='skull'?12:9;
+    this.life=22;this.dead=false;this.bt=Math.random()*TWO_PI;this.isDecoy=false;
+    const mp={chest:'chest',skull:'crate',doubloon:'crate',bottle:'bottle'};
+    const src=_mdls[mp[type]||'crate'];
+    if(src){this.mesh=src.clone(true);this.mesh.scale.setScalar(sc(mp[type]||'crate'));}
+    else{this.mesh=new THREE.Mesh(new THREE.SphereGeometry(this.r*.4,7,5),new THREE.MeshStandardMaterial({color:type==='chest'?0xc07010:0xf0c040,metalness:0,roughness:.7}));}
+    _scene.add(this.mesh);
+  }
+  update(dt){
+    this.life-=dt;this.bt+=dt*1.9;
+    if(this.life<=0||this.dead){_scene.remove(this.mesh);this.dead=true;return;}
+    this.mesh.position.set(this.x-HALF,2.5+Math.sin(this.bt)*2,this.z-HALF);
+    this.mesh.rotation.y+=dt*.8;
+  }
+}
+
+// ── MINE ENTITY ───────────────────────────────────────────────────────
+function mkMine(x,z){
+  const src=_mdls['barrel'];
+  const m=src?src.clone(true):new THREE.Mesh(new THREE.CylinderGeometry(4,4,7,7),new THREE.MeshStandardMaterial({color:0x7a4a20,metalness:0,roughness:.8}));
+  if(src)m.scale.setScalar(sc('barrel'));
+  m.position.set(x-HALF,2.5,z-HALF);_scene.add(m);
+  return{x,z,r:13,life:14,mesh:m,active:true};
+}
+
+// ── FLEET SHIP ────────────────────────────────────────────────────────
+class FleetShip{
+  constructor(type,owner){
+    const c=FLEET_CFG[type]||FLEET_CFG.rowboat;
+    this.ftype=type;this.hp=c.hp;this.maxHp=c.hp;this.spd=c.spd;this.sz=c.sz;
+    this.dmg=c.dmg;this.fr=c.fr;this.rng=c.rng;this.cn=c.cn;
+    this.x=owner.x;this.z=owner.z;this.angle=0;this.dead=false;
+    this.oA=Math.random()*TWO_PI;this.oR=80+owner.fleet.length*16;this.ft=Math.random()*2;
+    this.mesh=spawnMesh(c.model);_scene.add(this.mesh);
+    this.hpEl=mkHpBar();
+  }
+  update(dt,owner,enemies,dmMult){
+    if(this.dead)return;
+    this.oA+=dt*.9/(this.oR/80);
+    const tx=owner.x+Math.sin(this.oA)*this.oR,tz=owner.z+Math.cos(this.oA)*this.oR;
+    const dx=tx-this.x,dz=tz-this.z,dd=Math.sqrt(dx*dx+dz*dz);
+    if(dd>5){this.x+=dx/dd*this.spd*22*dt;this.z+=dz/dd*this.spd*22*dt;}
+    const ta=Math.atan2(dx,dz);let da=angDiff(ta,this.angle);this.angle+=da*Math.min(1,dt*3.5);
+    this.mesh.position.set(this.x-HALF,0,this.z-HALF);this.mesh.rotation.y=this.angle;
+    syncHpBar(this.hpEl,this.x,this.z,this.hp,this.maxHp);
+    this.ft-=dt;
+    if(this.ft<=0){
+      const e=enemies.filter(e=>!e.dead).sort((a,b)=>d2(this.x,this.z,a.x,a.z)-d2(this.x,this.z,b.x,b.z))[0];
+      if(e&&dst(this.x,this.z,e.x,e.z)<this.rng){
+        for(let ci=0;ci<this.cn;ci++){
+          const sa=(ci-(this.cn-1)/2)*.22,ba=Math.atan2(e.x-this.x,e.z-this.z);
+          fireBullet(this.x,this.z,this.x+Math.sin(ba+sa)*this.rng*.9,this.z+Math.cos(ba+sa)*this.rng*.9,this.dmg*dmMult,'fleet');
+        }
+        this.ft=this.fr;
+      }else this.ft=.38;
+    }
+  }
+  takeDmg(n){
+    this.hp-=n;if(this.hp<=0){this.hp=0;this.dead=true;}
+    this.mesh.traverse(m=>{if(!m.isMesh)return;m.material.emissive.set(0xff2200);m.material.emissiveIntensity=.8;setTimeout(()=>{if(m.material){m.material.emissive.set(0);m.material.emissiveIntensity=0;}},220);});
+  }
+  kill(){_scene.remove(this.mesh);this.hpEl.wrap?.parentNode?.removeChild(this.hpEl.wrap);this.dead=true;}
+}
+
+// ── ENEMY ─────────────────────────────────────────────────────────────
+class Enemy{
+  constructor(type,x,z,bossScale=0,ghostPaint=false){
+    const c=ENEMY_CFG[type];
+    this.etype=type;this.isBoss=!!c.boss;this.isGhost=this.isBoss||ghostPaint;
+    this.hp=c.hp*(1+bossScale*.4)*(ghostPaint&&!this.isBoss?.7:1);this.maxHp=this.hp;
+    this.spd=c.spd*(1+bossScale*.12);this.sz=c.sz;
+    this.dmg=c.dmg+bossScale*2.5;this.fr=c.fr;this.rng=c.rng;
+    this.xpV=c.xp;this.skV=c.sk;this.dead=false;
+    this.x=x;this.z=z;this.angle=0;this.vx=0;this.vz=0;
+    this.ft=Math.random()*2;this.circAngle=0;this.circDir=Math.random()>.5?1:-1;
+    this.gallTimer=0;this.minionTimer=0;this.chargeTimer=0;this.mineTimer=0;
+    this.phase=1;this._p2=false;this._p3=false;
+    this.lureTarget=null;this.lureTime=0;
+    this.mesh=spawnMesh(c.model);
+    if(this.isBoss)this.mesh.scale.multiplyScalar(1.5+bossScale*.22);
+    if(this.isGhost){
+      this.mesh.traverse(m=>{if(m.isMesh){m.material=m.material.clone();m.material.emissive.set(0x00ff88);m.material.emissiveIntensity=.55;m.material.transparent=true;m.material.opacity=.82;}});
+    }
+    _scene.add(this.mesh);
+    this.hpEl=mkHpBar();
+  }
+  takeDmg(n){
+    this.hp-=n;if(this.hp<=0){this.hp=0;this.dead=true;}
+    this.mesh.traverse(m=>{if(!m.isMesh)return;m.material.emissive.set(0xff2200);m.material.emissiveIntensity=.75;setTimeout(()=>{if(m.material){m.material.emissive.set(this.isGhost?new THREE.Color(0x00ff88):new THREE.Color(0));m.material.emissiveIntensity=this.isGhost?.55:0;}},220);});
+  }
+  update(dt,player,flagAcc){
+    if(this.dead)return;
+    const dist=dst(this.x,this.z,player.x,player.z);
+    // Lure override
+    if(this.lureTarget&&!this.lureTarget.dead&&this.lureTime>0){
+      this.lureTime-=dt;
+      const a=Math.atan2(this.lureTarget.x-this.x,this.lureTarget.z-this.z);
+      this.x+=Math.sin(a)*this.spd*22*dt;this.z+=Math.cos(a)*this.spd*22*dt;
+      this._sync();return;
+    }
+    if(this.isBoss){this._bossBehav(dt,player,dist,G);return;}
+    switch(this.etype){
+      case 'rowboat':{
+        const a=Math.atan2(player.x-this.x,player.z-this.z);
+        this.x+=Math.sin(a)*this.spd*22*dt;this.z+=Math.cos(a)*this.spd*22*dt;
+        const ta=a;let da=angDiff(ta,this.angle);this.angle+=da*Math.min(1,dt*7);
+        if(dist<player.sz+this.sz&&!player.phased){player.takeDmg(this.dmg*.5*dt*60);this.takeDmg(this.dmg*.3*dt*60);G.parts.emit(this.x,this.z,{n:5,color:'#ff4422',minS:20,maxS:80,life:.35});}
+        break;}
+      case 'sloop':case 'frigate':{
+        if(dist>210){const a=Math.atan2(player.x-this.x,player.z-this.z);this.x+=Math.sin(a)*this.spd*20*dt;this.z+=Math.cos(a)*this.spd*20*dt;let da=angDiff(a,this.angle);this.angle+=da*Math.min(1,dt*3);}
+        else{this.circAngle+=dt*this.circDir*(this.spd/185);this.x+=Math.sin(this.circAngle+Math.PI/2)*this.spd*12*dt;this.z+=Math.cos(this.circAngle+Math.PI/2)*this.spd*12*dt;}
+        this._fire(player,flagAcc,dt);break;}
+      case 'galleon':{
+        this.gallTimer+=dt;if(this.gallTimer>4){this.gallTimer=0;this.circDir*=-1;}
+        if(dist>255){const ofs=Math.PI/4*this.circDir;const a=Math.atan2(player.x-this.x,player.z-this.z)+ofs;this.x+=Math.sin(a)*this.spd*18*dt;this.z+=Math.cos(a)*this.spd*18*dt;let da=angDiff(a,this.angle);this.angle+=da*Math.min(1,dt*2);}
+        this._fire(player,flagAcc,dt);break;}
+    }
+    this.x=clamp(this.x,30,WORLD-30);this.z=clamp(this.z,30,WORLD-30);
+    this._sync();
+  }
+  _fire(player,flagAcc,dt){
+    this.ft-=dt;
+    if(this.ft<=0&&dst(this.x,this.z,player.x,player.z)<this.rng){
+      const shots=1;const ba=Math.atan2(player.x-this.x,player.z-this.z);
+      const spread=flagAcc?0.18:0.32;
+      fireBullet(this.x,this.z,this.x+Math.sin(ba+rand(-spread,spread))*this.rng*.9,this.z+Math.cos(ba+rand(-spread,spread))*this.rng*.9,this.dmg,'enemy');
+      this.ft=this.fr;
+    }
+  }
+  _bossBehav(dt,player,dist,G){
+    const pct=this.hp/this.maxHp;
+    if(pct>0.6){
+      // Phase 1: circle + spawn minions
+      this.circAngle+=(dt*.38);
+      const tx=player.x+Math.sin(this.circAngle)*310,tz=player.z+Math.cos(this.circAngle)*310;
+      this.x+=(tx-this.x)*dt*1.1;this.z+=(tz-this.z)*dt*1.1;
+      this.minionTimer+=dt;
+      if(this.minionTimer>=30){
+        this.minionTimer=0;
+        for(let i=0;i<6;i++){const a=(i/6)*TWO_PI;G.enemies.push(new Enemy('rowboat',clamp(this.x+Math.sin(a)*220,40,WORLD-40),clamp(this.z+Math.cos(a)*220,40,WORLD-40),0,true));}
+        announce('💀 Ghost minions unleashed!');
+      }
+    } else if(pct>0.3){
+      // Phase 2: charge + mines
+      if(!this._p2){this._p2=true;announce('👻 Phase 2 — CHARGING!');}
+      this.chargeTimer+=dt;
+      if(this.chargeTimer>=3.2){
+        this.chargeTimer=0;const a=Math.atan2(player.x-this.x,player.z-this.z);
+        this.vx=Math.sin(a)*620;this.vz=Math.cos(a)*620;
+      }
+      this.vx*=.85;this.vz*=.85;this.x+=this.vx*dt;this.z+=this.vz*dt;
+      this.mineTimer+=dt;if(this.mineTimer>=5){this.mineTimer=0;G.mines.push(mkMine(this.x,this.z));}
+    } else {
+      // Phase 3: enrage — speed×2, rapid fire
+      if(!this._p3){this._p3=true;this.spd*=2;this.fr*=.45;announce('💀 ENRAGED! 👻');addShake(1.5);}
+      const a=Math.atan2(player.x-this.x,player.z-this.z);
+      this.x+=Math.sin(a)*this.spd*26*dt;this.z+=Math.cos(a)*this.spd*26*dt;
+    }
+    // Boss fire — shots scale with phase
+    const shots=pct>0.6?3:pct>0.3?4:6;
+    this.ft-=dt;
+    if(this.ft<=0&&dist<365){
+      const ba=Math.atan2(player.x-this.x,player.z-this.z);
+      for(let s=0;s<shots;s++){
+        const sa=ba+(s-(shots-1)/2)*.26;
+        fireBullet(this.x,this.z,this.x+Math.sin(sa)*this.rng*.9,this.z+Math.cos(sa)*this.rng*.9,this.dmg,'enemy');
+      }
+      this.ft=this.fr;
+    }
+    this.x=clamp(this.x,30,WORLD-30);this.z=clamp(this.z,30,WORLD-30);
+    this._sync();
+    document.getElementById('BSF').style.width=clamp(this.hp/this.maxHp,0,1)*100+'%';
+  }
+  _sync(){
+    this.mesh.position.set(this.x-HALF,0,this.z-HALF);
+    this.mesh.rotation.y=this.angle;
+    this.mesh.position.y=Math.sin(Date.now()*.002+this.x*.001)*.1;
+    syncHpBar(this.hpEl,this.x,this.z,this.hp,this.maxHp);
+    if(this.isBoss&&this.hp>0)document.getElementById('BSB').style.display='block';
+  }
+  kill(){_scene.remove(this.mesh);this.hpEl.wrap?.parentNode?.removeChild(this.hpEl.wrap);this.dead=true;}
+  killFX(parts){parts.emit(this.x,this.z,{n:this.isBoss?40:18,color:this.isGhost?'#4dff9b':'#ff7722',minS:45,maxS:200,life:this.isBoss?1.5:.9});this.kill();}
+}
+
+// ── PLAYER ─────────────────────────────────────────────────────────────
+class Player{
+  constructor(def){
+    this.def=def;this.dead=false;this.x=HALF;this.z=HALF;this.angle=0;
+    // Momentum system
+    this.vx=0;this.vz=0;this.friction=def.friction;this.spd=def.spd;this.sz=def.sz;
+    this.cn=def.cn;this.tr=def.tr;this.passive=def.passive;
+    // HP
+    this.maxHp=def.hp*(META.upgrades.hull?1.15:1);this.hp=this.maxHp;
+    // Upgrade flags
+    this.extraCn=0;this.hasMob=false;this.hasStorm=false;this.stormT=0;
+    this.hasGB=false;this.hasRam=false;this.spdMul=1;
+    this.hasGH=false;this.ghT=0;this.ghCD=def.passive==='ghost'?60:30;
+    this.phased=false;
+    this.hasBrl=false;this.brlT=0;this.hasTwr=false;this.twrT=0;
+    this.hasLure=false;this.lureT=0;
+    this.hasVtx=false;this.vtxT=20;this.vtxActive=false;this.vtxLife=0;
+    this.mobA=0;this.mobFT=0;
+    this.fireTimes=Array(10).fill(0);
+    this.doubloons=0;this.xp=0;this.xpNeed=100;this.level=0;
+    this.pickR=META.upgrades.magnet?80:60;
+    this.fleet=[];this.upgTaken=[];this.respawnQ=[];
+    this.flagAcc=!!META.upgrades.flag;
+    this.tAutoT=META.upgrades.anchor?45:0;
+    this.mesh=spawnMesh(def.model);_scene.add(this.mesh);
+    if(def.passive==='ghost'){this.mesh.traverse(m=>{if(m.isMesh){m.material=m.material.clone();m.material.emissive.set(0x006633);m.material.emissiveIntensity=.38;}});}
+    this.hpEl=mkHpBar();
+  }
+  get dmgMult(){return(META.upgrades.cannon?1.1:1)*(this.hasGB?2:1);}
+  addXP(n){this.doubloons+=n;this.xp+=n;if(!_upPending&&this.xp>=this.xpNeed){this.xp-=this.xpNeed;this.xpNeed=Math.floor(this.xpNeed*1.22+26);this.level++;_upPending=true;_paused=true;Aud.levelUp();}}
+  takeDmg(n){
+    if(this.phased)return;
+    this.hp-=n;if(this.hp<0)this.hp=0;
+    addShake(.55);flashDmg();
+    G.ftexts.push(new FloatTxt(this.x,this.z,`-${Math.ceil(n)}`,'#ff4444'));
+    Aud.hit();
+    this.mesh.traverse(m=>{if(!m.isMesh)return;m.material.emissive.set(0xff2200);m.material.emissiveIntensity=.8;setTimeout(()=>{if(m.material){m.material.emissive.set(0);m.material.emissiveIntensity=0;}},220);});
+    // Fortress passive: while fleet alive, don't die
+    if(this.hp<=0&&this.passive==='fortress'&&this.fleet.filter(f=>!f.dead).length>0){
+      this.hp=1;const fs=this.fleet.find(f=>!f.dead);if(fs)fs.takeDmg(40);
+      toast('🛡️ Fleet absorbs the blow!');
+    }
+  }
+  heal(n){this.hp=Math.min(this.maxHp,this.hp+n);}
+  update(dt){
+    if(this.dead)return;
+    const inp=getInp();
+    // Momentum-based movement (inp.dy = forward/back = world Z axis)
+    const accel=this.spd*32;
+    this.vx=this.vx*this.friction+inp.dx*accel*dt;
+    this.vz=this.vz*this.friction+inp.dy*accel*dt;
+    const spd2=Math.sqrt(this.vx**2+this.vz**2),maxSpd=this.spd*this.spdMul*22;
+    if(spd2>maxSpd){this.vx*=maxSpd/spd2;this.vz*=maxSpd/spd2;}
+    this.x=clamp(this.x+this.vx*dt,60,WORLD-60);
+    this.z=clamp(this.z+this.vz*dt,60,WORLD-60);
+    // Rotate toward movement (per-ship turn rate)
+    if(spd2>2){const ta=Math.atan2(this.vx,this.vz);let da=angDiff(ta,this.angle);this.angle+=da*Math.min(1,dt*this.tr);}
+    // Wake particles
+    if(spd2>8&&Math.random()>.82){const ba=this.angle+Math.PI;G.parts.emit(this.x+Math.sin(ba)*12,this.z+Math.cos(ba)*12,{n:4,color:'#aaddff',minS:10,maxS:35,life:.58});}
+    // Ghost phase
+    this.ghCD-=dt;
+    if(this.ghCD<=0&&(this.passive==='ghost'||this.hasGH)){
+      this.phased=true;this.ghT=8;this.ghCD=this.passive==='ghost'?60:30;
+      toast('👻 Phased!',2000);document.getElementById('FTZ').style.display='block';
+      G.parts.emit(this.x,this.z,{n:14,color:'#4dff9b',minS:20,maxS:80,life:.7});
+    }
+    if(this.phased){
+      this.ghT-=dt;if(this.ghT<=0){this.phased=false;document.getElementById('FTZ').style.display='none';}
+      this.mesh.traverse(m=>{if(m.isMesh){m.material.transparent=true;m.material.opacity=.35+Math.sin(Date.now()*.009)*.12;}});
+    } else {
+      this.mesh.traverse(m=>{if(m.isMesh){if(this.passive!=='ghost'){m.material.transparent=false;m.material.opacity=1;}}});
+    }
+    // Auto-fire
+    const enemies=G.enemies.filter(e=>!e.dead).sort((a,b)=>d2(this.x,this.z,a.x,a.z)-d2(this.x,this.z,b.x,b.z));
+    const total=this.cn+this.extraCn;
+    for(let ci=0;ci<total;ci++){
+      this.fireTimes[ci]=(this.fireTimes[ci]||0)-dt;
+      if(this.fireTimes[ci]<=0){
+        const e=enemies[ci%Math.max(1,enemies.length)];
+        if(e&&dst(this.x,this.z,e.x,e.z)<325){
+          fireBullet(this.x,this.z,e.x+rand(-16,16),e.z+rand(-16,16),22*this.dmgMult,'player');
+          G.parts.emit(this.x,this.z,{n:5,color:'#ff8833',minS:28,maxS:95,life:.45});
+          addShake(.22);Aud.cannon();
+          this.fireTimes[ci]=1.9+ci*.25;
+        }else this.fireTimes[ci]=.28;
+      }
+    }
+    // Mobile cannon
+    if(this.hasMob&&enemies.length){
+      const e=enemies[0];this.mobA=lerp(this.mobA,Math.atan2(e.x-this.x,e.z-this.z),dt*2.8);
+      this.mobFT-=dt;
+      if(this.mobFT<=0&&dst(this.x,this.z,e.x,e.z)<410){fireBullet(this.x,this.z,e.x,e.z,16*this.dmgMult,'player');this.mobFT=1.15;}
+    }
+    // Cannonball storm
+    if(this.hasStorm){this.stormT-=dt;if(this.stormT<=0&&enemies.length){for(let s=0;s<8;s++){const a=(s/8)*TWO_PI;fireBullet(this.x,this.z,this.x+Math.sin(a)*185,this.z+Math.cos(a)*185,14*this.dmgMult,'player');}G.parts.emit(this.x,this.z,{n:26,color:'#ff5522',minS:40,maxS:190,life:.88});this.stormT=3;}}
+    // Barrels
+    if(this.hasBrl){this.brlT-=dt;if(this.brlT<=0){for(let b=0;b<3;b++)G.mines.push(mkMine(this.x+rand(-40,40),this.z+rand(-40,40)));this.brlT=10;}}
+    // Tower deployment
+    if(this.hasTwr||META.upgrades.anchor){
+      this.twrT-=dt;this.tAutoT-=dt;
+      const deployCD=this.hasTwr?20:999;
+      const autoCD=META.upgrades.anchor?90:999;
+      if((this.twrT<=0||this.tAutoT<=0)&&G.towers.filter(t=>!t.dead).length<(this.hasTwr?2:1)){
+        G.towers.push(new Tower(this.x+rand(-70,70),this.z+rand(-70,70)));
+        if(this.twrT<=0)this.twrT=deployCD;
+        if(this.tAutoT<=0)this.tAutoT=autoCD;
+        toast('🏰 Cannon tower deployed!',1800);
+      }
+    }
+    // Treasure lure
+    if(this.hasLure){
+      this.lureT-=dt;
+      if(this.lureT<=0&&G.enemies.length>3){
+        this.lureT=12;
+        const lure=new Loot(this.x+rand(-110,110),this.z+rand(-110,110),'chest',0);
+        lure.isDecoy=true;G.loots.push(lure);
+        G.enemies.slice(0,8).forEach(e=>{e.lureTarget=lure;e.lureTime=5;});
+        toast('💎 Treasure Lure deployed!',2000);
+      }
+    }
+    // Vortex
+    if(this.hasVtx){
+      this.vtxT-=dt;
+      if(this.vtxT<=0&&!this.vtxActive&&G.enemies.length>4){
+        this.vtxActive=true;this.vtxLife=3.2;this.vtxT=30;
+        toast('🌀 Maelstrom Vortex!',2200);addShake(1.2);
+        G.parts.emit(this.x,this.z,{n:55,color:'#4488ff',minS:55,maxS:260,life:1.4});
+      }
+    }
+    if(this.vtxActive){
+      this.vtxLife-=dt;if(this.vtxLife<=0)this.vtxActive=false;
+      for(const e of G.enemies){const d=dst(e.x,e.z,this.x,this.z);if(d<380){const a=Math.atan2(this.x-e.x,this.z-e.z);e.x+=Math.sin(a)*295*dt;e.z+=Math.cos(a)*295*dt;if(d<60)e.takeDmg(200*dt);}}
+    }
+    // Ram
+    if(this.hasRam)for(const e of G.enemies)if(!e.dead&&dst(this.x,this.z,e.x,e.z)<this.sz+e.sz+4)e.takeDmg(30*dt);
+    // Respawn queue (Rowboat Gang passive)
+    this.respawnQ=this.respawnQ.filter(r=>{r.t-=dt;if(r.t<=0){this.fleet.push(new FleetShip(r.type,this));return false;}return true;});
+    this.mesh.position.set(this.x-HALF,Math.sin(Date.now()*.003)*.14,this.z-HALF);
+    this.mesh.rotation.y=this.angle;
+    syncHpBar(this.hpEl,this.x,this.z,this.hp,this.maxHp);
+    if(this.hp<=0&&!(this.passive==='fortress'&&this.fleet.filter(f=>!f.dead).length>0))this.dead=true;
+  }
+}
+
+// ── WORLD BUILDING ─────────────────────────────────────────────────────
+let _worldObjs=[];
+function buildWorld(rng){
+  _worldObjs=[];
+  // Rocks
+  for(let i=0;i<30;i++){
+    const x=HALF+rng()*WORLD*.85-WORLD*.425,z=HALF+rng()*WORLD*.85-WORLD*.425,r=rand(18,44);
+    const key=rFrom(['rocks-a','rocks-b','rocks-c']);
+    const m=spawnMesh(key);m.scale.multiplyScalar(rand(.7,1.35));
+    m.position.set(x-HALF,rand(0,3),z-HALF);m.rotation.y=rng()*TWO_PI;_scene.add(m);
+    _worldObjs.push({type:'rock',x,z,r,mesh:m});
+  }
+  // Islands
+  for(let i=0;i<4;i++){
+    const x=HALF+rng()*WORLD*.7-WORLD*.35+200*(i%2?1:-1),z=HALF+rng()*WORLD*.7-WORLD*.35+200*(i<2?1:-1);
+    const r=rand(65,105);const grp=new THREE.Group();
+    for(let p=0;p<6;p++){const m=spawnMesh(rng()>.5?'patch-sand':'patch-grass');m.scale.multiplyScalar(rand(.8,1.2));m.position.set(rand(-r*.6,r*.6),0,rand(-r*.6,r*.6));m.rotation.y=rng()*TWO_PI;grp.add(m);}
+    for(let t=0;t<rInt(2,4);t++){const m=spawnMesh(rng()>.5?'palm-straight':'palm-bend');m.position.set(rand(-r*.5,r*.5),-1,rand(-r*.5,r*.5));m.rotation.y=rng()*TWO_PI;grp.add(m);}
+    const cm=spawnMesh('chest');cm.position.set(0,2,0);cm.userData.chest=true;grp.add(cm);
+    grp.position.set(x-HALF,0,z-HALF);_scene.add(grp);
+    _worldObjs.push({type:'island',x,z,r,mesh:grp,hasLoot:true});
+  }
+}
+function spawnWreck(x,z){
+  const m=spawnMesh('ship-wreck');m.scale.multiplyScalar(rand(.75,1.25));
+  m.position.set(x-HALF,0,z-HALF);m.rotation.y=Math.random()*TWO_PI;_scene.add(m);
+  _worldObjs.push({type:'wreck',x,z,r:17,mesh:m});
+}
+function cleanupWorld(){_worldObjs.forEach(o=>{if(o.mesh)_scene.remove(o.mesh);});_worldObjs=[];}
+
+// ── WAVE SYSTEM ────────────────────────────────────────────────────────
+function waveCfg(min){
+  if(min<2)return{types:['rowboat'],n:9,iv:2.9};
+  if(min<4)return{types:['rowboat','sloop'],n:11,iv:2.55};
+  if(min<7)return{types:['rowboat','sloop','frigate'],n:13,iv:2.2};
+  if(min<11)return{types:['sloop','frigate','galleon'],n:16,iv:2.0,gc:.12};
+  if(min<17)return{types:['frigate','galleon'],n:19,iv:1.8,gc:.28};
+  if(min<25)return{types:['galleon'],n:23,iv:1.55,gc:.42};
+  return{types:['galleon'],n:27,iv:1.25,gc:.55};
+}
+function spawnEnemy(){
+  const min=G.time/60,cfg=waveCfg(min),type=rFrom(cfg.types);
+  const ghostPaint=cfg.gc&&Math.random()<cfg.gc,p=G.player;
+  const far=rand(340,460),edge=rInt(0,3);
+  let ex,ez;
+  if(edge===0){ex=p.x-far;ez=p.z+rand(-430,430);}
+  else if(edge===1){ex=p.x+far;ez=p.z+rand(-430,430);}
+  else if(edge===2){ez=p.z-far;ex=p.x+rand(-430,430);}
+  else{ez=p.z+far;ex=p.x+rand(-430,430);}
+  G.enemies.push(new Enemy(type,clamp(ex,50,WORLD-50),clamp(ez,50,WORLD-50),G.bossScale,ghostPaint));
+  G.spawnIv=cfg.iv;
+}
+function spawnBoss(){
+  G.bossActive=true;G.lastBossMinute=Math.floor(G.time/60);
+  announce('💀 GHOST SHIP BOSS!<br><small>All cannons — OPEN FIRE!</small>');
+  addShake(1.4);document.getElementById('BSB').style.display='block';
+  Aud.boss();
+  const p=G.player,bc=Math.min(G.bossScale+1,2);
+  for(let b=0;b<bc;b++){
+    const bx=clamp(p.x+(b===0?420:-420),100,WORLD-100);
+    const bz=clamp(p.z-400,100,WORLD-100);
+    G.enemies.push(new Enemy('ghost',bx,bz,G.bossScale));
+  }
+  for(let i=0;i<10;i++){const a=(i/10)*TWO_PI;G.enemies.push(new Enemy('rowboat',clamp(p.x+Math.sin(a)*520,50,WORLD-50),clamp(p.z+Math.cos(a)*520,50,WORLD-50),0,true));}
+}
+function bossDeath(e){
+  for(let i=0;i<20;i++){const a=(i/20)*TWO_PI,dd=rand(45,195);G.loots.push(new Loot(clamp(e.x+Math.sin(a)*dd,50,WORLD-50),clamp(e.z+Math.cos(a)*dd,50,WORLD-50),'chest',80));}
+  G.bossActive=false;G.bossKills++;G.bossScale++;
+  G.nextBoss=G.time+(META.upgrades.ghost?540:480);
+  announce('🏆 GHOST SHIP DESTROYED!<br><small>LEGENDARY VICTORY!</small>');
+  addShake(2.8);G.player.heal(70);
+  document.getElementById('BSB').style.display='none';
+  toast('💀 Ghost Ship destroyed! +70 HP healed!',4000);Aud.sink();
+}
+
+// ── UPGRADE LOGIC ──────────────────────────────────────────────────────
+let _upCards=[];
+function getCards(level){
+  const lb=META.upgrades.mastery?.18:.06;
+  const pool=UPGRADES.filter(u=>!u.minLvl||level>=u.minLvl);
+  const weighted=pool.map(c=>({c,w:c.rarity==='common'?4.2:c.rarity==='rare'?2.6:c.rarity==='epic'?1.55:lb*10}));
+  weighted.sort(()=>Math.random()-.5);
+  const out=[],used=new Set();
+  for(const wi of weighted){if(out.length>=3)break;if(!used.has(wi.c.id)&&Math.random()<wi.w){out.push(wi.c);used.add(wi.c.id);}}
+  while(out.length<3){const c=rFrom(pool);if(!used.has(c.id)){out.push(c);used.add(c.id);}}
+  _upCards=out;return out;
+}
+function showUpgScr(){
+  const el=document.getElementById('CDS');el.innerHTML='';
+  getCards(G.player.level).forEach((c,i)=>{
+    const div=document.createElement('div');div.className='card '+c.rarity;
+    div.innerHTML=`<div class="ci">${c.icon}</div><div class="cn">${c.name}</div><div class="cd">${c.desc}</div><div class="cr">◆ ${c.rarity.toUpperCase()}</div>`;
+    div.onclick=()=>selCard(i);el.appendChild(div);
+  });
+  showScr('UPS');
+}
+function selCard(idx){const c=_upCards[idx];if(!c)return;applyUpg(c);_upCards=[];_upPending=false;_paused=false;showScr(null);}
+function skipUpg(){_upCards=[];_upPending=false;_paused=false;showScr(null);}
+function applyUpg(c){
+  const p=G.player;
+  toast('✨ '+c.name+'!',2200);
+  G.parts.emit(p.x,p.z,{n:24,color:'#f0c040',minS:40,maxS:180,life:1});
+  p.upgTaken.push(c.id);Aud.upgrade();
+  switch(c.type){
+    case 'fleet':for(let i=0;i<c.n;i++)p.fleet.push(new FleetShip(c.ship,p));break;
+    case 'add_cannon':p.extraCn++;break;
+    case 'mobile_cannon':p.hasMob=true;break;
+    case 'storm':p.hasStorm=true;p.stormT=0;break;
+    case 'ghost_breaker':p.hasGB=true;toast('👻 Ghost Breaker active — all ships deal 2× vs Ghosts!',3000);break;
+    case 'hull_hp':{const b=Math.floor(p.maxHp*.25);p.maxHp+=b;p.hp=Math.min(p.hp+b,p.maxHp);}break;
+    case 'ram':p.hasRam=true;break;
+    case 'speed':p.spdMul+=.35;break;
+    case 'ghost_hull':p.hasGH=true;p.ghCD=30;break;
+    case 'barrels':p.hasBrl=true;p.brlT=4;break;
+    case 'tower':p.hasTwr=true;p.twrT=0;break;
+    case 'lure':p.hasLure=true;p.lureT=0;break;
+    case 'vortex':p.hasVtx=true;p.vtxT=12;break;
+  }
+}
+
+// ── COLLISION SYSTEM ───────────────────────────────────────────────────
+function collide(){
+  const p=G.player;
+
+  // Player/fleet/tower bullets → enemies
+  for(const cb of _BPOOL){
+    if(!cb.active||!cb.isPlayer)continue;
+    for(const e of G.enemies){
+      if(e.dead)continue;
+      if(d2(cb.x,cb.z,e.x,e.z)<(e.sz+cb.r)**2){
+        let dmg=cb.dmg;if(e.isGhost&&!p.hasGB)dmg*=.5;
+        e.takeDmg(dmg);
+        G.ftexts.push(new FloatTxt(e.x,e.z,'-'+Math.floor(dmg),e.isGhost?'#4dff9b':'#ff8833'));
+        cb.active=false;cb.mesh.visible=false;break;
+      }
+    }
+  }
+
+  // Enemy bullets → player
+  for(const cb of _BPOOL){
+    if(!cb.active||cb.isPlayer)continue;
+    if(!p.phased&&d2(cb.x,cb.z,p.x,p.z)<(p.sz+cb.r)**2){
+      p.takeDmg(cb.dmg);cb.active=false;cb.mesh.visible=false;continue;
+    }
+    for(const fs of p.fleet)if(!fs.dead&&d2(cb.x,cb.z,fs.x,fs.z)<(fs.sz+cb.r)**2){fs.takeDmg(cb.dmg*.55);cb.active=false;cb.mesh.visible=false;break;}
+  }
+
+  // Enemy deaths
+  for(let i=G.enemies.length-1;i>=0;i--){
+    const e=G.enemies[i];if(!e.dead)continue;
+    if(e.isBoss){bossDeath(e);}
+    else{
+      const lc=e.etype==='galleon'?4:e.etype==='frigate'?2:1;
+      for(let l=0;l<lc;l++){
+        const chest=(e.etype==='galleon'&&Math.random()<.5);
+        const skull=!chest&&e.skV>0&&Math.random()<.28;
+        G.loots.push(new Loot(e.x+rand(-55,55),e.z+rand(-55,55),chest?'chest':skull?'skull':'doubloon',chest?62:skull?1:e.xpV/lc));
+      }
+    }
+    G.score+=e.xpV;
+    e.killFX(G.parts);
+    if(e.sz>=18)spawnWreck(e.x,e.z);
+    G.enemies.splice(i,1);
+  }
+
+  // Loot pickup
+  for(let i=G.loots.length-1;i>=0;i--){
+    const l=G.loots[i];if(l.dead){G.loots.splice(i,1);continue;}
+    if(!l.isDecoy&&dst(p.x,p.z,l.x,l.z)<p.pickR){
+      if(l.type==='doubloon'||l.type==='chest'){p.addXP(l.val);G.ftexts.push(new FloatTxt(l.x,l.z,'+'+Math.floor(l.val)+'🪙','#f0c040'));Aud.coin();}
+      else if(l.type==='skull'){G.skRun+=l.val;G.ftexts.push(new FloatTxt(l.x,l.z,'+'+l.val+'💀','#ccbbff'));}
+      G.score+=l.val*.5;l.dead=true;
+    }
+  }
+
+  // Mines
+  for(let i=G.mines.length-1;i>=0;i--){
+    const m=G.mines[i];m.life-=1/60;
+    if(m.life<=0){_scene.remove(m.mesh);G.mines.splice(i,1);continue;}
+    m.mesh.position.y=2.5+Math.sin(G.t*3+i)*1.5;
+    for(const e of G.enemies)if(!e.dead&&dst(m.x,m.z,e.x,e.z)<m.r+e.sz){
+      e.takeDmg(55);G.parts.emit(m.x,m.z,{n:18,color:'#ff7722',minS:45,maxS:170,life:.78});
+      _scene.remove(m.mesh);G.mines.splice(i,1);break;
+    }
+  }
+
+  // Rock collision
+  for(const o of _worldObjs){
+    if(o.type!=='rock')continue;
+    if(dst(p.x,p.z,o.x,o.z)<p.sz+o.r&&!p.phased){
+      p.takeDmg(4/60);const a=Math.atan2(p.x-o.x,p.z-o.z);p.x+=Math.sin(a)*3.5;p.z+=Math.cos(a)*3.5;
+    }
+  }
+
+  // Island loot
+  for(const o of _worldObjs){
+    if(o.type!=='island'||!o.hasLoot)continue;
+    if(dst(p.x,p.z,o.x,o.z)<o.r+42){
+      o.hasLoot=false;p.addXP(75);G.skRun+=2;
+      G.ftexts.push(new FloatTxt(o.x,o.z,'🏝️ +75🪙','#f0c040'));
+      toast('🏝️ Island looted! +2 Skulls',2000);
+      o.mesh.traverse(m=>{if(m.userData.chest)m.visible=false;});
+    }
+  }
+
+  // Fleet deaths
+  p.fleet=p.fleet.filter(fs=>{
+    if(fs.dead){
+      G.parts.emit(fs.x,fs.z,{n:15,color:'#ff7722',minS:35,maxS:145,life:.82});
+      spawnWreck(fs.x,fs.z);Aud.sink();
+      if(p.passive==='swarm')p.respawnQ.push({type:'rowboat',t:5});
+      fs.kill();return false;
+    }
+    return true;
+  });
+}
+
+// ── HUD UPDATE ─────────────────────────────────────────────────────────
+function updateHUD(){
+  const p=G.player,pct=clamp(p.hp/p.maxHp,0,1);
+  const hf=document.getElementById('HPF');
+  hf.style.width=(pct*100)+'%';
+  hf.style.background=pct>.5?'linear-gradient(90deg,#22cc22,#55ff55)':pct>.25?'linear-gradient(90deg,#aacc22,#ccee44)':'linear-gradient(90deg,#cc2222,#ff4444)';
+  const m=Math.floor(G.time/60),s=Math.floor(G.time%60);
+  const tel=document.getElementById('TMR');tel.textContent=m+':'+(s<10?'0':'')+s;tel.className=G.time>1500?'danger':'';
+  document.getElementById('DBL').textContent='🪙 '+p.doubloons.toLocaleString();
+  document.getElementById('FLT').textContent='⛵ Fleet: '+(1+p.fleet.length);
+  document.getElementById('LVL').textContent='Lv.'+(p.level+1);
+  document.getElementById('XPF').style.width=(p.xp/p.xpNeed*100)+'%';
+  const mn=Math.floor(G.time/60);
+  const labels=['Open Ocean','Sloop Hunters','Navy Frigates','Armada Rising','Ghost Seas','Infernal Deep'];
+  document.getElementById('WVL').textContent='⚓ Min '+mn+' — '+(labels[Math.min(mn>>1,labels.length-1)]);
+  if(!G.enemies.some(e=>e.isBoss&&!e.dead))document.getElementById('BSB').style.display='none';
+  drawMM();
+}
+
+function drawMM(){
+  const mc=document.getElementById('MMC').getContext('2d');
+  const W=88,s2=W/WORLD;
+  mc.fillStyle='#04101e';mc.fillRect(0,0,W,W);
+  mc.fillStyle='rgba(10,70,140,.25)';mc.fillRect(0,0,W,W);
+  for(const o of _worldObjs){
+    if(o.type==='island'){mc.fillStyle='#9a6a28';}
+    else if(o.type==='rock'){mc.fillStyle='#2a2018';}
+    else continue;
+    mc.beginPath();mc.arc(o.x*s2,o.z*s2,Math.max(1.5,o.r*s2),0,TWO_PI);mc.fill();
+  }
+  mc.fillStyle='#ef4444';
+  for(const e of G.enemies)if(!e.dead){mc.beginPath();mc.arc(e.x*s2,e.z*s2,e.isBoss?5:2.5,0,TWO_PI);mc.fill();}
+  mc.fillStyle='#60a5fa';
+  for(const fs of G.player.fleet)if(!fs.dead){mc.beginPath();mc.arc(fs.x*s2,fs.z*s2,2,0,TWO_PI);mc.fill();}
+  mc.fillStyle='#f0c040';mc.beginPath();mc.arc(G.player.x*s2,G.player.z*s2,4,0,TWO_PI);mc.fill();
+  mc.strokeStyle='rgba(240,192,64,.4)';mc.lineWidth=1.5;mc.stroke();
+}
+
+// ── CLEANUP ────────────────────────────────────────────────────────────
+function cleanupRun(){
+  if(!G||!G.player)return;
+  if(G.parts)G.parts.destroy();
+  if(G.enemies)G.enemies.forEach(e=>{try{e.kill();}catch{}});
+  if(G.player){
+    G.player.fleet.forEach(fs=>{try{fs.kill();}catch{}});
+    try{_scene.remove(G.player.mesh);G.player.hpEl.wrap?.parentNode?.removeChild(G.player.hpEl.wrap);}catch{}
+  }
+  if(G.loots)G.loots.forEach(l=>{if(l.mesh)try{_scene.remove(l.mesh);}catch{}});
+  if(G.mines)G.mines.forEach(m=>{if(m.mesh)try{_scene.remove(m.mesh);}catch{}});
+  if(G.towers)G.towers.forEach(t=>{if(t.mesh)try{_scene.remove(t.mesh);}catch{}});
+  if(G.ftexts)G.ftexts.forEach(f=>f.destroy());
+  cleanupWorld();
+  _BPOOL.forEach(b=>{b.active=false;b.mesh.visible=false;});
+  // Clean all HP bar DOM elements
+  document.querySelectorAll('[data-hpbar]').forEach(el=>el.remove());
+}
+
+// ── END GAME ───────────────────────────────────────────────────────────
+function endGame(victory=false){
+  _running=false;_paused=false;_upPending=false;
+  if(_animId){cancelAnimationFrame(_animId);_animId=null;}
+  AdSDK.gameplayStop();
+  AdSDK.midgame(); // Fire midgame ad on death
+  showHUD(false);
+  const p=G.player,time=G.time;
+  const score=Math.floor(G.score+p.doubloons+time*10+(victory?55000:0));
+  const skulls=Math.max(1,Math.floor(G.skRun+p.doubloons/80+G.bossKills*5+(time>=600?10:0)+(time>=1200?25:0)));
+  META.runs++;META.skulls+=skulls;META.coins=(META.coins||0)+Math.floor(p.doubloons*.1);
+  if(score>META.highScore)META.highScore=score;if(time>META.bestTime)META.bestTime=time;
+  const mn=Math.floor(time/60),sec=Math.floor(time%60);
+  META.lb.push({name:META.name,score,time,ship:META.ship||'sloop',date:new Date().toLocaleDateString()});
+  META.lb.sort((a,b)=>b.score-a.score);META.lb=META.lb.slice(0,25);saveMeta();
+  // Death screen
+  document.getElementById('DTT').textContent=victory?'🏆 LEGEND!':'SHIPWRECKED';
+  document.getElementById('DFL').textContent=victory?'"Only 0.3% survive 30 minutes. You are a legend."':'"The sea claims another legend… for now."';
+  document.getElementById('DTIME').textContent=mn+':'+(sec<10?'0':'')+sec;
+  document.getElementById('DSCO').textContent=score.toLocaleString();
+  document.getElementById('DDBL').textContent=p.doubloons.toLocaleString();
+  document.getElementById('DSKL').textContent='+'+skulls;
+  const icons={rowboat:'🚣',sloop:'⛵',brigantine:'🚢',galleon:'🏴‍☠️'};
+  document.getElementById('DFLEET').innerHTML=[SHIP_DEFS[META.ship||'sloop'].icon,...p.fleet.map(f=>icons[f.ftype]||'⛵')].join(' ');
+  const rank=META.lb.findIndex(e=>e.score===score)+1;
+  const def=SHIP_DEFS[META.ship||'sloop'];
+  const shareCard=`🏴‍☠️ MAELSTROM\n⏱ ${mn}:${sec<10?'0':''}${sec} survived\n🪙 ${score.toLocaleString()} pts\n${def.icon} Fleet: ${1+p.fleet.length} ships\n💀 Boss kills: ${G.bossKills}\n⚔️ Upgrades: ${p.upgTaken.length}\n#${rank} on local board`;
+  const dsh=document.getElementById('DSHARE');dsh.textContent=shareCard;
+  dsh.onclick=()=>navigator.clipboard?.writeText(shareCard).then(()=>toast('📋 Copied!'));
+  document.getElementById('bCON').style.display=victory?'none':'flex';
+  showScr('DS');
+}
+
+// ── GAME LOOP ──────────────────────────────────────────────────────────
+function gameLoop(ts){
+  if(!_running)return;
+  _animId=requestAnimationFrame(gameLoop);
+  const dt=Math.min((ts-_lastTs)/1000,.05);_lastTs=ts; // Cap at 50ms
+  _fpsC++;_fpsT+=dt;if(_fpsT>=1){_fpsV=_fpsC;_fpsC=0;_fpsT=0;document.getElementById('FPS').textContent=_fpsV+'fps';}
+
+  if(_paused){
+    if(_upPending&&_upCards.length===0)showUpgScr();
+    _rend.render(_scene,_cam);return;
+  }
+
+  G.t+=dt;G.time+=dt;
+
+  // Screen shake
+  if(G.shake>0){G.shX=(Math.random()-.5)*G.shake*14;G.shZ=(Math.random()-.5)*G.shake*14;G.shake=Math.max(0,G.shake-dt*3.2);}else{G.shX=0;G.shZ=0;}
+
+  // Spawn
+  G.maxE=Math.min(72,28+Math.floor(G.time/85)*4);
+  G.spawnT+=dt;if(G.spawnT>=G.spawnIv&&G.enemies.length<G.maxE){spawnEnemy();G.spawnT=0;}
+
+  // Boss spawn guard — lastBossMinute prevents re-trigger
+  const curMin=Math.floor(G.time/60);
+  const ghostDelay=META.upgrades.ghost?60:0;
+  if(G.time>=G.nextBoss+ghostDelay&&!G.bossActive&&G.lastBossMinute<curMin){spawnBoss();}
+
+  // Update all entities
+  const p=G.player;
+  p.update(dt);
+  for(const fs of p.fleet)if(!fs.dead)fs.update(dt,p,G.enemies,p.dmgMult);
+  for(const e of G.enemies)if(!e.dead)e.update(dt,p,p.flagAcc);
+  updateBullets(dt);
+  G.parts.update(dt);
+  for(let i=G.ftexts.length-1;i>=0;i--){G.ftexts[i].update(dt);if(G.ftexts[i].life<=0)G.ftexts.splice(i,1);}
+  for(let i=G.loots.length-1;i>=0;i--){G.loots[i].update(dt);if(G.loots[i].dead)G.loots.splice(i,1);}
+  G.towers.forEach(t=>t.update(dt,G.enemies,p.dmgMult));G.towers=G.towers.filter(t=>!t.dead);
+  collide();
+
+  // Camera smooth follow + shake
+  const tx=p.x-HALF+G.shX,tz=p.z-HALF+G.shZ;
+  _cam.position.x=lerp(_cam.position.x,tx,dt*4);
+  _cam.position.z=lerp(_cam.position.z,tz+CAM_D,dt*4);
+  _cam.position.y=CAM_H+p.fleet.length*1.2;
+  _cam.lookAt(lerp(_cam.position.x-G.shX,tx,dt*5),0,lerp(_cam.position.z-CAM_D,tz,dt*5));
+
+  animOcean(G.t);
+  _rend.render(_scene,_cam);
+  updateHUD();
+
+  if(p.hp<=0&&!(p.passive==='fortress'&&p.fleet.filter(f=>!f.dead).length>0)){endGame();return;}
+  if(G.time>=1800){endGame(true);return;}
+}
+
+// ── MENU BACKGROUND LOOP ───────────────────────────────────────────────
+let _mT=0,_mLast=0;
+function menuLoop(ts){
+  if(_running)return;
+  requestAnimationFrame(menuLoop);
+  const dt=Math.min((ts-_mLast)/1000,.05);_mLast=ts;_mT+=dt;
+  animOcean(_mT);
+  _cam.position.x=Math.sin(_mT*.07)*190;
+  _cam.position.z=Math.cos(_mT*.05)*190+CAM_D;
+  _cam.position.y=CAM_H+Math.sin(_mT*.1)*20;
+  _cam.lookAt(Math.sin(_mT*.07)*45,0,Math.cos(_mT*.05)*45);
+  _rend.render(_scene,_cam);
+}
+
+// ── INIT GAME ──────────────────────────────────────────────────────────
+function initGame(){
+  cleanupRun(); // MUST be first — prevents mesh accumulation
+  // Daily challenge seed
+  const today=new Date();
+  const seed=today.getUTCFullYear()*10000+(today.getUTCMonth()+1)*100+today.getUTCDate();
+  const rng=mkRng(seed);
+  const def=SHIP_DEFS[META.ship||'sloop'];
+  const p=new Player(def);
+  if(META.upgrades.fleet)p.fleet.push(new FleetShip('rowboat',p));
+  if(def.passive==='swarm')for(let i=0;i<4;i++)p.fleet.push(new FleetShip('rowboat',p));
+  if(def.passive==='fortress'){p.fleet.push(new FleetShip('sloop',p));setTimeout(()=>{if(_running)G.towers.push(new Tower(p.x+60,p.z));},100);}
+  buildWorld(rng);
+  G={
+    player:p,enemies:[],loots:[],mines:[],towers:[],ftexts:[],
+    parts:new Particles(2000),
+    time:0,t:0,score:0,skRun:0,
+    spawnT:0,spawnIv:2.9,maxE:28,
+    bossActive:false,bossScale:0,bossKills:0,lastBossMinute:-99,
+    nextBoss:META.upgrades.ghost?540:480,
+    shake:0,shX:0,shZ:0,
+  };
+}
+
+// ── START / RESTART ────────────────────────────────────────────────────
+function startGame(){
+  Aud.init();Aud.ctx?.resume();
+  showScr(null);showHUD(true);
+  document.getElementById('BSB').style.display='none';
+  document.getElementById('FTZ').style.display='none';
+  document.getElementById('POV').classList.remove('on');
+  _running=true;_paused=false;_upPending=false;
+  initGame();
+  buildBulletPool(120);
+  _lastTs=performance.now();
+  if(_animId)cancelAnimationFrame(_animId);
+  _animId=requestAnimationFrame(gameLoop);
+  AdSDK.gameplayStart();
+  // Show daily challenge banner
+  const dc=document.getElementById('DCB');
+  const day=Math.floor(Date.now()/86400000)-19900;
+  dc.textContent=`📅 Daily Challenge #${day} — Same seas for all players today!`;
+  dc.classList.add('show');setTimeout(()=>dc.classList.remove('show'),4000);
+}
+function togglePause(){_paused=!_paused;document.getElementById('POV').classList.toggle('on',_paused);}
+
+// ── META / SHIP / LB RENDERS ───────────────────────────────────────────
+function renderMeta(){
+  document.getElementById('MSKD').textContent='💀 Skulls: '+META.skulls;
+  const g=document.getElementById('MG');g.innerHTML='';
+  for(const n of META_TREE){
+    const own=!!META.upgrades[n.id],afford=META.skulls>=n.cost;
+    const div=document.createElement('div');
+    div.className='mu'+(own?' own':!afford?' disabled':'  can');
+    div.innerHTML=`<div class="mui">${n.icon}</div><div class="mun">${n.name}</div><div class="mud">${n.desc}</div><div class="muc">${own?'✅ Owned':'💀 '+n.cost}</div>`;
+    if(!own&&afford)div.onclick=()=>{META.skulls-=n.cost;META.upgrades[n.id]=true;saveMeta();renderMeta();toast('✅ '+n.name+' unlocked!');};
+    g.appendChild(div);
+  }
+}
+function renderShips(){
+  const g=document.getElementById('SHG');g.innerHTML='';
+  for(const[k,def]of Object.entries(SHIP_DEFS)){
+    const sel=META.ship===k;
+    const unlocked=k==='sloop'||!!META.upgrades['u_'+k];
+    const div=document.createElement('div');
+    div.className='sc'+(sel?' sel':'')+((!unlocked)?' locked':'');
+    div.innerHTML=`<div class="sci">${def.icon}</div><div class="scn">${def.name}</div><div class="scd">${def.desc}</div><div class="scc">${sel?'✅ Selected':!unlocked?'💀 '+def.cost:'▶ Select'}</div>`;
+    div.onclick=()=>{
+      if(unlocked){META.ship=k;saveMeta();renderShips();document.getElementById('SHIPLBL').textContent=def.name;toast('⛵ '+def.name+' selected!');}
+      else if(META.skulls>=def.cost){META.skulls-=def.cost;META.upgrades['u_'+k]=true;META.ship=k;saveMeta();renderShips();toast('🎉 '+def.name+' unlocked!');}
+      else toast('❌ Need '+(def.cost-META.skulls)+' more Skulls');
+    };
+    g.appendChild(div);
+  }
+}
+function renderLB(){
+  const el=document.getElementById('LBL'),lb=META.lb||[];
+  if(!lb.length){el.innerHTML='<div style="color:#1a3050;font-style:italic;text-align:center;padding:1.5em">No runs yet — set sail!</div>';return;}
+  el.innerHTML=lb.slice(0,15).map((e,i)=>{
+    const m=Math.floor(e.time/60),s=Math.floor(e.time%60),ico=SHIP_DEFS[e.ship||'sloop']?.icon||'⛵';
+    return`<div class="lrow"><span style="width:24px;text-align:right">#${i+1}</span><span style="width:18px;text-align:center">${ico}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.name||'?'}</span><span style="font-weight:700">${e.score?.toLocaleString()}</span><span style="color:#334455;font-size:.68rem">${m}:${s<10?'0':''}${s}</span></div>`;
+  }).join('');
+}
+function updateMenuUI(){
+  document.getElementById('MNSKULL').textContent='💀 Skulls: '+META.skulls;
+  document.getElementById('SKULLLBL').textContent=META.skulls+' 💀';
+  const def=SHIP_DEFS[META.ship||'sloop'];
+  document.getElementById('SHIPLBL').textContent=def.name;
+  if(META.bestTime>0){const m=Math.floor(META.bestTime/60),s=Math.floor(META.bestTime%60);document.getElementById('MNBEST').textContent='🏆 Best: '+m+':'+(s<10?'0':'')+s+' | Runs: '+META.runs;}
+  const top3=META.lb.slice(0,3);
+  if(top3.length>0)document.getElementById('MNBEST').textContent=(document.getElementById('MNBEST').textContent||'')+(META.bestTime>0?' | ':'')+'LB: '+top3.map((e,i)=>'#'+(i+1)+' '+e.name).join(' · ');
+}
+
+// ── BUTTON WIRING ──────────────────────────────────────────────────────
+function bindUI(){
+  const g=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn);};
+  g('bP',  startGame);
+  g('bSH', ()=>{renderShips();showScr('SHS');});
+  g('bMT', ()=>{renderMeta();showScr('MS');});
+  g('bLB', ()=>{renderLB();showScr('LBS');});
+  g('bSHB',()=>showScr('MN'));
+  g('bMTB',()=>showScr('MN'));
+  g('bLBB',()=>showScr('MN'));
+  g('bAG', ()=>{showScr(null);startGame();});
+  g('bDM', ()=>{showScr('MN');updateMenuUI();});
+  g('bRS', ()=>{togglePause();document.getElementById('POV').classList.remove('on');});
+  g('bCON',()=>{
+    // Rewarded ad — continue with 50% HP
+    AdSDK.rewarded(()=>{
+      if(!G.player)return;
+      G.player.hp=G.player.maxHp*.5;G.player.dead=false;
+      _running=true;_paused=false;
+      showScr(null);showHUD(true);
+      _lastTs=performance.now();
+      _animId=requestAnimationFrame(gameLoop);
+      toast('⚓ Second wind! Keep fighting!',2500);
+      AdSDK.gameplayStart();
+    });
+  });
+}
+
+// ── BOOT ──────────────────────────────────────────────────────────────
+async function boot(){
+  AdSDK.init();
+  // Verify CDN loaded correctly
+  if(typeof THREE==='undefined'){document.getElementById('LT').textContent='Error: THREE.js failed to load. Refresh.';return;}
+  if(typeof THREE.GLTFLoader==='undefined'){document.getElementById('LT').textContent='Error: GLTFLoader not found. Check CDN.';return;}
+
+  try{
+    initThree();
+    buildOcean();
+    buildBulletPool(120);
+  }catch(err){
+    document.getElementById('LT').textContent='WebGL failed: '+err.message;return;
+  }
+
+  // Menu background starts immediately — user sees animated ocean
+  requestAnimationFrame(menuLoop);
+
+  // Load assets — each has 6s timeout, errors use fallback
+  try{await preload();}catch(err){console.warn('Preload partial:',err);}
+
+  setLB(1,'⚓ Setting Sail…');
+  await new Promise(r=>setTimeout(r,450));
+
+  // Fade loading screen
+  const ls=document.getElementById('LS');ls.classList.add('out');
+  setTimeout(()=>{ls.style.display='none';},950);
+
+  bindUI();
+  updateMenuUI();
+  renderShips();
+  showScr('MN');
+}
+
+boot();
+
+})(); // end IIFE
 </script>
 </body>
 </html>
