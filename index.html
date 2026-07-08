@@ -8,6 +8,21 @@
 <meta property="og:type" content="website">
 <title>MAELSTROM v5 — Survive the Sea. Outlast the Storm.</title>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"MAELSTROM","description":"A free pirate naval survivor browser game","genre":["Roguelite","Survivor","Action"],"playMode":"SinglePlayer","applicationCategory":"Game","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<!-- GameMonetize.com HTML5 SDK — replace gameId with the ID from your GameMonetize dashboard -->
+<script>window._gmPending=[];</script>
+<script type="text/javascript">
+   window.SDK_OPTIONS = {
+      gameId: "your_game_id_here",
+      onEvent: function (a) {
+         if (window.GM_onSDKEvent) { window.GM_onSDKEvent(a); }
+         else { window._gmPending.push(a); }
+      }
+   };
+(function (a, b, c) {
+   var d = a.getElementsByTagName(b)[0];
+   a.getElementById(c) || (a = a.createElement(b), a.id = c, a.src = "https://api.gamemonetize.com/sdk.js", d.parentNode.insertBefore(a, d))
+})(document, "script", "gamemonetize-sdk");
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700&family=Pirata+One&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -375,10 +390,37 @@ const AdSDK={
     if(h.includes('poki.com'))this.platform='poki';
     else if(h.includes('crazygames.com'))this.platform='crazygames';
     else if(h.includes('gamedistribution.com'))this.platform='gd';
+    else if(h.includes('gamemonetize'))this.platform='gamemonetize';
     try{
       if(this.platform==='poki')window.PokiSDK?.init().then(()=>{this.ready=true;}).catch(()=>{});
       else if(this.platform==='crazygames')window.CrazyGames?.SDK?.init().then(()=>{this.ready=true;}).catch(()=>{});
     }catch{}
+    // Bridge GameMonetize SDK_OPTIONS.onEvent (registered in <head>) to this object.
+    // Also drains any events that fired before this script ran.
+    window.GM_onSDKEvent=(a)=>{
+      switch(a.name){
+        case 'SDK_GAME_PAUSE':this.gmPause();break;
+        case 'SDK_GAME_START':this.gmResume();break;
+        case 'SDK_READY':this.gmReady();break;
+      }
+    };
+    if(window._gmPending&&window._gmPending.length){window._gmPending.forEach(window.GM_onSDKEvent);window._gmPending=[];}
+  },
+  // Called when GameMonetize's SDK reports SDK_READY
+  gmReady(){this.platform=this.platform||'gamemonetize';this.ready=true;},
+  // Called on SDK_GAME_PAUSE — an ad is about to play, pause game logic and mute audio
+  gmPause(){
+    if(_running&&!_paused){_paused=true;const pov=document.getElementById('POV');if(pov)pov.classList.add('on');}
+    try{Aud.ctx&&Aud.ctx.suspend();}catch{}
+  },
+  // Called on SDK_GAME_START — the ad finished, resume game logic and unmute audio
+  gmResume(){
+    if(_running&&_paused){_paused=false;const pov=document.getElementById('POV');if(pov)pov.classList.remove('on');}
+    try{Aud.ctx&&Aud.ctx.state==='suspended'&&Aud.ctx.resume();}catch{}
+  },
+  // Actually requests an ad from GameMonetize (SDK_GAME_PAUSE/START events above handle the pause/resume)
+  showGMAd(){
+    try{if(typeof sdk!=='undefined'&&sdk.showBanner)sdk.showBanner();}catch{}
   },
   gameplayStart(){if(this.platform==='poki')try{window.PokiSDK?.gameplayStart();}catch{}},
   gameplayStop(){if(this.platform==='poki')try{window.PokiSDK?.gameplayStop();}catch{}},
@@ -386,7 +428,10 @@ const AdSDK={
     if(!this.ready)return;
     const now=Date.now();if(now-this.lastAdTime<180000)return;
     this.lastAdTime=now;this.adBreakCount++;_paused=true;this.gameplayStop();
-    try{if(this.platform==='poki')await window.PokiSDK.commercialBreak();}catch{}
+    try{
+      if(this.platform==='poki')await window.PokiSDK.commercialBreak();
+      else if(this.platform==='gamemonetize')this.showGMAd();
+    }catch{}
     this.gameplayStart();_paused=false;
   },
   async rewarded(onGrant){
@@ -394,6 +439,7 @@ const AdSDK={
     this.gameplayStop();
     try{
       if(this.platform==='poki'){const ok=await window.PokiSDK.rewardedBreak();if(ok)onGrant();}
+      else if(this.platform==='gamemonetize'){this.showGMAd();onGrant();}
       else onGrant();
     }catch{onGrant();}
     this.gameplayStart();
